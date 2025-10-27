@@ -1,0 +1,56 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# UV package manager
+.python-version
+uv.lock
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.two
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# Game-specific
+*.log
+debug_output/
+
+# Copyrighted Capcom assets (all sprites, backgrounds, and extracted frames)
+assets/
+tools/sprite_extraction/akuma_animations/
+tools/sprite_extraction/akuma_gifs/
+tools/sprite_extraction/character_portraits/
+public/*.gif
+
+# Local config (if we add user-specific settings later)
+config.local.json
+*.local
+
+# Keep assets but ignore temporary files
+*.tmp
+*.bak

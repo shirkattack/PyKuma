@@ -1,0 +1,316 @@
+# Animation configuration for Street Fighter 3rd Strike characters
+# This centralizes all animation data, frame data, and hitbox information
+
+characters:
+  akuma:
+    # Character-specific rendering settings
+    sprite_scale: 2.0
+    ground_offset: 190  # Pixels below character.y where sprite bottom is positioned
+
+    animations:
+      # === IDLE/MOVEMENT ===
+
+      stance:
+        # Standing idle animation
+        source: numbered_sprites
+        sprites: [18273, 18274, 18275, 18276, 18277, 18278, 18279, 18280, 18281, 18282]
+        frame_duration: 8  # Hold each frame for 8 game frames (subtle breathing)
+        loop: true
+
+      walk_forward:
+        # Walking forward animation
+        source: numbered_sprites
+        sprites: [18283, 18284, 18285, 18288, 18289, 18290, 18291, 18292, 18293]
+        frame_duration: 3  # Hold each frame for 3 game frames (smooth walk)
+        loop: true
+
+      crouch_hold:
+        # Crouching hold pose (single frame, loops)
+        source: numbered_sprites
+        sprites: [18439]  # Fully crouched pose
+        frame_duration: 1
+        loop: true
+
+      # === ATTACKS ===
+
+      medium_punch:
+        # Standing Medium Punch (s.MP)
+        source: numbered_sprites
+        sprites: [18673, 18673, 18674, 18675, 18676, 18677, 18678, 18679, 18680, 18681, 18682, 18682, 18682, 18682, 18682, 18673, 18673, 18673]
+        frame_duration: 1  # Each sprite displays for 1 game frame
+        loop: false
+        frame_data:
+          startup: 5      # Frames before attack becomes active
+          active: 4       # Frames where hitbox is active
+          recovery: 9     # Frames after active before returning to neutral
+          total: 18       # Total animation frames
+        hitbox:
+          active_frames: [5, 6, 7, 8]  # Animation frames where hitbox is active (1-indexed for frame data)
+          offset_x: 50    # X offset from character position (will flip based on facing)
+          offset_y: -65   # Y offset from character position (negative = up)
+          width: 60       # Hitbox width in pixels
+          height: 40      # Hitbox height in pixels
+          damage: 18      # Damage dealt on hit
+          hitstun: 15     # Frames of hitstun on hit
+          hit_type: HIGH  # HIGH, MID, LOW, OVERHEAD, THROW, PROJECTILE
+
+      crouch_light_punch:
+        # Crouching Light Punch (cr.LP)
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-wp"
+        frames: 7       # Number of frames in folder (frame_000.png to frame_006.png)
+        frame_duration: 2  # Hold each frame for 2 game frames
+        loop: false
+        frame_data:
+          startup: 4      # 4f startup
+          active: 2       # 2f active
+          recovery: 5     # 5f recovery
+          total: 11       # Total frames
+        hitbox:
+          active_frames: [4, 5]  # State frames where hitbox is active (1-indexed)
+          offset_x: 35    # Closer range for crouching attack
+          offset_y: -35   # Lower height for crouching attack
+          width: 40       # Smaller hitbox
+          height: 25      # Lower hitbox
+          damage: 8       # Light attack damage
+          hitstun: 10     # Light hitstun
+          hit_type: LOW   # Must be blocked crouching
+
+      light_punch:
+        # Standing Light Punch (s.LP)
+        source: numbered_sprites
+        sprites: [18664, 18666, 18667, 18669, 18670, 18669, 18671, 18671, 18672, 18672, 18664, 18664]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 3      # 3f startup
+          active: 3       # 3f active
+          recovery: 6     # 6f recovery
+          total: 12       # Total frames
+        hitbox:
+          active_frames: [3, 4, 5]  # State frames where hitbox is active
+          offset_x: 45    # Forward reach
+          offset_y: -70   # Head/chest height
+          width: 50       # Jab range
+          height: 35      # Jab height
+          damage: 12      # Light damage
+          hitstun: 12     # Light hitstun
+          hit_type: HIGH  # Must be blocked standing
+
+      heavy_punch:
+        # Standing Heavy Punch (s.HP) - Akuma's signature uppercut
+        source: numbered_sprites
+        sprites: [18640, 18640, 18641, 18642, 18643, 18643, 18644, 18644, 18645, 18645, 18646, 18646, 18647, 18647, 18648, 18648, 18649, 18649, 18649, 18649, 18640, 18640, 18640, 18640, 18640]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 4      # 4f startup
+          active: 4       # 4f active
+          recovery: 17    # 17f recovery
+          total: 25       # Total frames
+        hitbox:
+          active_frames: [4, 5, 6, 7]  # Two-hit uppercut
+          offset_x: 35    # Close range uppercut
+          offset_y: -85   # High reach
+          width: 55       # Wide uppercut
+          height: 50      # Tall hitbox
+          damage: 25      # Heavy damage
+          hitstun: 18     # Heavy hitstun
+          hit_type: HIGH  # Anti-air properties
+
+      light_kick:
+        # Standing Light Kick (s.LK)
+        source: numbered_sprites
+        sprites: [18706, 18706, 18707, 18708, 18709, 18710, 18711, 18711, 18712, 18712, 18712, 18712, 18706, 18706, 18706]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 4      # 4f startup
+          active: 4       # 4f active
+          recovery: 7     # 7f recovery
+          total: 15       # Total frames
+        hitbox:
+          active_frames: [4, 5, 6, 7]  # Kick active frames
+          offset_x: 50    # Leg reach
+          offset_y: -45   # Mid height
+          width: 45       # Kick width
+          height: 30      # Kick height
+          damage: 15      # Light kick damage
+          hitstun: 12     # Light hitstun
+          hit_type: MID   # Can be blocked standing or crouching
+
+      medium_kick:
+        # Standing Medium Kick (s.MK)
+        source: numbered_sprites
+        sprites: [18696, 18696, 18697, 18697, 18698, 18698, 18699, 18700, 18700, 18701, 18701, 18702, 18702, 18703, 18703, 18704, 18704, 18705, 18705, 18696, 18696, 18696, 18696, 18696, 18696, 18696, 18696]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 5      # 5f startup
+          active: 5       # 5f active
+          recovery: 17    # 17f recovery
+          total: 27       # Total frames
+        hitbox:
+          active_frames: [5, 6, 7, 8, 9]  # Medium kick active
+          offset_x: 60    # Good range
+          offset_y: -50   # Mid height
+          width: 50       # Medium width
+          height: 35      # Medium height
+          damage: 20      # Medium damage
+          hitstun: 15     # Medium hitstun
+          hit_type: MID   # Mid attack
+
+      heavy_kick:
+        # Standing Heavy Kick (s.HK)
+        source: numbered_sprites
+        sprites: [18717, 18717, 18717, 18717, 18717, 18717, 18717, 18718, 18718, 18718, 18718, 18720, 18720, 18720, 18720, 18720, 18720, 18721, 18721, 18721, 18721, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18722, 18717, 18717, 18717, 18717, 18717, 18717, 18717, 18717, 18717]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 9      # 9f startup
+          active: 8       # 8f active
+          recovery: 25    # 25f recovery
+          total: 42       # Total frames
+        hitbox:
+          active_frames: [9, 10, 11, 12, 13, 14, 15, 16]  # Heavy kick active
+          offset_x: 70    # Long range
+          offset_y: -55   # High kick
+          width: 60       # Wide kick
+          height: 40      # Tall kick
+          damage: 30      # Heavy damage
+          hitstun: 20     # Heavy hitstun
+          hit_type: HIGH  # High attack
+
+      # === CROUCHING ATTACKS ===
+
+      crouch_medium_punch:
+        # Crouching Medium Punch (cr.MP)
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-mp"
+        frames: 7
+        frame_duration: 2
+        loop: false
+        frame_data:
+          startup: 5      # 5f startup
+          active: 3       # 3f active
+          recovery: 7     # 7f recovery
+          total: 15       # Total frames
+        hitbox:
+          active_frames: [5, 6, 7]  # Active frames
+          offset_x: 40    # Medium range
+          offset_y: -40   # Crouching height
+          width: 50       # Medium width
+          height: 30      # Crouching height
+          damage: 15      # Medium damage
+          hitstun: 13     # Medium hitstun
+          hit_type: LOW   # Low attack
+
+      crouch_heavy_punch:
+        # Crouching Heavy Punch (cr.HP)
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-hp"
+        frames: 11
+        frame_duration: 3
+        loop: false
+        frame_data:
+          startup: 5      # 5f startup
+          active: 4       # 4f active
+          recovery: 19    # 19f recovery
+          total: 28       # Total frames
+        hitbox:
+          active_frames: [5, 6, 7, 8]  # Active frames
+          offset_x: 45    # Good range
+          offset_y: -45   # Crouching uppercut
+          width: 55       # Wide punch
+          height: 35      # Tall for crouching
+          damage: 22      # Heavy damage
+          hitstun: 18     # Heavy hitstun
+          hit_type: LOW   # Low attack
+
+      crouch_light_kick:
+        # Crouching Light Kick (cr.LK)
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-wk"
+        frames: 7
+        frame_duration: 2
+        loop: false
+        frame_data:
+          startup: 4      # 4f startup
+          active: 2       # 2f active
+          recovery: 6     # 6f recovery
+          total: 12       # Total frames
+        hitbox:
+          active_frames: [4, 5]  # Quick kick
+          offset_x: 40    # Leg reach
+          offset_y: -20   # Low kick
+          width: 45       # Kick width
+          height: 20      # Low height
+          damage: 6       # Light damage
+          hitstun: 10     # Light hitstun
+          hit_type: LOW   # Low attack
+
+      crouch_medium_kick:
+        # Crouching Medium Kick (cr.MK)
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-mk"
+        frames: 11
+        frame_duration: 2
+        loop: false
+        frame_data:
+          startup: 6      # 6f startup
+          active: 3       # 3f active
+          recovery: 10    # 10f recovery
+          total: 19       # Total frames
+        hitbox:
+          active_frames: [6, 7, 8]  # Medium kick
+          offset_x: 50    # Good range
+          offset_y: -25   # Mid-low height
+          width: 60       # Wide kick
+          height: 25      # Medium height
+          damage: 18      # Medium damage
+          hitstun: 14     # Medium hitstun
+          hit_type: LOW   # Low attack
+
+      crouch_heavy_kick:
+        # Crouching Heavy Kick (cr.HK) - Sweep
+        source: folder
+        path: "tools/sprite_extraction/akuma_animations/akuma-crouch-hk"
+        frames: 13
+        frame_duration: 2
+        loop: false
+        frame_data:
+          startup: 7      # 7f startup
+          active: 5       # 5f active
+          recovery: 17    # 17f recovery
+          total: 29       # Total frames
+        hitbox:
+          active_frames: [7, 8, 9, 10, 11]  # Sweep active
+          offset_x: 60    # Long sweep
+          offset_y: -15   # Ground level
+          width: 70       # Very wide
+          height: 20      # Low sweep
+          damage: 28      # Heavy damage
+          hitstun: 20     # Heavy hitstun + knockdown
+          hit_type: LOW   # Must be blocked crouching
+
+      # === SPECIAL MOVES ===
+
+      gohadoken:
+        # Gohadoken (QCF+P) - Fireball
+        source: numbered_sprites
+        sprites: [19024, 19024, 19025, 19025, 19026, 19027, 19028, 19029, 19030, 19031, 19032, 19033, 19034, 19035, 19036, 19037, 19038, 19039, 19040, 19041, 19042, 19043, 19044, 19045]
+        frame_duration: 1
+        loop: false
+        frame_data:
+          startup: 13     # 13f startup
+          active: 3       # 3f active (projectile spawns)
+          recovery: 8     # 8f recovery
+          total: 24       # Total frames
+        projectile:
+          spawn_frame: 14  # Frame to spawn projectile
+          offset_x: 40     # Spawn position offset
+          offset_y: -60    # Chest height
+          speeds:          # Speed by strength
+            light: 7.0
+            medium: 9.0
+            heavy: 11.0
