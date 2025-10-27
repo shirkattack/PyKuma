@@ -89,7 +89,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 2. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/pykuma.git
+git clone git@github.com:shirkattack/PyKuma.git
 cd pykuma
 ```
 
@@ -161,7 +161,7 @@ pykuma/
 ├── docs/                       # Documentation
 │   ├── ROADMAP.md             # Development roadmap
 │   ├── TESTING_GUIDE.md       # Testing philosophy
-│   └── CLAUDE.md              # AI assistant instructions
+│   
 └── tools/                      # Sprite extraction utilities
 ```
 
@@ -264,7 +264,6 @@ This approach makes the engine **robust, maintainable, and faithful to SF3's fra
 - **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development phases and milestones
 - **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing approach and philosophy
-- **[docs/CLAUDE.md](docs/CLAUDE.md)** - Project conventions for AI assistance
 
 ## 🧪 Testing
 
@@ -404,6 +403,6 @@ Stage assets from fightersgeneration.com archives.
 
 **PyKuma** - Made with ↓↘→👊 by fighting game fans for fighting game fans
 
-[Report Bug](https://github.com/yourusername/pykuma/issues/new?template=bug_report.md) • [Request Feature](https://github.com/yourusername/pykuma/issues/new?template=feature_request.md)
+[Report Bug](https://github.com/shirkattack/pykuma/issues/new?template=bug_report.md) • [Request Feature](https://github.com/shirkattack/pykuma/issues/new?template=feature_request.md)
 
 </div>
