@@ -19,6 +19,7 @@ Position reference:
 from dataclasses import dataclass
 from typing import List, Tuple
 from street_fighter_3rd.data.enums import HitType, CharacterState
+from street_fighter_3rd.data.character_dimensions import get_default_hurtbox_for_character
 
 @dataclass
 class HitboxFrame:
@@ -60,168 +61,180 @@ class MoveFrameData:
 
 # Standing Light Punch (5LP / st.LP)
 # Fast jab - primary pressure tool
+# SF3 Authentic: 4f startup, 3f active, 5f recovery | Damage: 5 | Guard: HIGH
 AKUMA_ST_LP = MoveFrameData(
     name="Standing Light Punch",
     state=CharacterState.LIGHT_PUNCH,
-    startup=3,
-    active=[4, 5],  # Active on frames 4-5
-    recovery=6,
+    startup=4,
+    active=[5, 6, 7],  # Active on frames 5-7 (3 active frames)
+    recovery=5,
     on_hit=+4,  # Advantage on hit
     on_block=+2,  # Advantage on block
     hitboxes=[
-        ([4, 5], HitboxFrame(
+        ([5, 6, 7], HitboxFrame(
             offset_x=45,
             offset_y=-70,
             width=50,
             height=35,
-            damage=12,
+            damage=5,  # SF3 authentic damage
             hitstun=12,
             blockstun=10,
             hit_type=HitType.HIGH
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=30, offset_y=-70, width=25, height=20),  # Extended arm
     ]
 )
 
 # Standing Medium Punch (5MP / st.MP)
 # Good poke - cancelable
+# SF3 Authentic: 5f startup, 4f active, 9f recovery | Damage: 18 | Guard: HIGH
 AKUMA_ST_MP = MoveFrameData(
     name="Standing Medium Punch",
     state=CharacterState.MEDIUM_PUNCH,
     startup=5,
-    active=[6, 7, 8],  # Active on frames 6-8
-    recovery=10,
+    active=[6, 7, 8, 9],  # Active on frames 6-9 (4 active frames)
+    recovery=9,
     on_hit=+5,
     on_block=+1,
     hitboxes=[
-        ([6, 7, 8], HitboxFrame(
+        ([6, 7, 8, 9], HitboxFrame(
             offset_x=55,
             offset_y=-65,
             width=60,
             height=40,
-            damage=18,
+            damage=18,  # SF3 authentic damage
             hitstun=15,
             blockstun=12,
             hit_type=HitType.MID
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=40, offset_y=-65, width=30, height=20),  # Extended arm
     ]
 )
 
 # Standing Heavy Punch (5HP / st.HP)
 # Strong anti-air and combo ender
+# SF3 Authentic: 4f startup, 4f active, 17f recovery | Damage: 24 | Guard: HIGH
 AKUMA_ST_HP = MoveFrameData(
     name="Standing Heavy Punch",
     state=CharacterState.HEAVY_PUNCH,
-    startup=7,
-    active=[8, 9, 10, 11],  # Active on frames 8-11
+    startup=4,
+    active=[5, 6, 7, 8],  # Active on frames 5-8 (4 active frames)
     recovery=17,
     on_hit=+8,
     on_block=-2,
     hitboxes=[
-        ([8, 9, 10, 11], HitboxFrame(
+        ([5, 6, 7, 8], HitboxFrame(
             offset_x=40,
             offset_y=-85,
             width=55,
             height=50,
-            damage=25,
+            damage=24,  # SF3 authentic damage
             hitstun=18,
             blockstun=14,
             hit_type=HitType.HIGH
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=35, offset_y=-85, width=30, height=30),  # Upper body/arm
     ]
 )
 
 # Standing Light Kick (5LK / st.LK)
 # Fast low poke
+# SF3 Authentic: 4f startup, 4f active, 7f recovery | Damage: 7 | Guard: HIGH
 AKUMA_ST_LK = MoveFrameData(
     name="Standing Light Kick",
     state=CharacterState.LIGHT_KICK,
     startup=4,
-    active=[5, 6],  # Active on frames 5-6
+    active=[5, 6, 7, 8],  # Active on frames 5-8 (4 active frames)
     recovery=7,
     on_hit=+3,
     on_block=+1,
     hitboxes=[
-        ([5, 6], HitboxFrame(
+        ([5, 6, 7, 8], HitboxFrame(
             offset_x=50,
             offset_y=-35,
             width=45,
             height=30,
-            damage=14,
+            damage=7,  # SF3 authentic damage
             hitstun=13,
             blockstun=11,
-            hit_type=HitType.LOW
+            hit_type=HitType.HIGH  # SF3 docs show this as HIGH, not LOW
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=40, offset_y=-35, width=30, height=15),  # Extended leg
     ]
 )
 
 # Standing Medium Kick (5MK / st.MK)
 # Solid mid-range poke
+# SF3 Authentic: 5f startup, 5f active, 17f recovery | Damage: 16 | Guard: HIGH
 AKUMA_ST_MK = MoveFrameData(
     name="Standing Medium Kick",
     state=CharacterState.MEDIUM_KICK,
-    startup=6,
-    active=[7, 8, 9],  # Active on frames 7-9
-    recovery=11,
+    startup=5,
+    active=[6, 7, 8, 9, 10],  # Active on frames 6-10 (5 active frames)
+    recovery=17,
     on_hit=+6,
     on_block=+2,
     hitboxes=[
-        ([7, 8, 9], HitboxFrame(
+        ([6, 7, 8, 9, 10], HitboxFrame(
             offset_x=60,
             offset_y=-50,
             width=50,
             height=35,
-            damage=20,
+            damage=16,  # SF3 authentic damage
             hitstun=16,
             blockstun=13,
-            hit_type=HitType.MID
+            hit_type=HitType.HIGH
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=50, offset_y=-50, width=35, height=20),  # Extended leg
     ]
 )
 
 # Standing Heavy Kick (5HK / st.HK)
 # Powerful kick - good range
+# SF3 Authentic: 5f startup, 5f active, 20f recovery | Damage: 25 | Guard: HIGH
 AKUMA_ST_HK = MoveFrameData(
     name="Standing Heavy Kick",
     state=CharacterState.HEAVY_KICK,
-    startup=9,
-    active=[10, 11, 12, 13],  # Active on frames 10-13
-    recovery=18,
+    startup=5,
+    active=[6, 7, 8, 9, 10],  # Active on frames 6-10 (5 active frames)
+    recovery=20,
     on_hit=+10,
     on_block=-3,
     hitboxes=[
-        ([10, 11, 12, 13], HitboxFrame(
+        ([6, 7, 8, 9, 10], HitboxFrame(
             offset_x=65,
             offset_y=-60,
             width=60,
             height=45,
-            damage=28,
+            damage=25,  # SF3 authentic damage
             hitstun=20,
             blockstun=15,
-            hit_type=HitType.MID
+            hit_type=HitType.HIGH
         ))
     ],
     hurtboxes=[
-        HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=60),  # Body
+        # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
+        HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=55, offset_y=-60, width=40, height=25),  # Extended leg
     ]
 )
@@ -275,8 +288,12 @@ def get_akuma_hurtboxes(state: CharacterState) -> List[HurtboxFrame]:
     if move_data:
         return move_data.hurtboxes
 
-    # Default standing hurtbox
-    return [HurtboxFrame(offset_x=0, offset_y=-60, width=40, height=120)]
+    # Default hurtbox using SF3:3S authentic dimensions
+    # Akuma: half_width=33, height=107 (from SF3 framedata.lua)
+    is_crouching = state == CharacterState.CROUCHING
+    offset_x, offset_y, width, height = get_default_hurtbox_for_character("akuma", is_crouching)
+
+    return [HurtboxFrame(offset_x=offset_x, offset_y=offset_y, width=width, height=height)]
 
 def get_move_frame_data(state: CharacterState) -> MoveFrameData | None:
     """Get complete frame data for a move"""

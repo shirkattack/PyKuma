@@ -290,14 +290,14 @@ class SF3CollisionSystem:
                             att_hitbox_mgr: SF3HitboxManager, def_hitbox_mgr: SF3HitboxManager,
                             att_pos: Tuple[float, float], def_pos: Tuple[float, float]):
         """Check one player's attacks against another's hurtboxes"""
-        
+
         # Get attack boxes
         attack_boxes = att_hitbox_mgr.get_current_hitboxes(SF3HitboxType.ATTACK)
-        
+
         # Get hurtboxes (body and hand)
         body_boxes = def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.BODY)
         hand_boxes = def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.HAND)
-        
+
         # Check attacks vs body boxes
         for attack_box in attack_boxes:
             for body_box in body_boxes:
@@ -312,6 +312,10 @@ class SF3CollisionSystem:
                         frame_number=self.current_frame
                     )
                     self.add_collision_event(collision)
+
+                    # TODO: Implement full SF3 hit_check_main_process integration
+                    # Currently using simplified direct damage application
+                    self._direct_apply_damage(attack_box, def_pos)
             
             # Check attacks vs hand boxes
             for hand_box in hand_boxes:
@@ -326,7 +330,34 @@ class SF3CollisionSystem:
                         frame_number=self.current_frame
                     )
                     self.add_collision_event(collision)
+                    self._direct_apply_damage(attack_box, def_pos)
     
+    def _direct_apply_damage(self, attack_box: SF3Hitbox, hit_position: Tuple[float, float]):
+        """
+        Direct damage application workaround - bypasses full SF3 processing.
+
+        This is a simplified approach that creates a hit status directly when
+        overlap is detected, bypassing the complex SF3 hit_check_main_process.
+
+        TODO: Integrate with full SF3 hit_check_main_process for:
+        - Proper priority handling
+        - Multi-hit detection
+        - Advanced collision resolution
+        """
+        # Create a simple hit status
+        hit = SF3HitStatus()
+        hit.damage = attack_box.damage
+        hit.hitstun = attack_box.hitstun
+        hit.blockstun = attack_box.blockstun
+        hit.result_flags = SF3CollisionResult.HIT_CONFIRMED
+        hit.hit_position_x = hit_position[0]
+        hit.hit_position_y = hit_position[1]
+        hit.frame_occurred = self.current_frame
+
+        # Store in first available slot
+        self.hit_status[0] = hit
+        self.hit_queue_input = 1
+
     def _check_throw_attempts(self, player1: SF3PlayerWork, player2: SF3PlayerWork,
                             hitbox_mgr1: SF3HitboxManager, hitbox_mgr2: SF3HitboxManager,
                             pos1: Tuple[float, float], pos2: Tuple[float, float]):

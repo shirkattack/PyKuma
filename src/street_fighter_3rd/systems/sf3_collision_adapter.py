@@ -80,7 +80,7 @@ class SF3CollisionAdapter:
     def check_attack_collision(self, attacker, defender, vfx_manager=None) -> bool:
         """
         Main collision check interface - compatible with old CollisionSystem.
-        
+
         This method:
         1. Converts Character objects to SF3 data structures
         2. Runs authentic SF3 collision detection
@@ -90,7 +90,7 @@ class SF3CollisionAdapter:
         # Update frame counter
         self.frame_counter += 1
         self.sf3_system.update_frame(self.frame_counter)
-        
+
         # Convert characters to SF3 structures
         att_work = self._character_to_sf3_work(attacker, player_id=1)
         def_work = self._character_to_sf3_work(defender, player_id=2)
@@ -115,19 +115,19 @@ class SF3CollisionAdapter:
             att_work, def_work, att_hitbox_mgr, def_hitbox_mgr
         )
 
-        # Process results with SF3 system
-        self.sf3_system.hit_check_main_process()
+        # TODO: Integrate full SF3 hit_check_main_process
+        # Currently using direct damage application from hit_status
+        hit_occurred = False
+        if self.sf3_system.hit_queue_input > 0:
+            # Update combo system
+            self.sf3_combo_system.update()
 
-        # Debug: Check if any hits were detected
-        if DEBUG_MODE and self.sf3_system.hit_queue_input > 0:
-            print(f"DEBUG: SF3 detected {self.sf3_system.hit_queue_input} hit(s) in queue")
-        
-        # Update combo system
-        self.sf3_combo_system.update()
-        
-        # Apply results back to characters
-        hit_occurred = self._apply_collision_results(attacker, defender, vfx_manager)
-        
+            # Apply results back to characters directly from hit_status
+            hit_occurred = self._apply_collision_results(attacker, defender, vfx_manager)
+
+            # Clear the hit queue for next frame
+            self.sf3_system.hit_queue_input = 0
+
         return hit_occurred
     
     def _character_to_sf3_work(self, character, player_id: int) -> SF3PlayerWork:
@@ -138,13 +138,19 @@ class SF3CollisionAdapter:
         if not hasattr(work.work, 'player_number'):
             work.work.player_number = player_id
 
-        # Basic positioning
-        work.position_x = int(character.x)
-        work.position_y = int(character.y)
+        # Basic positioning - MUST set work.work.position for SF3 collision system
+        work.work.position.x = float(character.x)
+        work.work.position.y = float(character.y)
+        work.work.position.z = 0.0
+
+        # Also set velocity in work structure
         work.velocity_x = int(character.velocity_x) if hasattr(character, 'velocity_x') else 0
         work.velocity_y = int(character.velocity_y) if hasattr(character, 'velocity_y') else 0
 
-        # Player identification
+        # Set facing direction in work structure
+        work.work.face = 1 if character.is_facing_right() else -1
+
+        # Player identification (legacy fields, kept for compatibility)
         work.player_id = player_id
         work.facing_right = character.is_facing_right()
         
@@ -486,11 +492,11 @@ class SF3CollisionAdapter:
     def _apply_collision_results(self, attacker, defender, vfx_manager) -> bool:
         """Apply SF3 collision results back to our Character objects"""
         hit_occurred = False
-        
+
         # Check if SF3 system detected any hits
         for i in range(self.sf3_system.hit_queue_input):
             hit_status = self.sf3_system.hit_status[i]
-            
+
             if hit_status.result_flags & SF3CollisionResult.HIT_CONFIRMED:
                 # Apply hit effects
                 self._apply_hit_to_character(
@@ -507,9 +513,10 @@ class SF3CollisionAdapter:
         
         # Handle mutual hits
         if self.sf3_system.aiuchi_flag:
-            print("Mutual hit detected!")
+            # TODO: Implement mutual hit (aiuchi) effects
             # Both characters should take damage/hitstun
-        
+            pass
+
         return hit_occurred
     
     def _apply_hit_to_character(self, attacker, defender, hit_status, vfx_manager):
@@ -526,34 +533,20 @@ class SF3CollisionAdapter:
             hitstun=hit_status.hitstun
         )
         
-        # Get player works for parry check
-        att_work = self.player_works.get(1 if attacker == self.player_works.get(1) else 2)
-        def_work = self.player_works.get(1 if defender == self.player_works.get(1) else 2)
-        
-        # Check for parry if both player works exist
-        if att_work and def_work:
-            parry_result = self.sf3_parry_system.defense_ground(
-                att_work, def_work, attack_box, "mid"
-            )
-            
-            if parry_result == SF3ParryResult.PARRY_SUCCESS:
-                # Parry successful - apply parry effects
-                self._apply_parry_effects(attacker, defender, vfx_manager)
-                return
-            elif parry_result == SF3ParryResult.GUARD_SUCCESS:
-                # Block successful - apply block effects
-                self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
-                return
-        
-        # Apply combo system damage scaling
-        attacker_id = 1 if attacker == self.player_works.get(1) else 2
-        defender_id = 1 if defender == self.player_works.get(1) else 2
-        
+        # WORKAROUND: Skip parry/block check for now to get basic hits working
+        # TODO: Fix player_works mapping to enable parry system
+        # att_work = self.player_works.get(1 if attacker == self.player_works.get(1) else 2)
+        # def_work = self.player_works.get(1 if defender == self.player_works.get(1) else 2)
+
+        # Determine attacker/defender IDs by player_number attribute
+        attacker_id = getattr(attacker, 'player_number', 1)
+        defender_id = getattr(defender, 'player_number', 2)
+
         # Register hit with combo system and get scaled damage
         scaled_damage = self.sf3_combo_system.register_hit(
             attacker_id, defender_id, hit_status.damage, "normal"
         )
-        
+
         # Apply scaled damage and hitstun
         defender.health -= scaled_damage
         defender.hitstun_frames = hit_status.hitstun
@@ -569,12 +562,13 @@ class SF3CollisionAdapter:
             hit_y = hit_status.hit_position_y
             vfx_manager.spawn_hit_spark(hit_x, hit_y, "normal")
         
-        # Display combo info
-        combo_count = self.sf3_combo_system.get_combo_count(defender_id)
-        if combo_count > 1:
-            print(f"🥊 SF3 Hit Applied: {hit_status.damage} → {scaled_damage} damage, {hit_status.hitstun} hitstun (Combo: {combo_count})")
-        else:
-            print(f"SF3 Hit Applied: {scaled_damage} damage, {hit_status.hitstun} hitstun")
+        # Display combo info in debug mode
+        if DEBUG_MODE:
+            combo_count = self.sf3_combo_system.get_combo_count(defender_id)
+            if combo_count > 1:
+                print(f"🥊 SF3 Hit Applied: {hit_status.damage} → {scaled_damage} damage, {hit_status.hitstun} hitstun (Combo: {combo_count})")
+            else:
+                print(f"SF3 Hit Applied: {scaled_damage} damage, {hit_status.hitstun} hitstun")
     
     def _apply_parry_effects(self, attacker, defender, vfx_manager):
         """Apply effects when a parry is successful"""
@@ -592,8 +586,9 @@ class SF3CollisionAdapter:
             parry_x = defender.x
             parry_y = defender.y - 60
             vfx_manager.spawn_hit_spark(parry_x, parry_y, "parry")
-        
-        print("🛡️ PARRY! Defender has frame advantage")
+
+        if DEBUG_MODE:
+            print("🛡️ PARRY! Defender has frame advantage")
     
     def _apply_block_effects(self, attacker, defender, hit_status, vfx_manager):
         """Apply effects when an attack is blocked"""
@@ -617,8 +612,9 @@ class SF3CollisionAdapter:
             block_x = defender.x
             block_y = defender.y - 60
             vfx_manager.spawn_hit_spark(block_x, block_y, "block")
-        
-        print(f"🛡️ BLOCKED! Chip damage: {chip_damage}, Blockstun: {blockstun}")
+
+        if DEBUG_MODE:
+            print(f"🛡️ BLOCKED! Chip damage: {chip_damage}, Blockstun: {blockstun}")
     
     def _apply_throw_to_character(self, attacker, defender, hit_status, vfx_manager):
         """Apply throw effects to defender character"""
@@ -636,8 +632,9 @@ class SF3CollisionAdapter:
             defender.x = attacker.x + 100
         else:
             defender.x = attacker.x - 100
-        
-        print(f"SF3 Throw Applied: {hit_status.damage} damage")
+
+        if DEBUG_MODE:
+            print(f"SF3 Throw Applied: {hit_status.damage} damage")
     
     def render_debug(self, screen: pygame.Surface, show_hitboxes: bool = None, show_hurtboxes: bool = None):
         """Render debug visualization - compatible with old CollisionSystem"""

@@ -9,7 +9,7 @@ from street_fighter_3rd.data.constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, 
 def main():
     """Initialize and run the game."""
     pygame.init()
-    
+
     # Initialize joystick subsystem explicitly with error handling
     try:
         pygame.joystick.init()
@@ -25,8 +25,13 @@ def main():
     # Create clock for frame rate control
     clock = pygame.time.Clock()
 
+    # Initialize game with no-rounds mode for instant fighting
+    from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
+    game_mode_manager = GameModeManager(GameMode.NORMAL)
+    game_mode_manager.config.no_rounds = True  # Skip pre-round freeze for quick play
+
     # Initialize game
-    game = Game(screen)
+    game = Game(screen, game_mode_manager)
 
     # Main game loop
     running = True

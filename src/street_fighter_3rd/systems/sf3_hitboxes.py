@@ -81,17 +81,17 @@ class SF3Hitbox:
         
         return pygame.Rect(actual_x, actual_y, self.width, self.height)
     
-    def overlaps(self, other: 'SF3Hitbox', 
+    def overlaps(self, other: 'SF3Hitbox',
                  my_pos: Tuple[float, float], my_facing: int,
                  other_pos: Tuple[float, float], other_facing: int) -> bool:
         """
         Check if this hitbox overlaps with another
-        
+
         This is the core collision detection that SF3 uses.
         """
         my_rect = self.get_rect(my_pos[0], my_pos[1], my_facing)
         other_rect = other.get_rect(other_pos[0], other_pos[1], other_facing)
-        
+
         return my_rect.colliderect(other_rect)
 
 
@@ -284,15 +284,15 @@ class SF3HitboxManager:
         """Get current active hitboxes of the specified type"""
         if not self.current_animation:
             return []
-        
+
         animation = self.animations.get(self.current_animation)
         if not animation:
             return []
-        
+
         frame_data = animation.get_frame(self.current_frame)
         if not frame_data:
             return []
-        
+
         return frame_data.get_hitboxes_by_type(hitbox_type)
     
     def has_active_attack_hitboxes(self) -> bool:
