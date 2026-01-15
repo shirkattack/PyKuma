@@ -54,3 +54,6 @@ config.local.json
 # Keep assets but ignore temporary files
 *.tmp
 *.bak
+
+# Writing and documentation drafts
+writing/
