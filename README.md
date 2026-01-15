@@ -336,21 +336,11 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 - Invincibility frames (Goshoryuken)
 - Multi-hit moves (Tatsumaki)
 
-### 🚧 Phase 3: SF3 Systems (NEXT)
+### 🚧 Phase 3: SF3 Systems (MAYBE???)
 - Parry system (SF3's signature mechanic)
 - Super meter and Super Arts
 - EX moves
 - Guard break
-
-### 📋 Phase 4: AI
-- AI Bots at different levels 
-
-### 📋 Phase 5: Polish
-- Round system (best of 3)
-- Sound effects and music
-- Multiple stages with parallax
-- Win poses and KO animations
-- Screen shake on heavy hits
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for detailed milestones.
 
