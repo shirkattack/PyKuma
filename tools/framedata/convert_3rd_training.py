@@ -255,10 +255,11 @@ def build_move(rom_id, entry, names, combat):
 
     if name_info:
         record["state"] = name_info["state"]
-        # metadata = name taken verbatim from framedata_meta.lua (authoritative);
+        # metadata = name verbatim from framedata_meta.lua (authoritative);
+        # baston   = active-box geometry cross-match to a unique pointer (authoritative);
         # inferred = name guessed from timing/geometry.
         src = name_info.get("name_source", "inferred")
-        record["name_status"] = "metadata" if src == "metadata" else "inferred"
+        record["name_status"] = src if src in ("metadata", "baston") else "inferred"
         if name_info.get("confidence"):
             record["confidence"] = name_info["confidence"]
         combat_block = combat.get(name_info["state"])

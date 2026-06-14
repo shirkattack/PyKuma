@@ -229,6 +229,8 @@ class HitboxRepository:
         lines.append(f"  moves loaded: {len(self._moves)}")
         named = [m for m in self._moves.values() if m.name_status == "metadata"]
         lines.append(f"  authoritative move names (framedata_meta.lua): {len(named)}")
+        baston = [m for m in self._moves.values() if m.name_status == "baston"]
+        lines.append(f"  authoritative move names (Baston cross-match): {len(baston)}")
         inferred = [m for m in self._moves.values() if m.name_status == "inferred"]
         lines.append(f"  inferred move names: {len(inferred)}")
         for m in inferred:

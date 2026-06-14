@@ -74,20 +74,38 @@ class SF3Hitbox:
     # "pending". Defaults to "verified" so existing call sites are unaffected.
     status: str = "verified"
 
+    # Horizontal anchor convention for ``offset_x`` (stored facing-RIGHT,
+    # forward-positive):
+    #   "edge"   -> offset_x is the forward-positive NEAR edge (attack boxes)
+    #   "center" -> offset_x is the CENTER (hurt / push / throw boxes)
+    # Default "edge" keeps facing-right callers identical to the old behavior.
+    anchor: str = "edge"
+
     def get_rect(self, character_x: float, character_y: float, facing: int) -> pygame.Rect:
         """
-        Get pygame Rect for collision detection
-        
+        Get pygame Rect for collision detection.
+
+        ``offset_x`` is stored facing-RIGHT and forward-positive; this mirrors it
+        for left-facing characters. ``anchor`` says how offset_x is interpreted.
+
         Args:
             character_x: Character's X position
-            character_y: Character's Y position  
+            character_y: Character's Y position
             facing: Character facing direction (-1 = left, 1 = right)
         """
-        # Flip X offset based on facing direction
-        actual_x = character_x + (self.offset_x * facing)
-        actual_y = character_y + self.offset_y
-        
-        return pygame.Rect(actual_x, actual_y, self.width, self.height)
+        if self.anchor == "center":
+            # offset_x is the box center; mirror the center, box stays symmetric.
+            box_center = character_x + (self.offset_x * facing)
+            left = box_center - self.width / 2
+        else:
+            # "edge": offset_x is the forward-positive near edge. Facing left must
+            # mirror BOTH edges, not just shift the near edge.
+            if facing >= 0:
+                left = character_x + self.offset_x
+            else:
+                left = character_x - self.offset_x - self.width
+
+        return pygame.Rect(left, character_y + self.offset_y, self.width, self.height)
     
     def overlaps(self, other: 'SF3Hitbox',
                  my_pos: Tuple[float, float], my_facing: int,
