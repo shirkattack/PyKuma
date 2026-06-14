@@ -1,8 +1,13 @@
-# SF3:3S Authentic Akuma Frame Data
-# Source: https://baston.esn3s.com/index.php?id=14
-# 
-# This file contains EXACT frame data from SF3:3S for 100% authentic recreation.
-# All values are verified against the Baston ESN3S database and SF3 decompilation.
+# Akuma community frame data (damage / stun / advantage) + APPROXIMATED boxes
+# Source: https://baston.esn3s.com/index.php?id=14 (Baston ESN3S) + gameplay tuning
+#
+# NOTE ON PROVENANCE — read this before trusting the geometry below.
+# This file is COMMUNITY frame data plus hand-approximated hitbox rectangles.
+# It is NO LONGER the box source of record. ROM-verified box geometry and frame
+# timing now live in data/characters/akuma/hitboxes.yaml (dumped from the SF3:3S
+# ROM via 3rd_training_lua). The boxes in THIS file are approximations and are
+# NOT ROM-verified. The damage/stun/advantage values here are still used as the
+# community combat tier and are copied into hitboxes.yaml at conversion time.
 
 character_info:
   name: "Akuma"
@@ -732,10 +737,13 @@ ai_personality:
   defensive_style: 0.4    # Prefers offense
   
 # === NOTES ===
-# This data is sourced from:
-# 1. Baston ESN3S database (https://baston.esn3s.com/index.php?id=14)
-# 2. SF3:3S decompilation verification
-# 3. Community frame data verification
-# 
-# All frame data has been cross-referenced for authenticity.
-# Hitbox data is approximated based on visual analysis and community data.
+# PROVENANCE: this is COMMUNITY frame data, not a ROM dump.
+# 1. Damage / stun / frame-advantage: Baston ESN3S database
+#    (https://baston.esn3s.com/index.php?id=14) + existing gameplay tuning.
+# 2. Hitbox rectangles in this file are APPROXIMATIONS (visual analysis +
+#    community data); they are NOT ROM-verified.
+#
+# This file is NO LONGER the box source of record. ROM-verified box geometry and
+# frame timing live in data/characters/akuma/hitboxes.yaml (dumped from the
+# SF3:3S ROM via 3rd_training_lua). Use that file for collision geometry; the
+# damage/stun/advantage here feed the "community" combat tier of that data.

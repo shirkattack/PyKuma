@@ -15,6 +15,10 @@ Dimensions:
 from dataclasses import dataclass
 from typing import Dict
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 @dataclass
 class CharacterDimensions:
@@ -111,23 +115,23 @@ KEN_DIMENSIONS = get_character_dimensions("ken")
 
 if __name__ == "__main__":
     # Test the dimensions system
-    print("SF3:3S Character Dimensions Test\n")
+    log.info("SF3:3S Character Dimensions Test")
 
     # Test Akuma dimensions
     akuma_dims = get_character_dimensions("akuma")
-    print(f"Akuma: half_width={akuma_dims.half_width}, height={akuma_dims.height}")
-    print(f"  Full width: {akuma_dims.half_width * 2}")
+    log.info("Akuma: half_width=%s, height=%s", akuma_dims.half_width, akuma_dims.height)
+    log.info("  Full width: %s", akuma_dims.half_width * 2)
 
     # Test hurtbox generation
     standing_hurtbox = get_default_hurtbox_for_character("akuma", is_crouching=False)
     crouching_hurtbox = get_default_hurtbox_for_character("akuma", is_crouching=True)
 
-    print(f"\nAkuma Standing Hurtbox: {standing_hurtbox}")
-    print(f"Akuma Crouching Hurtbox: {crouching_hurtbox}")
+    log.info("Akuma Standing Hurtbox: %s", standing_hurtbox)
+    log.info("Akuma Crouching Hurtbox: %s", crouching_hurtbox)
 
     # Show all characters
-    print("\n\nAll SF3:3S Characters:")
-    print("-" * 50)
+    log.info("All SF3:3S Characters:")
+    log.info("%s", "-" * 50)
     for char_id, dims in SF3_CHARACTER_DIMENSIONS.items():
         if char_id != "akuma":  # Skip alias
-            print(f"{dims.name:15} | Width: {dims.half_width*2:3}px | Height: {dims.height:3}px")
+            log.info("%-15s | Width: %3spx | Height: %3spx", dims.name, dims.half_width*2, dims.height)

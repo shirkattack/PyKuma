@@ -6,19 +6,61 @@ allowing us to use the authentic SF3 collision mechanics without rewriting the e
 character system.
 """
 
+import logging
 import pygame
 from typing import List, Tuple, Optional, Dict, Any
 from dataclasses import dataclass
 
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+
+log = get_logger(__name__)
+
 from .sf3_collision import SF3CollisionSystem, SF3CollisionEvent, SF3CollisionResult
 from .sf3_core import SF3PlayerWork, SF3WorkStructure
-from .sf3_hitboxes import SF3HitboxManager, SF3HitboxType, SF3Hitbox
+from .sf3_hitboxes import (
+    SF3HitboxManager,
+    SF3HitboxType,
+    SF3Hitbox,
+    SF3HitboxFrame,
+    SF3HitboxAnimation,
+    SF3HitLevel,
+)
 from .sf3_parry import SF3ParrySystem, SF3ParryResult, SF3ParryType
 from .sf3_combo_system import SF3ComboSystem
-from .collision import HitboxData  # For compatibility
-from ..data.enums import CharacterState, HitType
+from .hitbox_data import HitboxData
+from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
 from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
+from ..data.hitbox_repository import HitboxRepository
+from ..characters.character import apply_reaction
+from .vfx import HitSparkType
+
+# Hit spark strength by the attacking state.
+_LIGHT_STATES = {CharacterState.LIGHT_PUNCH, CharacterState.LIGHT_KICK,
+                 CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_LIGHT_KICK,
+                 CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_LIGHT_KICK}
+_MEDIUM_STATES = {CharacterState.MEDIUM_PUNCH, CharacterState.MEDIUM_KICK,
+                  CharacterState.CROUCH_MEDIUM_PUNCH, CharacterState.CROUCH_MEDIUM_KICK,
+                  CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_MEDIUM_KICK}
+_HEAVY_STATES = {CharacterState.HEAVY_PUNCH, CharacterState.HEAVY_KICK,
+                 CharacterState.CROUCH_HEAVY_PUNCH, CharacterState.CROUCH_HEAVY_KICK,
+                 CharacterState.JUMP_HEAVY_PUNCH, CharacterState.JUMP_HEAVY_KICK}
+_SPECIAL_STATES = {CharacterState.GOHADOKEN, CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI}
+
+# Damage-scaled hitstop (deterministic, integer)
+HITSTOP_BASE, HITSTOP_PER, HITSTOP_MAX = 6, 4, 16
+SHAKE_INTENSITY = 4
+
+
+def _spark_for_state(state) -> str:
+    """Hit-spark type for the attacking state (heavier = bigger spark)."""
+    if state in _SPECIAL_STATES:
+        return HitSparkType.SPECIAL
+    if state in _HEAVY_STATES:
+        return HitSparkType.HEAVY
+    if state in _MEDIUM_STATES:
+        return HitSparkType.MEDIUM
+    return HitSparkType.LIGHT
 
 
 @dataclass
@@ -46,70 +88,78 @@ class SF3CollisionAdapter:
         self.sf3_parry_system = SF3ParrySystem()
         self.sf3_combo_system = SF3ComboSystem()
         self.frame_counter = 0
-        
+
         # Debug rendering (compatible with old CollisionSystem)
         self.debug_hitboxes: List[pygame.Rect] = []
         self.debug_hurtboxes: List[pygame.Rect] = []
-        
-        # Player work structures for SF3 system
+
+        # Persistent player work structures and hitbox managers, keyed by
+        # player_number. Updated in place every frame instead of being
+        # reallocated per collision check.
         self.player_works: Dict[int, SF3PlayerWork] = {}
         self.hitbox_managers: Dict[int, SF3HitboxManager] = {}
-        
+        for player_id in (1, 2):
+            work = SF3PlayerWork()
+            work.work.player_number = player_id
+            self.player_works[player_id] = work
+            self.hitbox_managers[player_id] = SF3HitboxManager(f"player_{player_id}")
+
         # Results from last collision check
         self.last_results: List[CollisionResult] = []
-    
-    def update_parry_inputs(self, character, input_state: Dict[str, bool]):
-        """Update parry input tracking for a character"""
-        # Determine player_id based on player_number attribute if available
-        player_id = character.player_number if hasattr(character, 'player_number') else 1
 
-        # Only update if we have a player work structure for this player
-        if player_id in self.player_works:
-            player_work = self.player_works[player_id]
-            
-            # Ensure the player_work has the required structure for parry system
-            if not hasattr(player_work, 'work'):
-                # Create a simple work structure for compatibility
-                class WorkStruct:
-                    def __init__(self, player_number):
-                        self.player_number = player_number
-                player_work.work = WorkStruct(player_id)
-            
-            self.sf3_parry_system.update_parry_inputs(player_work, input_state)
-    
+    def tick(self):
+        """Advance the SF3 core by exactly one game frame.
+
+        Must be called once per game frame, before any check_attack_collision
+        calls that frame. Frame advancement used to happen inside
+        check_attack_collision, which runs twice per frame (P1->P2, P2->P1) and
+        made every frame-windowed mechanic inside the SF3 core half as long as
+        specified.
+        """
+        self.frame_counter += 1
+        self.sf3_system.update_frame(self.frame_counter)
+
+    def update_parry_inputs(self, character, input_state: Dict[str, bool]):
+        """Update parry input tracking for a character.
+
+        Must be called once per game frame per player: it both registers new
+        parry attempts and counts down the active parry window.
+        """
+        player_id = getattr(character, 'player_number', 1)
+        self.sf3_parry_system.update_parry_inputs(self.player_works[player_id], input_state)
+
     def check_attack_collision(self, attacker, defender, vfx_manager=None) -> bool:
         """
         Main collision check interface - compatible with old CollisionSystem.
 
         This method:
-        1. Converts Character objects to SF3 data structures
+        1. Syncs Character objects into the persistent SF3 data structures
         2. Runs authentic SF3 collision detection
         3. Applies results back to Character objects
         4. Maintains compatibility with existing VFX system
-        """
-        # Update frame counter
-        self.frame_counter += 1
-        self.sf3_system.update_frame(self.frame_counter)
 
-        # Convert characters to SF3 structures
-        att_work = self._character_to_sf3_work(attacker, player_id=1)
-        def_work = self._character_to_sf3_work(defender, player_id=2)
-        
-        # Create hitbox managers
-        att_hitbox_mgr = self._create_hitbox_manager(attacker)
-        def_hitbox_mgr = self._create_hitbox_manager(defender)
-        
-        # Store for SF3 system
-        self.player_works[1] = att_work
-        self.player_works[2] = def_work
-        self.hitbox_managers[1] = att_hitbox_mgr
-        self.hitbox_managers[2] = def_hitbox_mgr
-        
+        Frame advancement happens in tick(), not here.
+        """
+        att_id = getattr(attacker, 'player_number', 1)
+        def_id = getattr(defender, 'player_number', 2)
+
+        # Sync characters into persistent SF3 structures
+        att_work = self.player_works[att_id]
+        def_work = self.player_works[def_id]
+        self._sync_sf3_work(att_work, attacker)
+        self._sync_sf3_work(def_work, defender)
+
+        # Rebuild current-frame hitboxes in the persistent managers
+        att_hitbox_mgr = self.hitbox_managers[att_id]
+        def_hitbox_mgr = self.hitbox_managers[def_id]
+        self._sync_hitbox_manager(att_hitbox_mgr, attacker)
+        self._sync_hitbox_manager(def_hitbox_mgr, defender)
+
         # Enable throw checking if either player is attempting a throw
         self.sf3_system.enable_throw_checking(
             self._is_throwing(attacker) or self._is_throwing(defender)
         )
-        
+
         # Run SF3 collision detection
         self.sf3_system.check_collision_between_players(
             att_work, def_work, att_hitbox_mgr, def_hitbox_mgr
@@ -130,14 +180,8 @@ class SF3CollisionAdapter:
 
         return hit_occurred
     
-    def _character_to_sf3_work(self, character, player_id: int) -> SF3PlayerWork:
-        """Convert our Character object to SF3PlayerWork structure"""
-        work = SF3PlayerWork()
-
-        # Ensure work.work exists and has player_number for parry system
-        if not hasattr(work.work, 'player_number'):
-            work.work.player_number = player_id
-
+    def _sync_sf3_work(self, work: SF3PlayerWork, character):
+        """Update a persistent SF3PlayerWork in place from our Character object"""
         # Basic positioning - MUST set work.work.position for SF3 collision system
         work.work.position.x = float(character.x)
         work.work.position.y = float(character.y)
@@ -151,9 +195,9 @@ class SF3CollisionAdapter:
         work.work.face = 1 if character.is_facing_right() else -1
 
         # Player identification (legacy fields, kept for compatibility)
-        work.player_id = player_id
+        work.player_id = work.work.player_number
         work.facing_right = character.is_facing_right()
-        
+
         # State mapping
         work.current_state = self._map_character_state(character.state)
         work.previous_state = work.current_state  # Simplified for now
@@ -177,15 +221,9 @@ class SF3CollisionAdapter:
         ]
         work.is_blocking = character.state in [CharacterState.BLOCKING_HIGH, CharacterState.BLOCKING_LOW]
         work.is_crouching = character.state in [CharacterState.CROUCHING, CharacterState.BLOCKING_LOW]
-        
-        return work
-    
-    def _create_hitbox_manager(self, character) -> SF3HitboxManager:
-        """Create SF3HitboxManager from character's current hitboxes"""
-        from .sf3_hitboxes import SF3Hitbox, SF3HitboxFrame, SF3HitLevel
 
-        manager = SF3HitboxManager(character.name if hasattr(character, 'name') else "Unknown")
-
+    def _sync_hitbox_manager(self, manager: SF3HitboxManager, character):
+        """Rebuild a persistent SF3HitboxManager's current frame from the character"""
         # Get current frame number (1-indexed for frame data)
         frame_number = (character.state_frame if hasattr(character, 'state_frame') else 0) + 1
 
@@ -193,13 +231,21 @@ class SF3CollisionAdapter:
         akuma_attack_hitboxes = get_akuma_hitboxes(character.state, frame_number)
         akuma_hurtboxes = get_akuma_hurtboxes(character.state)
 
+        # Attack-box provenance: geometry is ROM-verified, but if the move's
+        # NAME is only inferred, surface that as the box status so the debug
+        # viewer can flag it (PENDING/INFERRED). Hurtboxes are always verified.
+        repo_move = HitboxRepository.instance().get_move_by_state(character.state.name)
+        attack_status = "verified"
+        if repo_move is not None and repo_move.name_status == "inferred":
+            attack_status = "inferred"
+
         # Create a frame with the hitboxes
         sf3_frame = SF3HitboxFrame(frame_number=frame_number)
 
         # Add attack hitboxes (offensive boxes)
         if akuma_attack_hitboxes:
             if DEBUG_MODE:
-                print(f"DEBUG: Character {character.name if hasattr(character, 'name') else '?'} state={character.state.name}, frame={frame_number}, has {len(akuma_attack_hitboxes)} attack hitbox(es)")
+                log.debug("Character %s state=%s, frame=%s, has %s attack hitbox(es)", character.name if hasattr(character, 'name') else '?', character.state.name, frame_number, len(akuma_attack_hitboxes))
             for hitbox_data in akuma_attack_hitboxes:
                 # Map HitType to SF3HitLevel
                 hit_level_map = {
@@ -218,7 +264,8 @@ class SF3CollisionAdapter:
                     damage=hitbox_data.damage,
                     hitstun=hitbox_data.hitstun,
                     blockstun=hitbox_data.blockstun,
-                    hit_level=hit_level
+                    hit_level=hit_level,
+                    status=attack_status,
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.ATTACK, sf3_hitbox)
 
@@ -232,7 +279,8 @@ class SF3CollisionAdapter:
                     height=float(hurtbox_data.height),
                     damage=0,  # Hurtboxes don't deal damage
                     hitstun=0,
-                    blockstun=0
+                    blockstun=0,
+                    status="verified",
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.BODY, sf3_hurtbox)
 
@@ -242,13 +290,11 @@ class SF3CollisionAdapter:
         manager.current_animation = anim_name
         manager.current_frame = frame_number
 
-        # Add the frame to the manager's animations
-        from .sf3_hitboxes import SF3HitboxAnimation
+        # Replace the manager's animations with just the current frame
         animation = SF3HitboxAnimation(animation_name=anim_name, total_frames=100)
         animation.add_frame(frame_number, sf3_frame)
+        manager.animations.clear()
         manager.animations[anim_name] = animation
-
-        return manager
     
     def _get_character_hitboxes(self, character) -> List[Tuple[HitboxData, pygame.Rect]]:
         """Get hitboxes from character using frame data"""
@@ -296,135 +342,16 @@ class SF3CollisionAdapter:
 
             return hitboxes
 
-        # Try YAML animation data as fallback
-        yaml_hitbox = self._get_yaml_hitbox(character)
-        if yaml_hitbox:
-            hitboxes.append(yaml_hitbox)
-            return hitboxes
-
-        # Final fallback to basic hardcoded hitboxes
-        return self._get_fallback_hitboxes(character)
-    
-    def _get_yaml_hitbox(self, character) -> Tuple[HitboxData, pygame.Rect] | None:
-        """Get hitbox from YAML animation data if available"""
-        try:
-            import yaml
-            from pathlib import Path
-
-            # Load animation data (relative to this file)
-            data_dir = Path(__file__).parent.parent / 'data'
-            animations_file = data_dir / 'animations.yaml'
-            with open(animations_file, 'r') as f:
-                anim_data = yaml.safe_load(f)
-            
-            # Map character states to animation names
-            state_to_anim = {
-                CharacterState.LIGHT_PUNCH: 'light_punch',
-                CharacterState.MEDIUM_PUNCH: 'medium_punch', 
-                CharacterState.HEAVY_PUNCH: 'heavy_punch',
-                CharacterState.LIGHT_KICK: 'light_kick',
-                CharacterState.MEDIUM_KICK: 'medium_kick',
-                CharacterState.HEAVY_KICK: 'heavy_kick',
-                CharacterState.CROUCHING: 'crouch_light_punch'  # Example for crouching attacks
-            }
-            
-            anim_name = state_to_anim.get(character.state)
-            if not anim_name:
-                return None
-            
-            # Get character animation data
-            char_data = anim_data.get('characters', {}).get('akuma', {})
-            animations = char_data.get('animations', {})
-            anim = animations.get(anim_name, {})
-            
-            if 'hitbox' not in anim:
-                return None
-            
-            hitbox_data_yaml = anim['hitbox']
-            frame_data = anim.get('frame_data', {})
-            
-            # Check if we're in active frames
-            active_frames = hitbox_data_yaml.get('active_frames', [])
-            current_anim_frame = character.current_frame + 1  # Convert to 1-indexed
-            
-            if current_anim_frame not in active_frames:
-                return None  # Not in active frames
-            
-            # Convert hit type string to enum
-            hit_type_str = hitbox_data_yaml.get('hit_type', 'MID')
-            hit_type_map = {
-                'HIGH': HitType.HIGH,
-                'MID': HitType.MID, 
-                'LOW': HitType.LOW,
-                'OVERHEAD': HitType.OVERHEAD
-            }
-            hit_type = hit_type_map.get(hit_type_str, HitType.MID)
-            
-            # Create hitbox data from YAML
-            hitbox_data = HitboxData(
-                x=hitbox_data_yaml.get('offset_x', 0),
-                y=hitbox_data_yaml.get('offset_y', 0),
-                width=hitbox_data_yaml.get('width', 50),
-                height=hitbox_data_yaml.get('height', 50),
-                damage=hitbox_data_yaml.get('damage', 10),
-                hitstun=hitbox_data_yaml.get('hitstun', 10),
-                hit_type=hit_type
-            )
-            
-            # Create rectangle in world coordinates
-            offset_x = hitbox_data.x
-            offset_y = hitbox_data.y
-            
-            # Apply facing direction
-            if character.is_facing_right():
-                rect = pygame.Rect(
-                    character.x + offset_x,
-                    character.y + offset_y,
-                    hitbox_data.width,
-                    hitbox_data.height
-                )
-            else:
-                rect = pygame.Rect(
-                    character.x - offset_x - hitbox_data.width,
-                    character.y + offset_y,
-                    hitbox_data.width,
-                    hitbox_data.height
-                )
-            
-            return (hitbox_data, rect)
-            
-        except Exception as e:
-            print(f"Warning: Could not load YAML hitbox data: {e}")
-            return None
-    
-    def _get_fallback_hitboxes(self, character) -> List[Tuple[HitboxData, pygame.Rect]]:
-        """Fallback hardcoded hitboxes if YAML data unavailable"""
-        hitboxes = []
-        
-        # Basic attack hitboxes based on state (simplified versions)
-        if character.state == CharacterState.LIGHT_PUNCH:
-            hitbox_data = HitboxData(45, -70, 50, 35, 12, 12, HitType.HIGH)
-            rect = pygame.Rect(character.x + 45, character.y - 70, 50, 35)
-            if not character.is_facing_right():
-                rect.x = character.x - 95
-            hitboxes.append((hitbox_data, rect))
-            
-        elif character.state == CharacterState.MEDIUM_PUNCH:
-            hitbox_data = HitboxData(50, -65, 60, 40, 18, 15, HitType.HIGH)
-            rect = pygame.Rect(character.x + 50, character.y - 65, 60, 40)
-            if not character.is_facing_right():
-                rect.x = character.x - 110
-            hitboxes.append((hitbox_data, rect))
-            
-        elif character.state == CharacterState.HEAVY_PUNCH:
-            hitbox_data = HitboxData(35, -85, 55, 50, 25, 18, HitType.HIGH)
-            rect = pygame.Rect(character.x + 35, character.y - 85, 55, 50)
-            if not character.is_facing_right():
-                rect.x = character.x - 90
-            hitboxes.append((hitbox_data, rect))
-        
+        # No ROM-verified frame data for this state/frame. Never fabricate
+        # boxes -- return empty and note it once.
+        log_once(
+            log, ("no_attack_hitboxes", getattr(character.state, "name", character.state)),
+            logging.INFO,
+            "No frame-data attack hitboxes for state %s; returning none.",
+            getattr(character.state, "name", character.state),
+        )
         return hitboxes
-    
+
     def _get_character_hurtboxes(self, character) -> List[pygame.Rect]:
         """Get hurtboxes from character using frame data"""
         hurtboxes = []
@@ -522,53 +449,75 @@ class SF3CollisionAdapter:
     def _apply_hit_to_character(self, attacker, defender, hit_status, vfx_manager):
         """Apply hit effects to defender character with parry checking"""
         from ..data.enums import CharacterState
-        from .sf3_hitboxes import SF3Hitbox, SF3HitLevel
-        
+
+        attacker_id = getattr(attacker, 'player_number', 1)
+        defender_id = getattr(defender, 'player_number', 2)
+
         # Create SF3Hitbox for parry system
+        # TODO: carry the real hit level through SF3HitStatus; MID is parryable
+        # by both high and low parry rules' high path, which matches most normals.
         attack_box = SF3Hitbox(
-            offset_x=0, offset_y=0, 
-            width=hit_status.damage, height=hit_status.hitstun,  # Using damage/hitstun as placeholder
-            hit_level=SF3HitLevel.MID,  # Default to mid
+            offset_x=0, offset_y=0,
+            width=10, height=10,
+            hit_level=SF3HitLevel.MID,
             damage=hit_status.damage,
             hitstun=hit_status.hitstun
         )
-        
-        # WORKAROUND: Skip parry/block check for now to get basic hits working
-        # TODO: Fix player_works mapping to enable parry system
-        # att_work = self.player_works.get(1 if attacker == self.player_works.get(1) else 2)
-        # def_work = self.player_works.get(1 if defender == self.player_works.get(1) else 2)
 
-        # Determine attacker/defender IDs by player_number attribute
-        attacker_id = getattr(attacker, 'player_number', 1)
-        defender_id = getattr(defender, 'player_number', 2)
+        # Defense check: parry first (highest priority), then guard, then hit.
+        att_work = self.player_works[attacker_id]
+        def_work = self.player_works[defender_id]
+        if defender.is_grounded:
+            defense = self.sf3_parry_system.defense_ground(att_work, def_work, attack_box, "mid")
+        else:
+            defense = self.sf3_parry_system.defense_sky(att_work, def_work, attack_box, "mid")
+
+        if defense == SF3ParryResult.PARRY_SUCCESS:
+            self._apply_parry_effects(attacker, defender, vfx_manager)
+            return
+
+        # The parry system's guard check is still simplified; honor the
+        # defender's own guard signal (holding back, see _check_movement).
+        if defense == SF3ParryResult.GUARD_SUCCESS or getattr(defender, 'is_blocking', False):
+            self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
+            return
 
         # Register hit with combo system and get scaled damage
         scaled_damage = self.sf3_combo_system.register_hit(
             attacker_id, defender_id, hit_status.damage, "normal"
         )
 
-        # Apply scaled damage and hitstun
-        defender.health -= scaled_damage
-        defender.hitstun_frames = hit_status.hitstun
-        defender._transition_to_state(CharacterState.HITSTUN_STANDING)
+        # Apply clamped damage and the reaction the attacking move causes
+        # (knockdown / launch / normal), selected from the attacker's move data.
+        defender.health = max(0, defender.health - scaled_damage)
+        move = get_move_frame_data(getattr(attacker, 'state', None))
+        hit_effect = move.hit_effect if move else HitEffect.NORMAL
+        apply_reaction(defender, hit_effect, hit_status.hitstun)
 
-        # Apply hitfreeze to both characters
-        attacker.hitfreeze_frames = 8  # Standard hitfreeze
-        defender.hitfreeze_frames = 8
-        
-        # Spawn VFX if available
+        # Hitstop scales with damage so heavy hits land harder (deterministic).
+        hitstop = min(HITSTOP_MAX, HITSTOP_BASE + scaled_damage // HITSTOP_PER)
+        attacker.hitfreeze_frames = hitstop
+        defender.hitfreeze_frames = hitstop
+
+        # Spawn a strength-appropriate spark + request a screen shake on heavy
+        # / knockdown-class hits.
+        spark = _spark_for_state(getattr(attacker, 'state', None))
         if vfx_manager:
-            hit_x = hit_status.hit_position_x
-            hit_y = hit_status.hit_position_y
-            vfx_manager.spawn_hit_spark(hit_x, hit_y, "normal")
+            vfx_manager.spawn_hit_spark(hit_status.hit_position_x, hit_status.hit_position_y, spark)
+            heavy_class = spark in (HitSparkType.HEAVY, HitSparkType.SPECIAL)
+            knockdown_class = hit_effect in (HitEffect.KNOCKDOWN, HitEffect.JUGGLE,
+                                             HitEffect.CRUMPLE, HitEffect.GROUND_BOUNCE,
+                                             HitEffect.WALL_BOUNCE)
+            if heavy_class or knockdown_class:
+                vfx_manager.request_shake(SHAKE_INTENSITY)
         
         # Display combo info in debug mode
         if DEBUG_MODE:
             combo_count = self.sf3_combo_system.get_combo_count(defender_id)
             if combo_count > 1:
-                print(f"🥊 SF3 Hit Applied: {hit_status.damage} → {scaled_damage} damage, {hit_status.hitstun} hitstun (Combo: {combo_count})")
+                log.debug("SF3 Hit Applied: %s -> %s damage, %s hitstun (Combo: %s)", hit_status.damage, scaled_damage, hit_status.hitstun, combo_count)
             else:
-                print(f"SF3 Hit Applied: {scaled_damage} damage, {hit_status.hitstun} hitstun")
+                log.debug("SF3 Hit Applied: %s damage, %s hitstun", scaled_damage, hit_status.hitstun)
     
     def _apply_parry_effects(self, attacker, defender, vfx_manager):
         """Apply effects when a parry is successful"""
@@ -585,23 +534,27 @@ class SF3CollisionAdapter:
         if vfx_manager:
             parry_x = defender.x
             parry_y = defender.y - 60
-            vfx_manager.spawn_hit_spark(parry_x, parry_y, "parry")
+            vfx_manager.spawn_hit_spark(parry_x, parry_y, HitSparkType.PARRY)
 
         if DEBUG_MODE:
-            print("🛡️ PARRY! Defender has frame advantage")
+            log.debug("PARRY! Defender has frame advantage")
     
     def _apply_block_effects(self, attacker, defender, hit_status, vfx_manager):
         """Apply effects when an attack is blocked"""
         from ..data.enums import CharacterState
         
-        # Apply chip damage (small amount)
+        # Apply chip damage (small amount), clamped at zero
         chip_damage = max(1, hit_status.damage // 8)
-        defender.health -= chip_damage
-        
-        # Apply blockstun instead of hitstun
+        defender.health = max(0, defender.health - chip_damage)
+
+        # Apply blockstun (low block if crouching) + small pushback
         blockstun = max(4, hit_status.hitstun // 2)
         defender.blockstun_frames = blockstun
-        defender._transition_to_state(CharacterState.BLOCKSTUN_HIGH)
+        crouching = defender.state in (CharacterState.CROUCHING, CharacterState.BLOCKSTUN_LOW)
+        defender._transition_to_state(
+            CharacterState.BLOCKSTUN_LOW if crouching else CharacterState.BLOCKSTUN_HIGH)
+        push = 3.0 if attacker.x < defender.x else -3.0
+        defender.x += push
 
         # Both characters get hitfreeze
         attacker.hitfreeze_frames = 6
@@ -611,17 +564,17 @@ class SF3CollisionAdapter:
         if vfx_manager:
             block_x = defender.x
             block_y = defender.y - 60
-            vfx_manager.spawn_hit_spark(block_x, block_y, "block")
+            vfx_manager.spawn_hit_spark(block_x, block_y, HitSparkType.BLOCK)
 
         if DEBUG_MODE:
-            print(f"🛡️ BLOCKED! Chip damage: {chip_damage}, Blockstun: {blockstun}")
+            log.debug("BLOCKED! Chip damage: %s, Blockstun: %s", chip_damage, blockstun)
     
     def _apply_throw_to_character(self, attacker, defender, hit_status, vfx_manager):
         """Apply throw effects to defender character"""
         from ..data.enums import CharacterState
         
-        # Apply throw damage (usually higher than normal attacks)
-        defender.health -= hit_status.damage
+        # Apply throw damage (usually higher than normal attacks), clamped
+        defender.health = max(0, defender.health - hit_status.damage)
 
         # Apply throw hitstun (usually longer)
         defender.hitstun_frames = hit_status.hitstun
@@ -634,52 +587,105 @@ class SF3CollisionAdapter:
             defender.x = attacker.x - 100
 
         if DEBUG_MODE:
-            print(f"SF3 Throw Applied: {hit_status.damage} damage")
+            log.debug("SF3 Throw Applied: %s damage", hit_status.damage)
     
+    @staticmethod
+    def _draw_dashed_rect(screen, color, rect, dash=4, width=2):
+        """Draw a rectangle outline as a dashed line (for non-verified boxes)."""
+        x, y, w, h = rect.x, rect.y, rect.width, rect.height
+        corners = [((x, y), (x + w, y)), ((x + w, y), (x + w, y + h)),
+                   ((x + w, y + h), (x, y + h)), ((x, y + h), (x, y))]
+        for (x0, y0), (x1, y1) in corners:
+            length = max(abs(x1 - x0), abs(y1 - y0))
+            if length == 0:
+                continue
+            steps = int(length // (dash * 2)) + 1
+            for i in range(steps):
+                t0 = (i * dash * 2) / length
+                t1 = min(1.0, (i * dash * 2 + dash) / length)
+                sx = x0 + (x1 - x0) * t0
+                sy = y0 + (y1 - y0) * t0
+                ex = x0 + (x1 - x0) * t1
+                ey = y0 + (y1 - y0) * t1
+                pygame.draw.line(screen, color, (sx, sy), (ex, ey), width)
+
     def render_debug(self, screen: pygame.Surface, show_hitboxes: bool = None, show_hurtboxes: bool = None):
-        """Render debug visualization - compatible with old CollisionSystem"""
+        """Render debug visualization - compatible with old CollisionSystem.
+
+        Verified boxes are drawn solid (hitboxes red, hurtboxes blue). Any box
+        whose provenance status is not ``verified`` (inferred / community /
+        pending) is drawn DASHED in yellow, with a one-time "PENDING/INFERRED
+        DATA" legend so the operator knows it is not ROM-verified.
+        """
         if not (show_hitboxes or show_hurtboxes):
             return
-        
-        # Update debug rectangles from current hitbox managers
+
+        YELLOW = (255, 255, 0)
+        # (rect, status) pairs so we can choose solid vs dashed per box.
         self.debug_hitboxes.clear()
         self.debug_hurtboxes.clear()
-        
+        hit_pairs = []
+        hurt_pairs = []
+
         for player_id, manager in self.hitbox_managers.items():
             work = self.player_works.get(player_id)
             if not work:
                 continue
-                
-            # Get attack hitboxes
-            attack_hitboxes = manager.get_current_hitboxes(SF3HitboxType.ATTACK)
-            for hitbox in attack_hitboxes:
-                screen_x = work.position_x + hitbox.offset_x
-                screen_y = work.position_y + hitbox.offset_y
+
+            for hitbox in manager.get_current_hitboxes(SF3HitboxType.ATTACK):
+                screen_x = work.work.position.x + hitbox.offset_x
+                screen_y = work.work.position.y + hitbox.offset_y
                 rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                hit_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hitboxes.append(rect)
-            
-            # Get body hurtboxes
-            body_hitboxes = manager.get_current_hitboxes(SF3HitboxType.BODY)
-            for hitbox in body_hitboxes:
-                screen_x = work.position_x + hitbox.offset_x
-                screen_y = work.position_y + hitbox.offset_y
+
+            for hitbox in manager.get_current_hitboxes(SF3HitboxType.BODY):
+                screen_x = work.work.position.x + hitbox.offset_x
+                screen_y = work.work.position.y + hitbox.offset_y
                 rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                hurt_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hurtboxes.append(rect)
-        
-        # Render hitboxes in red
+
+        has_pending = False
+
         if show_hitboxes:
-            for rect in self.debug_hitboxes:
-                pygame.draw.rect(screen, (255, 0, 0), rect, 2)
-        
-        # Render hurtboxes in blue
+            for rect, status in hit_pairs:
+                if status == "verified":
+                    pygame.draw.rect(screen, (255, 0, 0), rect, 2)
+                else:
+                    self._draw_dashed_rect(screen, YELLOW, rect)
+                    has_pending = True
+
         if show_hurtboxes:
-            for rect in self.debug_hurtboxes:
-                pygame.draw.rect(screen, (0, 0, 255), rect, 2)
+            for rect, status in hurt_pairs:
+                if status == "verified":
+                    pygame.draw.rect(screen, (0, 0, 255), rect, 2)
+                else:
+                    self._draw_dashed_rect(screen, YELLOW, rect)
+                    has_pending = True
+
+        if has_pending:
+            if not hasattr(self, "_pending_legend_font"):
+                self._pending_legend_font = pygame.font.Font(None, 18)
+            label = self._pending_legend_font.render("PENDING/INFERRED DATA", True, YELLOW)
+            screen.blit(label, (8, 8))
     
     def get_combo_info(self, player_id: int) -> Dict[str, Any]:
         """Get combo information for a player (for UI display)"""
         return self.sf3_combo_system.get_combo_display_info(player_id)
-    
+
     def reset_combos(self):
         """Reset all combo states"""
         self.sf3_combo_system.reset_all_combos()
+
+    def reset(self):
+        """Reset all per-round state: frame counter, hit queue, combos, parry."""
+        self.frame_counter = 0
+        self.sf3_system.update_frame(0)
+        self.sf3_system.clear_hit_queue()
+        self.sf3_combo_system.reset_all_combos()
+        for work in self.player_works.values():
+            self.sf3_parry_system.reset_parry_state(work)
+        self.debug_hitboxes.clear()
+        self.debug_hurtboxes.clear()
+        self.last_results.clear()

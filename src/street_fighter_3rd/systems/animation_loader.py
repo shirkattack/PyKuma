@@ -4,6 +4,7 @@ import os
 import yaml
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from street_fighter_3rd.util.logging_config import get_logger
 from street_fighter_3rd.systems.animation import (
     Animation,
     FolderAnimation,
@@ -13,6 +14,8 @@ from street_fighter_3rd.systems.animation import (
     create_folder_animation
 )
 from street_fighter_3rd.data.enums import HitType
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -116,7 +119,7 @@ class AnimationLoader:
         if not animations:
             raise AnimationLoadError(f"No animations defined for {character_name}")
 
-        print(f"Loading {len(animations)} animations for {character_name}...")
+        log.debug("Loading %s animations for %s...", len(animations), character_name)
 
         for anim_name, anim_data in animations.items():
             try:
@@ -136,14 +139,14 @@ class AnimationLoader:
                         character.animation_projectiles = {}
                     character.animation_projectiles[anim_name] = anim_config.projectile
 
-                print(f"  ✓ Loaded '{anim_name}' ({anim_config.source})")
+                log.debug("Loaded '%s' (%s)", anim_name, anim_config.source)
 
-            except Exception as e:
+            except (AnimationLoadError, KeyError, ValueError, OSError) as e:
                 # Validation: log error but continue loading other animations
-                print(f"  ✗ Failed to load '{anim_name}': {e}")
+                log.warning("Failed to load '%s': %s", anim_name, e)
                 continue
 
-        print(f"Animation loading complete for {character_name}")
+        log.debug("Animation loading complete for %s", character_name)
 
     def _parse_animation_config(self, name: str, data: Dict[str, Any]) -> AnimationConfig:
         """Parse animation data from YAML into AnimationConfig.

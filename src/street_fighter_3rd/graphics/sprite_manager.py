@@ -13,6 +13,7 @@ Key Features:
 - Integration with SF3 timing systems
 """
 
+import logging
 import pygame
 import os
 import json
@@ -20,6 +21,10 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
+
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+
+log = get_logger(__name__)
 
 # Import our systems
 from ..schemas.sf3_schemas import CharacterData, MoveData
@@ -147,7 +152,7 @@ class SF3SpriteManager:
         # Color key for transparency (SF3 sprites often use magenta)
         self.transparency_color = (255, 0, 255)  # Magenta
         
-        print(f"SF3SpriteManager initialized with assets path: {self.assets_base_path}")
+        log.debug("SF3SpriteManager initialized with assets path: %s", self.assets_base_path)
     
     def load_character_sprites(self, character_name: str, character_data: CharacterData) -> bool:
         """
@@ -162,16 +167,16 @@ class SF3SpriteManager:
         """
         
         if character_name in self.loaded_characters:
-            print(f"Character {character_name} sprites already loaded")
+            log.debug("Character %s sprites already loaded", character_name)
             return True
-        
-        print(f"Loading sprites for {character_name}...")
+
+        log.debug("Loading sprites for %s...", character_name)
         
         # Character animations path
         char_animations_path = self.assets_base_path / f"{character_name}_animations"
         
         if not char_animations_path.exists():
-            print(f"⚠️ Animation path not found: {char_animations_path}")
+            log.warning("Animation path not found: %s", char_animations_path)
             return False
         
         # Initialize character animations
@@ -213,10 +218,10 @@ class SF3SpriteManager:
         # Mark as loaded if we got at least some animations
         if success_count > 0:
             self.loaded_characters.add(character_name)
-            print(f"✅ Loaded {success_count}/{total_moves} animations for {character_name}")
+            log.debug("Loaded %s/%s animations for %s", success_count, total_moves, character_name)
             return True
         else:
-            print(f"❌ Failed to load any animations for {character_name}")
+            log.warning("Failed to load any animations for %s", character_name)
             return False
     
     def _load_move_animation(self, character_name: str, move_name: str, move_data: MoveData) -> bool:
@@ -231,7 +236,7 @@ class SF3SpriteManager:
         animation_path = self.assets_base_path / f"{character_name}_animations" / animation_folder
         
         if not animation_path.exists():
-            print(f"⚠️ Animation folder not found: {animation_path}")
+            log_once(log, ("anim_folder_miss", str(animation_path)), logging.WARNING, "Animation folder not found: %s", animation_path)
             return False
         
         # Load animation frames
@@ -340,7 +345,7 @@ class SF3SpriteManager:
         frame_files = sorted([f for f in folder_path.glob("*.png")])
         
         if not frame_files:
-            print(f"⚠️ No PNG files found in {folder_path}")
+            log_once(log, ("no_png", str(folder_path)), logging.WARNING, "No PNG files found in %s", folder_path)
             return None
         
         # Create animation
@@ -371,8 +376,8 @@ class SF3SpriteManager:
                 
                 animation.frames.append(sprite_frame)
                 
-            except Exception as e:
-                print(f"⚠️ Failed to load frame {frame_file}: {e}")
+            except (pygame.error, OSError, FileNotFoundError) as e:
+                log_once(log, ("frame_load_err", str(frame_file)), logging.WARNING, "Failed to load frame %s: %s", frame_file, e)
                 continue
         
         if animation.frames:
@@ -385,7 +390,7 @@ class SF3SpriteManager:
                 animation.origin_x = first_frame.image.get_width() // 2
                 animation.origin_y = first_frame.image.get_height()
             
-            print(f"✅ Loaded animation '{animation_name}' with {len(animation.frames)} frames")
+            log.debug("Loaded animation '%s' with %s frames", animation_name, len(animation.frames))
             return animation
         
         return None
@@ -473,7 +478,7 @@ class SF3SpriteManager:
                 del self.sprite_cache.cache[key]
                 self.sprite_cache.access_order.remove(key)
         
-        print(f"Unloaded sprites for {character_name}")
+        log.debug("Unloaded sprites for %s", character_name)
     
     def get_memory_usage(self) -> Dict[str, Any]:
         """Get memory usage statistics"""
@@ -499,37 +504,30 @@ class SF3SpriteManager:
 
 if __name__ == "__main__":
     # Test sprite manager
-    print("Testing SF3 Sprite Manager...")
-    
+    log.info("Testing SF3 Sprite Manager...")
+
     # Initialize pygame
     pygame.init()
-    
+
     sprite_manager = SF3SpriteManager()
-    
+
     # Test with mock character data
-    print(f"✅ Sprite manager created")
-    print(f"   Assets path: {sprite_manager.assets_base_path}")
-    print(f"   Default scale: {sprite_manager.default_scale}")
-    print(f"   Transparency color: {sprite_manager.transparency_color}")
-    
+    log.info("Sprite manager created")
+    log.info("   Assets path: %s", sprite_manager.assets_base_path)
+    log.info("   Default scale: %s", sprite_manager.default_scale)
+    log.info("   Transparency color: %s", sprite_manager.transparency_color)
+
     # Check if Akuma animations exist
     akuma_path = sprite_manager.assets_base_path / "akuma_animations"
     if akuma_path.exists():
         animation_folders = [d for d in akuma_path.iterdir() if d.is_dir()]
-        print(f"✅ Found {len(animation_folders)} Akuma animation folders")
-        
+        log.info("Found %s Akuma animation folders", len(animation_folders))
+
         # List some animations
         for folder in animation_folders[:5]:
             frame_count = len(list(folder.glob("*.png")))
-            print(f"   {folder.name}: {frame_count} frames")
+            log.info("   %s: %s frames", folder.name, frame_count)
     else:
-        print(f"⚠️ Akuma animations not found at {akuma_path}")
-    
-    print("SF3 Sprite Manager working correctly! ✅")
-    print("🎯 Features implemented:")
-    print("   - Sprite loading and caching")
-    print("   - Animation frame management")
-    print("   - Character-specific organization")
-    print("   - Memory-efficient handling")
-    print("   - Integration with move data")
-    print("🚀 Ready for character sprite integration!")
+        log.warning("Akuma animations not found at %s", akuma_path)
+
+    log.info("SF3 Sprite Manager working correctly!")

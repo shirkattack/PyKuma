@@ -12,6 +12,7 @@ class GameMode(Enum):
     DEV = auto()         # Full debug mode for development
     VERSUS = auto()      # 2-player versus mode
     DEMO = auto()        # AI vs AI demonstration
+    HITBOX_VIEWER = auto()  # Standalone ROM-accurate hitbox visualization
 
 
 @dataclass
@@ -31,6 +32,7 @@ class GameModeConfig:
     no_rounds: bool = False
     no_timer: bool = False
     auto_reset_position: bool = False
+    regen_after_idle: bool = False  # restore health to full after a no-damage lull
     
     # Training mode features
     show_damage_numbers: bool = False
@@ -60,7 +62,10 @@ GAME_MODE_CONFIGS = {
         show_damage_numbers=True,
         show_frame_advantage=True,
         show_combo_counter=True,
-        infinite_health=True,
+        # Health drops normally so damage is visible, then regenerates to full
+        # once both players stop trading hits for a few seconds.
+        infinite_health=False,
+        regen_after_idle=True,
         no_rounds=True,
         no_timer=True,
         auto_reset_position=True,
@@ -97,6 +102,17 @@ GAME_MODE_CONFIGS = {
         # Demo mode for showcasing
         show_combo_counter=True,
         show_damage_numbers=True,
+        no_timer=True
+    ),
+
+    GameMode.HITBOX_VIEWER: GameModeConfig(
+        # Standalone hitbox/hurtbox visualization (no gameplay)
+        show_hitboxes=True,
+        show_hurtboxes=True,
+        show_frame_data=True,
+        show_collision_info=True,
+        infinite_health=True,
+        no_rounds=True,
         no_timer=True
     )
 }
@@ -146,6 +162,7 @@ class GameModeManager:
             GameMode.TRAINING: "Practice mode with infinite health and debug tools",
             GameMode.DEV: "Full development mode with all debug features",
             GameMode.VERSUS: "Local 2-player versus matches",
-            GameMode.DEMO: "AI demonstration mode"
+            GameMode.DEMO: "AI demonstration mode",
+            GameMode.HITBOX_VIEWER: "ROM-accurate hitbox visualization viewer"
         }
         return descriptions.get(self.current_mode, "Unknown mode")

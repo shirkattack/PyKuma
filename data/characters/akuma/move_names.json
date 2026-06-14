@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "method": "Move names are taken from framedata_meta.lua (Grouflon/3rd_training_lua) where that file annotates the ROM pointer (name_source=metadata, AUTHORITATIVE). Pointers it does not annotate fall back to timing/geometry inference against community frame data (name_source=inferred, a guess). Box geometry + timing remain ROM-verified in all cases.",
+    "name_metadata_source": "https://github.com/Grouflon/3rd_training_lua/blob/master/data/sfiii3nr1/framedata_meta.lua",
+    "name_metadata_commit": "73ec4c062108fd3494c4fae6b81a61f9cf518b81"
+  },
+
+  "LIGHT_PUNCH":        { "rom_id": "1438", "name_source": "metadata", "meta_name": "LP",
+    "rationale": "framedata_meta.lua GOUKI: \"1438\" -- LP  (corrects prior guess 13a8/LK)" },
+  "CROUCH_LIGHT_PUNCH": { "rom_id": "1d28", "name_source": "metadata", "meta_name": "Cr LP",
+    "rationale": "framedata_meta.lua GOUKI: \"1d28e\" -- Cr LP  (meta typo; 1d28 is the present pointer)" },
+  "CROUCH_LIGHT_KICK":  { "rom_id": "1f68", "name_source": "metadata", "meta_name": "Cr LK",
+    "rationale": "framedata_meta.lua GOUKI: \"1f68\" -- Cr LK" },
+  "CROUCH_MEDIUM_KICK": { "rom_id": "2008", "name_source": "metadata", "meta_name": "Cr MK",
+    "rationale": "framedata_meta.lua GOUKI: \"2008\" -- Cr MK  (corrects prior guess 2008/CrHK)" },
+  "CROUCH_HEAVY_KICK":  { "rom_id": "20d8", "name_source": "metadata", "meta_name": "Cr HK",
+    "rationale": "framedata_meta.lua GOUKI: \"20d8\" -- Cr HK  (corrects prior guess 2008)" },
+
+  "JUMP_LIGHT_PUNCH":   { "rom_id": "2708", "name_source": "metadata", "meta_name": "Air LP",
+    "rationale": "framedata_meta.lua GOUKI: \"2708\" -- Air LP" },
+  "JUMP_MEDIUM_PUNCH":  { "rom_id": "22a8", "name_source": "metadata", "meta_name": "Air MP",
+    "rationale": "framedata_meta.lua GOUKI: \"22a8\" -- Air MP" },
+  "JUMP_HEAVY_PUNCH":   { "rom_id": "2800", "name_source": "metadata", "meta_name": "Air HP",
+    "rationale": "framedata_meta.lua GOUKI: \"2800\" -- Air HP" },
+  "JUMP_LIGHT_KICK":    { "rom_id": "28e0", "name_source": "metadata", "meta_name": "Air LK",
+    "rationale": "framedata_meta.lua GOUKI: \"28e0\" -- Air LK" },
+  "JUMP_MEDIUM_KICK":   { "rom_id": "29c0", "name_source": "metadata", "meta_name": "Air MK",
+    "rationale": "framedata_meta.lua GOUKI: \"29c0\" -- Air MK" },
+  "JUMP_HEAVY_KICK":    { "rom_id": "2b30", "name_source": "metadata", "meta_name": "Air HK",
+    "rationale": "framedata_meta.lua GOUKI: \"2b30\" -- Air HK" },
+
+  "OVERHEAD":           { "rom_id": "98f8", "name_source": "metadata", "meta_name": "UOH",
+    "rationale": "framedata_meta.lua GOUKI: \"98f8\" -- UOH (universal overhead)" },
+
+  "HEAVY_PUNCH":        { "rom_id": "1e88", "name_source": "inferred", "confidence": "low",
+    "rationale": "tallest non-moving box, s/a/r approx 5/5/25; NOT annotated in framedata_meta.lua" },
+  "MEDIUM_KICK":        { "rom_id": "1dd8", "name_source": "inferred", "confidence": "low",
+    "rationale": "longer-reach non-moving kick, s/a/r approx 5/4/13; NOT annotated in framedata_meta.lua" },
+  "HEAVY_KICK":         { "rom_id": "1818", "name_source": "inferred", "confidence": "low",
+    "rationale": "longest reach, big, s/a/r approx 8/5/25; NOT annotated in framedata_meta.lua" }
+}

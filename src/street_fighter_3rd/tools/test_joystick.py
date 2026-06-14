@@ -3,6 +3,10 @@
 import pygame
 import sys
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 def main():
     """Test joystick input and display button mappings."""
@@ -17,13 +21,13 @@ def main():
 
     # Check for joysticks
     joystick_count = pygame.joystick.get_count()
-    print(f"\n{'='*60}")
-    print(f"Joysticks detected: {joystick_count}")
-    print(f"{'='*60}\n")
+    log.info("%s", "="*60)
+    log.info("Joysticks detected: %s", joystick_count)
+    log.info("%s", "="*60)
 
     if joystick_count == 0:
-        print("No joystick detected!")
-        print("Please connect your Brooks UFB hitbox and restart.")
+        log.warning("No joystick detected!")
+        log.warning("Please connect your Brooks UFB hitbox and restart.")
         input("\nPress Enter to exit...")
         return
 
@@ -31,14 +35,14 @@ def main():
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
 
-    print(f"Controller Name: {joystick.get_name()}")
-    print(f"Number of Axes: {joystick.get_numaxes()}")
-    print(f"Number of Buttons: {joystick.get_numbuttons()}")
-    print(f"Number of Hats: {joystick.get_numhats()}")
-    print(f"\n{'='*60}")
-    print("Press buttons to see their numbers!")
-    print("Press ESC to exit")
-    print(f"{'='*60}\n")
+    log.info("Controller Name: %s", joystick.get_name())
+    log.info("Number of Axes: %s", joystick.get_numaxes())
+    log.info("Number of Buttons: %s", joystick.get_numbuttons())
+    log.info("Number of Hats: %s", joystick.get_numhats())
+    log.info("%s", "="*60)
+    log.info("Press buttons to see their numbers!")
+    log.info("Press ESC to exit")
+    log.info("%s", "="*60)
 
     # Track button states
     button_states = {}
@@ -55,10 +59,10 @@ def main():
                     running = False
             elif event.type == pygame.JOYBUTTONDOWN:
                 button_states[event.button] = True
-                print(f"Button {event.button} PRESSED")
+                log.info("Button %s PRESSED", event.button)
             elif event.type == pygame.JOYBUTTONUP:
                 button_states[event.button] = False
-                print(f"Button {event.button} released")
+                log.info("Button %s released", event.button)
 
         # Clear screen
         screen.fill((20, 20, 40))

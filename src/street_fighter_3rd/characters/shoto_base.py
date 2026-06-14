@@ -19,9 +19,13 @@ from dataclasses import dataclass, field
 
 # Import our schemas
 from ..schemas.sf3_schemas import (
-    CharacterData, CharacterStats, MoveData, FrameData, 
+    CharacterData, CharacterStats, MoveData, FrameData,
     HitboxData, MoveHitboxes, AIPersonality, CharacterArchetype
 )
+
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -415,12 +419,12 @@ class ShotoArchetype(ABC):
 
 
 if __name__ == "__main__":
-    print("SF3 Shoto Base Class created! ✅")
-    print("🎯 Features implemented:")
-    print("   - Abstract Shoto archetype")
-    print("   - Shared moveset (Hadoken, Shoryuken, Tatsumaki)")
-    print("   - Character inheritance system")
-    print("   - Move variant customization")
-    print("   - Complete normal attack set")
-    print("   - Standard throw system")
-    print("🚀 Ready for Ken and Ryu implementation!")
+    log.info("SF3 Shoto Base Class created!")
+    log.info("Features implemented:")
+    log.info("   - Abstract Shoto archetype")
+    log.info("   - Shared moveset (Hadoken, Shoryuken, Tatsumaki)")
+    log.info("   - Character inheritance system")
+    log.info("   - Move variant customization")
+    log.info("   - Complete normal attack set")
+    log.info("   - Standard throw system")
+    log.info("Ready for Ken and Ryu implementation!")

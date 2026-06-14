@@ -1,0 +1,50 @@
+Vendored ROM-accurate hitbox/box geometry source
+==================================================
+
+Repository:   https://github.com/Grouflon/3rd_training_lua
+Commit:       73ec4c062108fd3494c4fae6b81a61f9cf518b81
+ROM revision: sfiii3nr1  (Street Fighter III: 3rd Strike, JP 990512)
+File path:    data/sfiii3nr1/framedata/gouki_framedata.json
+Vendored as:  data/sources/gouki_framedata.json
+
+Attribution / provenance
+------------------------
+This box geometry was dumped directly from the SF3:3S ("sfiii3nr1") ROM by the
+3rd_training_lua project for training/educational use. It is REVERSE-ENGINEERED
+data describing the game's collision rectangles (attack / vulnerability / push /
+throwable boxes) per animation frame, keyed by hex ROM pointers.
+
+The underlying data is (c) Capcom. It is vendored here solely for accurate,
+educational recreation of the game's hitbox geometry and frame timing.
+
+What this source DOES contain:
+  - Per-frame box geometry (left/bottom/width/height) for every animation.
+  - Box types: attack, vulnerability, push, throwable.
+  - Movement deltas per frame.
+  - Active-frame ranges (hit_frames).
+
+What this source does NOT contain:
+  - Damage values.
+  - Stun values.
+  - Move names (entries are keyed by raw hex ROM pointers, not human names).
+
+Damage and stun are read from live RAM by the training tool at runtime; they are
+NOT part of this static dump. In this project those gameplay values come from the
+community frame-data tier (see data/characters/akuma/sf3_authentic_frame_data.yaml),
+NOT from this ROM source.
+
+==================================================
+Second vendored source: framedata_meta.lua
+==================================================
+
+Repository:   https://github.com/Grouflon/3rd_training_lua
+Commit:       73ec4c062108fd3494c4fae6b81a61f9cf518b81
+File path:    data/sfiii3nr1/framedata_meta.lua
+Vendored as:  data/sources/framedata_meta.lua
+
+This file annotates ROM pointers with human move names (as Lua comments, e.g.
+`"1f68" = {...} -- Cr LK`). It is the AUTHORITATIVE source for the ROM-pointer ->
+move-name mapping, replacing the prior timing/geometry inference for the moves it
+covers (see data/characters/akuma/move_names.json, name_source=metadata). It does
+not annotate every move; pointers it omits remain inferred or unnamed. Underlying
+data is (c) Capcom; vendored for educational recreation.

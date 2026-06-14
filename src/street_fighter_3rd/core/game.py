@@ -1,7 +1,15 @@
 """Core game class managing game state and main loop."""
 
+import json
+import logging
+import os
 import pygame
 from typing import Dict
+
+from street_fighter_3rd.util.logging_config import get_logger, is_strict, log_once
+from street_fighter_3rd.core.diagnostics import InvariantChecker, FrameRecorder
+
+log = get_logger(__name__)
 from street_fighter_3rd.data.enums import GameState
 from street_fighter_3rd.data.constants import (
     SCREEN_WIDTH,
@@ -14,7 +22,6 @@ from street_fighter_3rd.data.constants import (
     COLOR_BLUE,
     DEBUG_MODE,
     SHOW_FRAME_DATA,
-    MAX_HEALTH,
 )
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.systems.input_system import InputSystem
@@ -23,9 +30,17 @@ from street_fighter_3rd.systems.vfx import VFXManager
 from street_fighter_3rd.core.round_manager import RoundManager
 from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
 
+# Round-start positions
+P1_START_X = 200
+P2_START_X = 440
+
 
 class Game:
-    """Main game class."""
+    """Main game class.
+
+    The engine is fixed-timestep: one update() call is one game frame at 60 FPS.
+    All gameplay logic is frame-based; there is no delta-time anywhere.
+    """
 
     def __init__(self, screen: pygame.Surface, game_mode_manager: GameModeManager = None):
         """Initialize the game.
@@ -36,6 +51,29 @@ class Game:
         """
         self.screen = screen
         self.frame_count = 0
+        self.paused = False
+        self.debug_display = DEBUG_MODE
+
+        # Gameplay diagnostics: per-frame invariant checks + frame recorder
+        self.diagnostics = InvariantChecker()
+        self.recorder = FrameRecorder()
+
+        # Screen shake (deterministic): countdown + intensity, fed by the VFX
+        # manager's shake_request. Fight layer is composed into this buffer then
+        # blitted offset; see render() / shake_offset().
+        self.shake_frames = 0
+        self.shake_intensity = 0
+        self.SHAKE_TOTAL = 8
+        self._shake_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+        # Health-bar animation + training regen state (set up after players exist)
+        self.p1_ghost_health = 0
+        self.p2_ghost_health = 0
+        self._prev_p1_health = 0
+        self._prev_p2_health = 0
+        self.last_damage_frame = 0
+        # Frames of no damage before training-mode regen kicks in (10s @ 60fps)
+        self.REGEN_IDLE_FRAMES = 600
 
         # Initialize game mode manager
         self.game_mode_manager = game_mode_manager or GameModeManager()
@@ -50,23 +88,50 @@ class Game:
         # Load stage background
         try:
             self.stage_background = pygame.image.load("assets/stages/ryu-stage.gif").convert()
-        except:
-            print("Warning: Could not load stage background")
+        except (pygame.error, OSError, FileNotFoundError) as e:
+            log_once(log, ("stage_load",), logging.WARNING, "Could not load stage background: %s", e)
             self.stage_background = None
 
         # Create characters
-        self.player1 = Akuma(200, STAGE_FLOOR, player_number=1)
+        self.player1 = Akuma(P1_START_X, STAGE_FLOOR, player_number=1)
         self.player1.input = self.input_system.player1
 
-        self.player2 = Akuma(440, STAGE_FLOOR, player_number=2)
+        self.player2 = Akuma(P2_START_X, STAGE_FLOOR, player_number=2)
         self.player2.input = self.input_system.player2
 
         # Start new match
         self.round_manager.start_new_match()
+        self._last_game_state = self.round_manager.game_state
+
+        # Health-bar ghost layers start full
+        self.p1_ghost_health = self.player1.health
+        self.p2_ghost_health = self.player2.health
+        self._prev_p1_health = self.player1.health
+        self._prev_p2_health = self.player2.health
 
         # Debug info
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 18)
+
+        # Text rendering cache: Font.render is expensive, so static labels are
+        # rendered once and dynamic text (timer digits, round text) is cached
+        # per unique string.
+        self._text_cache: Dict[tuple, pygame.Surface] = {}
+        self.p1_name_label = self.small_font.render(
+            f"P1 - {self.player1.name.upper()}", True, COLOR_WHITE)
+        self.p2_name_label = self.small_font.render(
+            f"{self.player2.name.upper()} - P2", True, COLOR_WHITE)
+        self.controls_label = self.small_font.render(
+            "P1: WASD + JKLUIO | P2: Arrows + NumPad", True, (150, 150, 150))
+
+    def _render_text(self, font: pygame.font.Font, text: str, color) -> pygame.Surface:
+        """Render text through a cache so repeated frames don't re-render."""
+        key = (id(font), text, color)
+        surface = self._text_cache.get(key)
+        if surface is None:
+            surface = font.render(text, True, color)
+            self._text_cache[key] = surface
+        return surface
 
     def handle_event(self, event: pygame.event.Event):
         """Handle pygame events.
@@ -76,22 +141,39 @@ class Game:
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                # Toggle pause or quit
-                pass
-            elif event.key == pygame.K_F1 and DEBUG_MODE:
-                # Toggle debug display
-                pass
+                self._toggle_pause()
+            elif event.key == pygame.K_F1:
+                self.debug_display = not self.debug_display
+            elif event.key == pygame.K_F10:
+                self.build_issue_report()
+            elif event.key == pygame.K_F11:
+                self.save_clip()
+            elif event.key == pygame.K_F12:
+                self.save_debug_snapshot()
             elif event.key == pygame.K_RETURN:
                 # Handle "Play Again" on continue screen
                 if self.round_manager.game_state == GameState.CONTINUE_SCREEN:
                     self._reset_for_new_match()
 
-    def update(self, dt: float):
-        """Update game state.
+    def _toggle_pause(self):
+        """Toggle pause. Pausing freezes the whole update loop, timer included."""
+        self.paused = not self.paused
 
-        Args:
-            dt: Delta time in seconds
-        """
+    def shake_offset(self):
+        """Deterministic screen-shake offset (px). Pure function of the countdown
+        and intensity — no RNG/frame_count — so replays are bit-identical. (0,0)
+        when idle."""
+        if self.shake_frames <= 0:
+            return (0, 0)
+        mag = (self.shake_intensity * self.shake_frames) // self.SHAKE_TOTAL  # decays to 0
+        sign = 1 if (self.shake_frames % 2 == 0) else -1
+        return (sign * mag, -sign * (mag // 2))
+
+    def update(self):
+        """Advance the game by exactly one frame (fixed 60 FPS timestep)."""
+        if self.paused:
+            return
+
         self.frame_count += 1
 
         # Apply training mode features
@@ -101,35 +183,84 @@ class Game:
         if not self.config.no_rounds:
             self.round_manager.update(self.player1.health, self.player2.health)
 
+            # A new round just began (ROUND_END -> PRE_ROUND): reset characters
+            # and systems so every round starts from a clean slate.
+            if (self.round_manager.game_state == GameState.PRE_ROUND
+                    and self._last_game_state == GameState.ROUND_END):
+                self._reset_round_state()
+            self._last_game_state = self.round_manager.game_state
+
         # Only update gameplay during PRE_ROUND and FIGHTING states (or always if no rounds)
         if self.config.no_rounds:
             # In no-rounds mode, always update as if fighting
-            self._update_fight(dt)
+            self._update_fight()
         elif self.round_manager.game_state == GameState.PRE_ROUND:
-            self._update_pre_round(dt)
+            self._update_pre_round()
         elif self.round_manager.game_state == GameState.FIGHTING:
-            self._update_fight(dt)
-        elif self.round_manager.game_state == GameState.PAUSE:
-            pass  # No updates while paused
+            self._update_fight()
 
-    def _update_pre_round(self, dt: float):
-        """Update pre-round state (characters frozen).
+        # Training idle-regen + animated health-bar ghost layers
+        self._update_health_dynamics()
 
-        Args:
-            dt: Delta time in seconds
-        """
+        # Screen shake: pick up a request from this frame's hits, else count down.
+        if self.vfx_manager.shake_request > 0:
+            self.shake_intensity = self.vfx_manager.shake_request
+            self.shake_frames = self.SHAKE_TOTAL
+            self.vfx_manager.shake_request = 0
+        elif self.shake_frames > 0:
+            self.shake_frames -= 1
+
+        # Diagnostics — record this frame + check invariants. Gated so release
+        # builds (debug off, not strict) pay nothing. Runs after collision tick
+        # so box/combo state is populated.
+        if self.debug_display or DEBUG_MODE or is_strict():
+            self.recorder.record(self)
+            self.diagnostics.check(self)
+
+    def _update_health_dynamics(self):
+        """Track damage timing, run training idle-regen, animate ghost bars."""
+        p1, p2 = self.player1, self.player2
+
+        # Note when damage was last dealt (either player lost health this frame)
+        if p1.health < self._prev_p1_health or p2.health < self._prev_p2_health:
+            self.last_damage_frame = self.frame_count
+
+        # Training mode: after a no-damage lull, regenerate both to full
+        if self.config.regen_after_idle:
+            idle = self.frame_count - self.last_damage_frame
+            if idle >= self.REGEN_IDLE_FRAMES:
+                regen = 3  # HP per frame (~visible refill, not instant)
+                if p1.health < p1.max_health:
+                    p1.health = min(p1.max_health, p1.health + regen)
+                if p2.health < p2.max_health:
+                    p2.health = min(p2.max_health, p2.health + regen)
+
+        self._prev_p1_health = p1.health
+        self._prev_p2_health = p2.health
+
+        # Ghost/chip layer: snaps UP instantly on heal, eases DOWN to meet
+        # current health over ~0.3s so damage reads as a draining chip.
+        self.p1_ghost_health = self._ease_ghost(self.p1_ghost_health, p1.health)
+        self.p2_ghost_health = self._ease_ghost(self.p2_ghost_health, p2.health)
+
+    @staticmethod
+    def _ease_ghost(ghost: float, actual: float) -> float:
+        """Move a ghost-health value toward actual: instant up, eased down."""
+        if actual >= ghost:
+            return actual
+        # ease out, with a minimum step so it always finishes promptly
+        return max(actual, ghost - max(1.0, (ghost - actual) * 0.25))
+
+    def _update_pre_round(self):
+        """Update pre-round state (characters frozen)."""
         # Update facing so characters look at each other
         self.player1._update_facing(self.player2)
         self.player2._update_facing(self.player1)
 
         # Don't process input or update characters during pre-round freeze
 
-    def _update_fight(self, dt: float):
-        """Update fighting state.
-
-        Args:
-            dt: Delta time in seconds
-        """
+    def _update_fight(self):
+        """Update fighting state."""
         # Update facing FIRST (before input processing) using current positions
         self.player1._update_facing(self.player2)
         self.player2._update_facing(self.player1)
@@ -140,66 +271,89 @@ class Game:
             player2_facing_right=self.player2.is_facing_right()
         )
 
-        # Update parry inputs for SF3 collision system
-        # TODO: Re-enable once parry system is fully integrated
-        # The parry system needs to be called AFTER check_attack_collision creates player_works
-        # if hasattr(self.collision_system, 'update_parry_inputs'):
-        #     try:
-        #         # Convert input system state to parry input format
-        #         p1_inputs = self._get_parry_inputs_for_player(1)
-        #         p2_inputs = self._get_parry_inputs_for_player(2)
-        #
-        #         self.collision_system.update_parry_inputs(self.player1, p1_inputs)
-        #         self.collision_system.update_parry_inputs(self.player2, p2_inputs)
-        #     except Exception as e:
-        #         # Graceful fallback if parry system has issues
-        #         print(f"Warning: Parry system error: {e}")
-        #         pass
+        # Update parry windows from this frame's directional inputs
+        self.collision_system.update_parry_inputs(
+            self.player1, self._get_parry_inputs_for_player(1))
+        self.collision_system.update_parry_inputs(
+            self.player2, self._get_parry_inputs_for_player(2))
 
         # Update characters (this will call _update_facing again in parent, but that's ok)
         self.player1.update(self.player2)
         self.player2.update(self.player1)
 
-        # Check collisions and spawn hit sparks
+        # Advance the SF3 core exactly once per game frame, then check both
+        # attack directions within that same frame.
+        self.collision_system.tick()
         self.collision_system.check_attack_collision(self.player1, self.player2, self.vfx_manager)
         self.collision_system.check_attack_collision(self.player2, self.player1, self.vfx_manager)
 
         # Update VFX
         self.vfx_manager.update()
 
+    def _reset_round_state(self):
+        """Reset every stateful system to a clean round-start slate.
+
+        This is the reset contract: characters (position, health, transient
+        combat state, projectiles), input buffers, VFX, and the collision
+        adapter (frame counter, combos, parry state) all start fresh.
+        """
+        self.player1.reset(P1_START_X, STAGE_FLOOR)
+        self.player2.reset(P2_START_X, STAGE_FLOOR)
+        self.input_system.reset()
+        self.vfx_manager.clear()
+        self.collision_system.reset()
+        # Reset health-bar animation + idle-regen tracking
+        self.p1_ghost_health = self.player1.health
+        self.p2_ghost_health = self.player2.health
+        self._prev_p1_health = self.player1.health
+        self._prev_p2_health = self.player2.health
+        self.last_damage_frame = self.frame_count
+        self.shake_frames = 0  # no round starts mid-shake
+
     def _reset_for_new_match(self):
         """Reset characters and start a new match."""
-        # Reset character positions and health
-        self.player1.x = 200
-        self.player1.y = STAGE_FLOOR
-        self.player1.health = MAX_HEALTH
-        self.player1.velocity_x = 0
-        self.player1.velocity_y = 0
-
-        self.player2.x = 440
-        self.player2.y = STAGE_FLOOR
-        self.player2.health = MAX_HEALTH
-        self.player2.velocity_x = 0
-        self.player2.velocity_y = 0
-
-        # Start new match
+        self._reset_round_state()
         self.round_manager.start_new_match()
+        self._last_game_state = self.round_manager.game_state
 
     def render(self):
         """Render the current frame."""
-        # Clear screen
-        self.screen.fill(COLOR_BLACK)
+        state = self.round_manager.game_state
+        fight_state = state in (GameState.PRE_ROUND, GameState.FIGHTING,
+                                GameState.ROUND_END, GameState.MATCH_END)
+        shaking = self.shake_frames > 0 and fight_state
 
-        # Render fight scene for all gameplay states
-        if self.round_manager.game_state in [GameState.PRE_ROUND, GameState.FIGHTING,
-                                               GameState.ROUND_END, GameState.MATCH_END]:
+        if shaking:
+            # Compose the fight layer into the shake buffer, then blit it offset
+            # onto a black screen. The self.screen swap keeps every sub-renderer
+            # (characters, VFX, UI) unchanged. Overlays draw on the real screen
+            # afterward so they never jitter.
+            self._shake_buf.fill(COLOR_BLACK)
+            real_screen = self.screen
+            self.screen = self._shake_buf
             self._render_fight()
-        elif self.round_manager.game_state == GameState.CONTINUE_SCREEN:
-            self._render_continue_screen()
+            self.screen = real_screen
+            self.screen.fill(COLOR_BLACK)
+            self.screen.blit(self._shake_buf, self.shake_offset())
+        else:
+            self.screen.fill(COLOR_BLACK)
+            if fight_state:
+                self._render_fight()
+            elif state == GameState.CONTINUE_SCREEN:
+                self._render_continue_screen()
 
-        # Render debug info
-        if DEBUG_MODE:
+        # Render debug info (on the real, un-shaken screen)
+        if self.debug_display:
             self._render_debug()
+
+        # Pause overlay on top of everything
+        if self.paused:
+            paused_text = self._render_text(self.font, "PAUSED", COLOR_WHITE)
+            self.screen.blit(paused_text, (SCREEN_WIDTH // 2 - paused_text.get_width() // 2,
+                                           SCREEN_HEIGHT // 2 - 30))
+            hint_text = self._render_text(self.small_font, "Press ESC to resume", (150, 150, 150))
+            self.screen.blit(hint_text, (SCREEN_WIDTH // 2 - hint_text.get_width() // 2,
+                                         SCREEN_HEIGHT // 2))
 
     def _render_fight(self):
         """Render fighting game scene."""
@@ -216,9 +370,17 @@ class Game:
                 2
             )
 
-        # Render characters
-        self.player1.render(self.screen)
-        self.player2.render(self.screen)
+        # Render characters — attacker on top so an extended limb isn't hidden
+        # behind the opponent's body (default order otherwise).
+        p1, p2 = self.player1, self.player2
+        if p1.is_attacking() and not p2.is_attacking():
+            back, front = p2, p1
+        elif p2.is_attacking() and not p1.is_attacking():
+            back, front = p1, p2
+        else:
+            back, front = p1, p2
+        back.render(self.screen)
+        front.render(self.screen)
 
         # Render VFX (hit sparks, etc.)
         self.vfx_manager.render(self.screen)
@@ -233,81 +395,107 @@ class Game:
         # Render UI
         self._render_ui()
 
+    @staticmethod
+    def _health_color(percent: float):
+        """Color for a health bar by remaining fraction: green->yellow->orange->red.
+
+        Same scheme for both players so health is read by color+length, not side.
+        """
+        percent = max(0.0, min(1.0, percent))
+        # (threshold, color) stops from empty (0.0) to full (1.0)
+        stops = (
+            (0.0, (200, 30, 30)),    # red
+            (0.33, (235, 130, 0)),   # orange
+            (0.66, (235, 215, 0)),   # yellow
+            (1.0, (40, 195, 60)),    # green
+        )
+        for i in range(len(stops) - 1):
+            lo_p, lo_c = stops[i]
+            hi_p, hi_c = stops[i + 1]
+            if percent <= hi_p:
+                span = hi_p - lo_p
+                t = (percent - lo_p) / span if span else 0.0
+                return tuple(int(lo_c[j] + (hi_c[j] - lo_c[j]) * t) for j in range(3))
+        return stops[-1][1]
+
+    def _timer_color(self):
+        """Clock color: white normally, escalating in the final seconds."""
+        secs = self.round_manager.timer_seconds
+        if secs > 10:
+            return COLOR_WHITE
+        if secs > 5:
+            return (240, 200, 0)  # last 10s: yellow warning
+        # last 5s: flash red / bright for urgency
+        return (235, 30, 30) if (self.frame_count // 15) % 2 == 0 else (255, 220, 120)
+
     def _render_ui(self):
-        """Render game UI (health bars, timer, round indicators, etc.)."""
-        # Player 1 health bar
+        """Render game UI (health bars, timer, round indicators, etc.).
+
+        Both health bars deplete toward the center timer: the colored
+        (remaining) health stays anchored at the inner/center end of each bar,
+        so damage eats inward from the outer edges and the eye is drawn to the
+        center. P1 (left bar) is right-anchored; P2 (right bar) is left-anchored.
+        """
         health_bar_width = 250
         health_bar_height = 20
-        p1_health_percent = max(0, self.player1.health / MAX_HEALTH)
+        chip_color = (245, 245, 245)  # ghost/chip layer (recently lost health)
 
-        # P1 Health background
-        pygame.draw.rect(self.screen, (50, 50, 50),
-                        (20, 20, health_bar_width, health_bar_height))
-        # P1 Health foreground
-        pygame.draw.rect(self.screen, COLOR_RED,
-                        (20, 20, int(health_bar_width * p1_health_percent), health_bar_height))
-        # P1 Health border
-        pygame.draw.rect(self.screen, COLOR_WHITE,
-                        (20, 20, health_bar_width, health_bar_height), 2)
+        # --- Player 1 (left bar): colored health right-anchored (center end) ---
+        p1_pct = max(0, self.player1.health / self.player1.max_health)
+        p1_ghost_pct = max(0, self.p1_ghost_health / self.player1.max_health)
+        p1_fill = int(health_bar_width * p1_pct)
+        p1_ghost = int(health_bar_width * p1_ghost_pct)
+        pygame.draw.rect(self.screen, (50, 50, 50), (20, 20, health_bar_width, health_bar_height))
+        # ghost/chip behind, then current health on top
+        pygame.draw.rect(self.screen, chip_color,
+                        (20 + health_bar_width - p1_ghost, 20, p1_ghost, health_bar_height))
+        pygame.draw.rect(self.screen, self._health_color(p1_pct),
+                        (20 + health_bar_width - p1_fill, 20, p1_fill, health_bar_height))
+        pygame.draw.rect(self.screen, COLOR_WHITE, (20, 20, health_bar_width, health_bar_height), 2)
+        self.screen.blit(self.p1_name_label, (20, 3))
 
-        # P1 Name
-        p1_name = self.small_font.render("P1 - AKUMA", True, COLOR_WHITE)
-        self.screen.blit(p1_name, (20, 3))
-
-        # Player 2 health bar (right side)
-        p2_health_percent = max(0, self.player2.health / MAX_HEALTH)
+        # --- Player 2 (right bar): colored health left-anchored (center end) ---
         p2_x = SCREEN_WIDTH - 20 - health_bar_width
-
-        # P2 Health background
-        pygame.draw.rect(self.screen, (50, 50, 50),
-                        (p2_x, 20, health_bar_width, health_bar_height))
-        # P2 Health foreground
-        pygame.draw.rect(self.screen, COLOR_BLUE,
-                        (p2_x, 20, int(health_bar_width * p2_health_percent), health_bar_height))
-        # P2 Health border
-        pygame.draw.rect(self.screen, COLOR_WHITE,
-                        (p2_x, 20, health_bar_width, health_bar_height), 2)
-
-        # P2 Name
-        p2_name = self.small_font.render("AKUMA - P2", True, COLOR_WHITE)
+        p2_pct = max(0, self.player2.health / self.player2.max_health)
+        p2_ghost_pct = max(0, self.p2_ghost_health / self.player2.max_health)
+        p2_fill = int(health_bar_width * p2_pct)
+        p2_ghost = int(health_bar_width * p2_ghost_pct)
+        pygame.draw.rect(self.screen, (50, 50, 50), (p2_x, 20, health_bar_width, health_bar_height))
+        pygame.draw.rect(self.screen, chip_color, (p2_x, 20, p2_ghost, health_bar_height))
+        pygame.draw.rect(self.screen, self._health_color(p2_pct), (p2_x, 20, p2_fill, health_bar_height))
+        pygame.draw.rect(self.screen, COLOR_WHITE, (p2_x, 20, health_bar_width, health_bar_height), 2)
+        p2_name = self.p2_name_label
         self.screen.blit(p2_name, (p2_x + health_bar_width - p2_name.get_width(), 3))
 
-        # Timer (centered at top)
-        timer_text = self.font.render(self.round_manager.get_timer_display(), True, COLOR_WHITE)
-        timer_x = SCREEN_WIDTH // 2 - timer_text.get_width() // 2
-        self.screen.blit(timer_text, (timer_x, 10))
+        center_x = SCREEN_WIDTH // 2
 
-        # Round wins indicators
-        p1_wins, p2_wins = self.round_manager.get_round_wins()
+        # Timer (hidden in no-timer modes like training) — color escalates late
+        if not self.config.no_timer:
+            timer_text = self._render_text(self.font, self.round_manager.get_timer_display(), self._timer_color())
+            self.screen.blit(timer_text, (center_x - timer_text.get_width() // 2, 10))
 
-        # P1 round wins (left of timer)
-        win_circle_radius = 8
-        for i in range(p1_wins):
-            pygame.draw.circle(self.screen, COLOR_RED, (timer_x - 40 - (i * 20), 25), win_circle_radius)
+        # Round indicators (win dots + ROUND/FIGHT/result text) only when rounds
+        # are enabled — training/quick-play have no round structure.
+        if not self.config.no_rounds:
+            p1_wins, p2_wins = self.round_manager.get_round_wins()
+            for i in range(p1_wins):
+                pygame.draw.circle(self.screen, COLOR_RED, (center_x - 60 - (i * 20), 25), 8)
+            for i in range(p2_wins):
+                pygame.draw.circle(self.screen, COLOR_BLUE, (center_x + 60 + (i * 20), 25), 8)
 
-        # P2 round wins (right of timer)
-        for i in range(p2_wins):
-            pygame.draw.circle(self.screen, COLOR_BLUE, (timer_x + timer_text.get_width() + 40 + (i * 20), 25), win_circle_radius)
-
-        # Round/state text overlays
-        if self.round_manager.game_state == GameState.PRE_ROUND:
-            # Show "ROUND X" and then "FIGHT!"
-            if self.round_manager.state_frame < 60:
-                round_text = self.font.render(self.round_manager.get_round_display(), True, COLOR_WHITE)
-                self.screen.blit(round_text, (SCREEN_WIDTH // 2 - round_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
-            else:
-                fight_text = self.font.render("FIGHT!", True, COLOR_WHITE)
-                self.screen.blit(fight_text, (SCREEN_WIDTH // 2 - fight_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
-
-        elif self.round_manager.game_state == GameState.ROUND_END:
-            # Show round result
-            result_text = self.font.render(self.round_manager.get_round_result_text(), True, COLOR_WHITE)
-            self.screen.blit(result_text, (SCREEN_WIDTH // 2 - result_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
-
-        elif self.round_manager.game_state == GameState.MATCH_END:
-            # Show match winner
-            winner_text = self.font.render(self.round_manager.get_match_winner_text(), True, COLOR_WHITE)
-            self.screen.blit(winner_text, (SCREEN_WIDTH // 2 - winner_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
+            if self.round_manager.game_state == GameState.PRE_ROUND:
+                if self.round_manager.state_frame < 60:
+                    round_text = self._render_text(self.font, self.round_manager.get_round_display(), COLOR_WHITE)
+                    self.screen.blit(round_text, (center_x - round_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
+                else:
+                    fight_text = self._render_text(self.font, "FIGHT!", COLOR_WHITE)
+                    self.screen.blit(fight_text, (center_x - fight_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
+            elif self.round_manager.game_state == GameState.ROUND_END:
+                result_text = self._render_text(self.font, self.round_manager.get_round_result_text(), COLOR_WHITE)
+                self.screen.blit(result_text, (center_x - result_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
+            elif self.round_manager.game_state == GameState.MATCH_END:
+                winner_text = self._render_text(self.font, self.round_manager.get_match_winner_text(), COLOR_WHITE)
+                self.screen.blit(winner_text, (center_x - winner_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
 
     def _render_continue_screen(self):
         """Render the continue/play again screen."""
@@ -315,60 +503,162 @@ class Game:
         self.screen.fill((20, 20, 20))
 
         # Match result
-        winner_text = self.font.render(self.round_manager.get_match_winner_text(), True, COLOR_WHITE)
+        winner_text = self._render_text(self.font, self.round_manager.get_match_winner_text(), COLOR_WHITE)
         self.screen.blit(winner_text, (SCREEN_WIDTH // 2 - winner_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
 
         # Play again prompt
-        play_again = self.font.render("Play Again?", True, COLOR_WHITE)
+        play_again = self._render_text(self.font, "Play Again?", COLOR_WHITE)
         self.screen.blit(play_again, (SCREEN_WIDTH // 2 - play_again.get_width() // 2, SCREEN_HEIGHT // 2))
 
         # Instructions
-        instructions = self.small_font.render("Press ENTER to continue", True, (150, 150, 150))
+        instructions = self._render_text(self.small_font, "Press ENTER to continue", (150, 150, 150))
         self.screen.blit(instructions, (SCREEN_WIDTH // 2 - instructions.get_width() // 2, SCREEN_HEIGHT // 2 + 40))
 
+    def _debug_lines(self, player) -> list:
+        """Build the per-player debug panel text from its numerical state."""
+        s = player.get_debug_state()
+        anim = s.get("anim", {}) or {}
+        spr = anim.get("sprite_number", anim.get("source", "-"))
+        return [
+            f"P{s['player']} {s.get('name', '')}",
+            f"state {s['state']} (f{s['state_frame']})",
+            f"anim {anim.get('animation', '-')}",
+            f"  frame {anim.get('frame_index', '-')}/{anim.get('total_frames', '-')}  spr={spr}",
+            f"pos {s['pos']} vel {s['vel']} {s['facing']}",
+            f"hp {s['health']}/{s['max_health']}  feet_y {s.get('feet_y', '-')}",
+            f"stun h{s['hitstun']} b{s['blockstun']} frz{s['hitfreeze']}",
+            f"grnd {s['grounded']} act {s['can_act']} inv {s['invincible']}",
+        ]
+
+    def _blit_debug_panel(self, lines, x, y, color):
+        """Draw a translucent debug panel of text lines at (x, y)."""
+        line_h = 18
+        w, h = 240, len(lines) * line_h + 8
+        bg = pygame.Surface((w, h))
+        bg.set_alpha(175)
+        bg.fill((0, 0, 0))
+        self.screen.blit(bg, (x - 4, y - 4))
+        for i, line in enumerate(lines):
+            self.screen.blit(self.small_font.render(line, True, color), (x, y + i * line_h))
+
     def _render_debug(self):
-        """Render debug information."""
-        if self.config.show_frame_data or SHOW_FRAME_DATA:
-            y_offset = SCREEN_HEIGHT - 120
+        """Render the live debug overlay (toggle with F1)."""
+        # Per-player state panels
+        self._blit_debug_panel(self._debug_lines(self.player1), 10, 44, COLOR_RED)
+        self._blit_debug_panel(self._debug_lines(self.player2), SCREEN_WIDTH - 240, 44, COLOR_BLUE)
 
-            # Show frame count
-            frame_text = self.small_font.render(f"Frame: {self.frame_count}", True, COLOR_WHITE)
-            self.screen.blit(frame_text, (10, y_offset))
+        # Frame counter + combo state
+        info = [f"frame {self.frame_count}  state {self.round_manager.game_state.name}"]
+        if hasattr(self.collision_system, 'get_combo_info'):
+            for pid, col in ((1, "P1"), (2, "P2")):
+                c = self.collision_system.get_combo_info(pid)
+                if c['active'] and c['count'] > 1:
+                    info.append(f"{col} combo {c['count']} hits / {c['damage']} dmg")
+        for i, line in enumerate(info):
+            self.screen.blit(self.small_font.render(line, True, COLOR_WHITE),
+                             (10, SCREEN_HEIGHT - 56 + i * 18))
 
-            # P1 State
-            p1_state = self.small_font.render(f"P1: {self.player1.state.name}", True, COLOR_RED)
-            self.screen.blit(p1_state, (10, y_offset + 20))
+        # Invariant status line (green OK / red last violation)
+        ok, last = self.diagnostics.last_status()
+        if ok:
+            inv_text, inv_color = "INV OK", (90, 220, 90)
+        else:
+            inv_text = f"INV {last.type} p{last.player} @f{last.frame}"
+            inv_color = (235, 80, 80)
+        self.screen.blit(self.small_font.render(inv_text, True, inv_color),
+                         (SCREEN_WIDTH - 240, SCREEN_HEIGHT - 56))
 
-            # P1 Position
-            p1_pos = self.small_font.render(f"   Pos: ({int(self.player1.x)}, {int(self.player1.y)})", True, COLOR_RED)
-            self.screen.blit(p1_pos, (10, y_offset + 40))
+        # Hotkey hint
+        hint = self._render_text(self.small_font, "F1 debug  F10 report  F11 clip  F12 snapshot", (150, 150, 150))
+        self.screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 18))
 
-            # P2 State
-            p2_state = self.small_font.render(f"P2: {self.player2.state.name}", True, COLOR_BLUE)
-            self.screen.blit(p2_state, (10, y_offset + 60))
+    def debug_state(self) -> dict:
+        """Full game numerical state for snapshots / crash reports / clips."""
+        return {
+            "frame": self.frame_count,
+            "game_state": self.round_manager.game_state.name,
+            "stage_floor": STAGE_FLOOR,
+            "screen": [SCREEN_WIDTH, SCREEN_HEIGHT],
+            "players": [self.player1.get_debug_state(), self.player2.get_debug_state()],
+        }
 
-            # P2 Position
-            p2_pos = self.small_font.render(f"   Pos: ({int(self.player2.x)}, {int(self.player2.y)})", True, COLOR_BLUE)
-            self.screen.blit(p2_pos, (10, y_offset + 80))
+    def save_debug_snapshot(self, out_dir="debug_snapshots", name=None):
+        """Dump the current frame as PNG + a JSON of full numerical state.
 
-            # Combo information (if SF3 collision system is active)
-            if hasattr(self.collision_system, 'get_combo_info'):
-                p1_combo = self.collision_system.get_combo_info(1)
-                p2_combo = self.collision_system.get_combo_info(2)
-                
-                if p1_combo['active'] and p1_combo['count'] > 1:
-                    combo_text = f"P1 COMBO: {p1_combo['count']} hits, {p1_combo['damage']} damage"
-                    combo_surface = self.small_font.render(combo_text, True, COLOR_RED)
-                    self.screen.blit(combo_surface, (10, y_offset + 100))
-                
-                if p2_combo['active'] and p2_combo['count'] > 1:
-                    combo_text = f"P2 COMBO: {p2_combo['count']} hits, {p2_combo['damage']} damage"
-                    combo_surface = self.small_font.render(combo_text, True, COLOR_BLUE)
-                    self.screen.blit(combo_surface, (10, y_offset + 120))
+        Hand both files to a collaborator/assistant to pinpoint a bug: the PNG
+        shows what's on screen, the JSON shows exactly which sprite each
+        character is drawing, positions, frames, health, stun, etc.
+        """
+        os.makedirs(out_dir, exist_ok=True)
+        base = os.path.join(out_dir, name or f"snapshot_{self.frame_count:06d}")
+        pygame.image.save(self.screen, base + ".png")
+        with open(base + ".json", "w") as f:
+            json.dump(self.debug_state(), f, indent=2)
+        log.info("Saved debug snapshot: %s.png + %s.json", base, base)
+        return base
 
-            # Controls reminder
-            controls = self.small_font.render("P1: WASD + JKLUIO | P2: Arrows + NumPad", True, (150, 150, 150))
-            self.screen.blit(controls, (SCREEN_WIDTH // 2 - controls.get_width() // 2, SCREEN_HEIGHT - 20))
+    def save_clip(self, out_dir=None, frames=240):
+        """Dump the last N frames of recorded state as a timeline (F11).
+
+        Captures a *dynamic* issue (a hitch, a bad pose during a move) instead
+        of a single instant. Returns the clip directory.
+        """
+        out_dir = out_dir or os.path.join("debug_snapshots", f"clip_{self.frame_count:06d}")
+        os.makedirs(out_dir, exist_ok=True)
+        timeline = self.recorder.recent(frames)
+        with open(os.path.join(out_dir, "frames.json"), "w") as f:
+            json.dump(timeline, f, indent=2)
+        self.save_debug_snapshot(out_dir=out_dir, name="current")
+        # short human summary of the window
+        states = {1: set(), 2: set()}
+        for fr in timeline:
+            for p in fr["players"]:
+                states[p["player"]].add(p["state"])
+        lines = [f"# Clip @frame {self.frame_count}", "",
+                 f"- frames captured: {len(timeline)} "
+                 f"({timeline[0]['frame'] if timeline else '-'}–{self.frame_count})",
+                 f"- P1 states: {', '.join(sorted(states[1]))}",
+                 f"- P2 states: {', '.join(sorted(states[2]))}",
+                 "", "See `frames.json` for the per-frame timeline and `current.png`."]
+        with open(os.path.join(out_dir, "summary.md"), "w") as f:
+            f.write("\n".join(lines))
+        log.info("Saved clip: %s", out_dir)
+        return out_dir
+
+    def build_issue_report(self):
+        """Bundle a pasteable issue report (F10): snapshot + violations + clip.
+
+        Everything an assistant needs to act on a gameplay issue in one folder.
+        """
+        out_dir = os.path.join("debug_snapshots", f"report_{self.frame_count:06d}")
+        os.makedirs(out_dir, exist_ok=True)
+        self.save_debug_snapshot(out_dir=out_dir, name="snapshot")
+        self.save_clip(out_dir=out_dir)
+        violations = [v.as_dict() for v in self.diagnostics.recent(40)]
+        with open(os.path.join(out_dir, "violations.json"), "w") as f:
+            json.dump(violations, f, indent=2)
+
+        s1, s2 = self.player1.get_debug_state(), self.player2.get_debug_state()
+        md = [f"# Issue report @frame {self.frame_count}", "",
+              f"- game state: `{self.round_manager.game_state.name}`", ""]
+        md.append("## Players")
+        for s in (s1, s2):
+            anim = s.get("anim", {})
+            md.append(f"- **P{s['player']} {s.get('name','')}** — state `{s['state']}` "
+                      f"(f{s['state_frame']}), pos {s['pos']}, hp {s['health']}/{s['max_health']}, "
+                      f"anim `{anim.get('animation')}` spr `{anim.get('sprite_number', anim.get('source'))}`"
+                      + (", **MISSING ART**" if s.get("rendering_fallback") else ""))
+        md += ["", "## Recent invariant violations"]
+        if violations:
+            md += [f"- f{v['frame']} `{v['type']}` p{v['player']} {v['values']}" for v in violations[-15:]]
+        else:
+            md.append("- none flagged")
+        md += ["", "## Files", "- `snapshot.png` / `snapshot.json` — this frame",
+               "- `frames.json` — recent timeline · `violations.json` — full list"]
+        with open(os.path.join(out_dir, "report.md"), "w") as f:
+            f.write("\n".join(md))
+        log.info("Saved issue report: %s", out_dir)
+        return out_dir
 
     def _get_parry_inputs_for_player(self, player_num: int) -> Dict[str, bool]:
         """Convert input system state to parry input format for a player"""
@@ -394,37 +684,31 @@ class Game:
     def reset_positions(self):
         """Reset character positions to starting positions (training mode)."""
         from street_fighter_3rd.data.enums import CharacterState
-        
-        self.player1.x = 200
+
+        self.player1.x = P1_START_X
         self.player1.y = STAGE_FLOOR
         self.player1.velocity_x = 0
         self.player1.velocity_y = 0
         self.player1._transition_to_state(CharacterState.STANDING)
-        
-        self.player2.x = 440
+
+        self.player2.x = P2_START_X
         self.player2.y = STAGE_FLOOR
         self.player2.velocity_x = 0
         self.player2.velocity_y = 0
         self.player2._transition_to_state(CharacterState.STANDING)
-        
-        print("Positions reset")
+
+        log.info("Positions reset")
 
     def reset_health(self):
-        """Reset both players' health to maximum (training mode)."""
-        if self.config.infinite_health:
-            self.player1.health = self.player1.max_health if hasattr(self.player1, 'max_health') else MAX_HEALTH
-            self.player2.health = self.player2.max_health if hasattr(self.player2, 'max_health') else MAX_HEALTH
-            print("Health reset")
+        """Reset both players' health to maximum (training/dev hotkey)."""
+        self.player1.health = self.player1.max_health
+        self.player2.health = self.player2.max_health
+        self.p1_ghost_health = self.player1.health
+        self.p2_ghost_health = self.player2.health
+        log.info("Health reset")
 
     def _apply_infinite_health(self):
         """Apply infinite health if enabled."""
         if self.config.infinite_health:
-            # Store original health values if not already stored
-            if not hasattr(self.player1, 'max_health'):
-                self.player1.max_health = self.player1.health
-            if not hasattr(self.player2, 'max_health'):
-                self.player2.max_health = self.player2.health
-                
-            # Keep health at maximum
             self.player1.health = self.player1.max_health
             self.player2.health = self.player2.max_health
