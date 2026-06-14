@@ -2,17 +2,17 @@
 Provenance gate — enforces the prime directive: we do NOT make up data.
 
 Every move in the canonical frames.yaml must declare provenance. Moves that are still
-`unverified` (hand-authored placeholders pending real Baston transcription) are allowed
-ONLY while listed in UNVERIFIED_BACKLOG below. Adding a new unverified move without
-listing it here fails this test — so fabricated data can never enter silently. As moves
-are verified against Baston, delete them from the backlog; the list only shrinks.
+`unverified` (hand-authored placeholders pending real data) are allowed ONLY while listed
+in UNVERIFIED_BACKLOG below. Adding a new unverified move without listing it here fails
+this test — so fabricated data can never enter silently. As moves are verified against the
+real data source, delete them from the backlog; the list only shrinks.
 """
 
 import pytest
 
 from street_fighter_3rd.data.frame_data_loader import get_character_frames
 
-# Move keys still on hand-authored placeholders, pending Baston verification (Phase 3).
+# Move keys still on hand-authored placeholders, pending verification against real data.
 # THIS LIST MUST ONLY SHRINK. Do not add to it.
 UNVERIFIED_BACKLOG = {
     "light_punch", "medium_punch", "heavy_punch",
@@ -38,7 +38,7 @@ def test_no_unlisted_unverified_moves():
     rogue = unverified - UNVERIFIED_BACKLOG
     assert not rogue, (
         f"Made-up/unverified moves not tracked in UNVERIFIED_BACKLOG: {sorted(rogue)}. "
-        "Either verify them against Baston or add them to the backlog (which must only shrink)."
+        "Either verify them against the real data source or add them to the backlog (which must only shrink)."
     )
 
 

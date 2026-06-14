@@ -5,9 +5,9 @@
 # Right now ALL of these are status: unverified — they were migrated verbatim from
 # the hand-authored placeholders in the old data/akuma_hitboxes.py and are NOT
 # confirmed against the game. They must be replaced, move by move, with VERIFIED
-# numbers transcribed from Baston/esn3s (http://ensabahnur.free.fr/BastonNew/,
-# iChar=14) via scripts/baston_to_yaml.py, then visually confirmed in the hitbox
-# viewer. See ARCHITECTURE.md and tests/test_data_provenance.py.
+# numbers from the real game data source, each tagged provenance.status: verified
+# with its source, then visually confirmed in the hitbox viewer (sf3-viewer).
+# See ARCHITECTURE.md and tests/test_data_provenance.py.
 #
 # Coordinates are PIXELS relative to the facing-forward character origin (feet):
 #   offset_x: + = forward    offset_y: - = up from ground, + = down
@@ -30,8 +30,6 @@ moves:
     hit_effect: NORMAL
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [5, 6, 7]
@@ -53,8 +51,6 @@ moves:
     hit_effect: NORMAL
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [6, 7, 8, 9]
@@ -76,8 +72,6 @@ moves:
     hit_effect: JUGGLE
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [5, 6, 7, 8]
@@ -99,8 +93,6 @@ moves:
     hit_effect: NORMAL
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [5, 6, 7, 8]
@@ -122,8 +114,6 @@ moves:
     hit_effect: NORMAL
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [6, 7, 8, 9, 10]
@@ -145,8 +135,6 @@ moves:
     hit_effect: NORMAL
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [6, 7, 8, 9, 10]
@@ -168,8 +156,6 @@ moves:
     hit_effect: KNOCKDOWN
     provenance:
       status: unverified
-      ichar: 14
-      move_type: fd_normals
       note: "Migrated from data/akuma_hitboxes.py (hand-authored placeholder)."
     hitboxes:
       - frames: [8, 9, 10, 11, 12]

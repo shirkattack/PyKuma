@@ -4,7 +4,7 @@ Frame-step hitbox viewer — the data-verification tool.
 Pick a move, step it frame-by-frame, and see the hitboxes/hurtboxes from the canonical
 loader (data/frame_data_loader.py) drawn over Akuma's sprite, alongside a data panel and
 the move's PROVENANCE tag. This is how unverified placeholder boxes get visually confirmed
-against the game and flipped to `verified` (see scripts/baston_to_yaml.py, Phase 3).
+against the game and flipped to `verified` once real data is ingested.
 
 Boxes are anchored to the sprite's FEET line (character.y + feet_offset), which is where the
 box coordinate system's "ground" sits — so correct data lands on the limb. The viewer reads
@@ -48,7 +48,7 @@ class _MoveEntry:
     on_block: int
     provenance_status: str
     provenance_source: Optional[str]
-    provenance_imove: Optional[int]
+    provenance_ref: Optional[str]
 
     @property
     def total_frames(self) -> int:
@@ -73,7 +73,7 @@ def _load_move_entries(character: str = "akuma") -> List[_MoveEntry]:
             on_hit=mf.on_hit, on_block=mf.on_block,
             provenance_status=mf.provenance.status,
             provenance_source=mf.provenance.source,
-            provenance_imove=mf.provenance.imove,
+            provenance_ref=mf.provenance.ref,
         ))
     return entries
 
@@ -153,8 +153,8 @@ class HitboxViewer:
         m = self.current
         if m.provenance_status == "verified":
             tag = "VERIFIED ✓"
-            if m.provenance_imove is not None:
-                tag += f" (Baston iMove={m.provenance_imove})"
+            if m.provenance_ref:
+                tag += f" ({m.provenance_ref})"
             return tag
         if m.provenance_status == "derived":
             return "DERIVED (computed)"

@@ -461,7 +461,7 @@ class SF3GameConfig(BaseModel):
 # Canonical frame-data schema (the single source of truth for hitbox/hurtbox)
 #
 # PRIME DIRECTIVE: we do NOT make up data. Every move MUST declare `provenance`:
-#   verified   = transcribed from the game's actual hitbox data (Baston/esn3s)
+#   verified   = transcribed from the real game data source (must cite a source)
 #   unverified = hand-authored placeholder, pending verification
 #   derived    = computed from another verified move (must name `derived_from`)
 # Enforced by: the required `provenance` field below, the loader's boot-time
@@ -476,11 +476,9 @@ _STATE_NAMES = {m.name for m in CharacterState}
 class Provenance(BaseModel):
     """Where a move's numbers came from. No move may omit this."""
     status: Literal["verified", "unverified", "derived"]
-    source: Optional[str] = None        # Baston URL the boxes were read from
-    ichar: Optional[int] = None         # Baston character id (Akuma/Gouki = 14)
-    imove: Optional[int] = None         # Baston iMove
-    move_type: Optional[str] = None     # fd_normals / fd_specials / fd_supers
-    scraped: Optional[str] = None       # ISO date the data was pulled
+    source: Optional[str] = None        # where the boxes were read from (URL/citation)
+    ref: Optional[str] = None           # optional source-specific id (move ref, page, etc.)
+    scraped: Optional[str] = None       # ISO date the data was captured
     derived_from: Optional[str] = None  # move key, required when status == derived
     note: Optional[str] = None
 

@@ -64,7 +64,7 @@ nothing constructs Ken yet; both players are Akuma (`core/game.py`).
 ## Frame data — canonical source & the no-made-up-data rule
 
 **PRIME DIRECTIVE: we do NOT make up hitbox/frame data. Every value must be
-referenced from the game (Baston/esn3s).** This is enforced in code, not just by
+referenced from the real game data.** This is enforced in code, not just by
 convention — see the five enforcement points below.
 
 - **Canonical source of truth:** `data/characters/<char>/frames.yaml` (one file per
@@ -72,17 +72,17 @@ convention — see the five enforcement points below.
   by `data/frame_data_loader.py`. The collision adapter reads **only** the loader
   (`get_hitboxes` / `get_hurtboxes` / `get_move_frame_data`).
 - **Provenance is mandatory.** Every move declares `provenance.status` —
-  `verified` (transcribed from Baston), `unverified` (hand-authored placeholder), or
-  `derived` (computed from a verified move). The field has no default; a move cannot
-  be defined without it.
+  `verified` (transcribed from real game data, must cite a `source`), `unverified`
+  (hand-authored placeholder), or `derived` (computed from a verified move). The field
+  has no default; a move cannot be defined without it.
 - **Enforcement (5 points):** (1) the required `provenance` schema field; (2) the
   loader's boot-time `VERIFIED/UNVERIFIED` log; (3) `tests/test_data_provenance.py`,
   which fails on any unverified move not in its shrinking `UNVERIFIED_BACKLOG`;
   (4) the hitbox viewer shows each move's tag on screen; (5) quarantined fabricated
   files live in `attic/` so nothing reads them by accident.
-- **Pipeline:** real numbers come from Baston via `scripts/baston_to_yaml.py`
-  (Phase 3), then get visually confirmed in the hitbox viewer before flipping to
-  `verified`.
+- **Verification:** once real numbers are ingested into `frames.yaml` (tagged
+  `verified` with a `source`), confirm each move visually in the hitbox viewer
+  (`sf3-viewer`) and remove it from `UNVERIFIED_BACKLOG`.
 
 Quarantined (do not use): `attic/data/akuma_hitboxes.py` and
 `attic/data/characters/akuma/sf3_authentic_frame_data.yaml` were hand-approximated
