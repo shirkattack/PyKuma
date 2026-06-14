@@ -652,6 +652,12 @@ class Character:
         Args:
             opponent: The opposing character
         """
+        # Pushboxes are ground-only: an airborne character passes over/through the
+        # other so you can jump over opponents (and cross up). Only separate when
+        # BOTH are grounded.
+        if not self.is_grounded or not opponent.is_grounded:
+            return
+
         # Calculate distance between characters
         distance = abs(self.x - opponent.x)
         min_distance = (self.hitbox_width + opponent.hitbox_width) / 2

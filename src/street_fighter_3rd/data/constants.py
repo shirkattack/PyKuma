@@ -51,7 +51,7 @@ COMBO_SCALING_FACTOR = 0.9  # Each hit does 90% of previous
 MIN_DAMAGE_SCALING = 0.1  # Minimum 10% damage
 
 # Health and meter
-MAX_HEALTH = 160  # SF3 standard (varies by character)
+MAX_HEALTH = 1050  # SF3 vitality scale (matches the Baston damage values, e.g. MP=115 ~ 11%)
 MAX_SUPER_METER = 100
 SUPER_METER_GAIN_ON_HIT = 5
 SUPER_METER_GAIN_ON_BLOCK = 2
