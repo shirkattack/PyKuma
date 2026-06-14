@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "purpose": "Per-move vulnerability (v_hb) hurtbox extensions for Akuma's active frames - the limb that becomes hittable during a move. These are NOT in the 3rd_training_lua ROM dump (only idle/wakeup carry vulnerability boxes), so they are sourced from Baston ESN3S per-move dumps as an interim until tools/rom_extract/ backfills authoritative per-frame data from the ROM.",
+    "source": "Baston ESN3S (ensabahnur.free.fr, iChar=14 fd_normals)",
+    "status": "baston",
+    "box_format": "raw {left,width,height,bottom} (same convention as the ROM JSON); converted centered, applied to every active frame of the move",
+    "coverage": "interim seed for st.LP/st.LK/st.MK; remaining moves pending ROM extraction"
+  },
+
+  "LIGHT_PUNCH": {
+    "status": "baston", "rom_id": "baston",
+    "boxes": [ { "left": -54, "width": 22, "height": 18, "bottom": 84 } ]
+  },
+  "LIGHT_KICK": {
+    "status": "baston", "rom_id": "baston",
+    "boxes": [ { "left": -64, "width": 38, "height": 34, "bottom": 20 } ]
+  },
+  "MEDIUM_KICK": {
+    "status": "baston", "rom_id": "baston",
+    "boxes": [ { "left": -62, "width": 32, "height": 32, "bottom": 44 } ]
+  }
+}

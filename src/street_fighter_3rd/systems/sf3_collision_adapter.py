@@ -229,7 +229,7 @@ class SF3CollisionAdapter:
 
         # Try to get hitboxes from akuma_hitboxes.py
         akuma_attack_hitboxes = get_akuma_hitboxes(character.state, frame_number)
-        akuma_hurtboxes = get_akuma_hurtboxes(character.state)
+        akuma_hurtboxes = get_akuma_hurtboxes(character.state, frame_number)
 
         # Attack-box provenance: geometry is ROM-verified, but if the move's
         # NAME is only inferred, surface that as the box status so the debug
@@ -358,8 +358,9 @@ class SF3CollisionAdapter:
         """Get hurtboxes from character using frame data"""
         hurtboxes = []
 
-        # Try to get hurtboxes from akuma_hitboxes.py
-        akuma_hurtboxes = get_akuma_hurtboxes(character.state)
+        # Try to get hurtboxes from akuma_hitboxes.py (base + per-frame v_hb)
+        frame_number = (character.state_frame if hasattr(character, 'state_frame') else 0) + 1
+        akuma_hurtboxes = get_akuma_hurtboxes(character.state, frame_number)
         if akuma_hurtboxes:
             for hurtbox_frame in akuma_hurtboxes:
                 # Create rectangle in world coordinates

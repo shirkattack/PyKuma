@@ -67,8 +67,11 @@ A box is four numbers. The two sources order them differently but mean the same 
 
 > **Nuance:** an attacking move records (almost) only its **attack** boxes. The hurtbox
 > is the **shared base body hurtbox** (`p_hb`, taken from `idle`) — *plus* any move-specific
-> **`v_hb`** extensions on active frames. We currently extract the base hurtbox from `idle`
-> and the per-move attack boxes; **per-move `v_hb` extensions are a TODO** (§7).
+> **`v_hb`** extensions on active frames. The pipeline now supports per-move `v_hb`
+> (`frames[].vulnerability[]` → repository → `get_akuma_hurtboxes(state, frame)` layering →
+> collision + viewer in magenta). **The ROM dump omits per-move `v_hb`** (only `idle`/`wakeup`),
+> so st.LP/st.LK/st.MK are seeded from Baston (`data/characters/akuma/vhb_supplement.json`,
+> status `baston`) until the ROM extractor backfills the rest — see `tools/rom_extract/README.md`.
 > **Invincibility is NOT derivable from a missing hurtbox** — a move with no recorded hurtbox
 > just didn't record one. Invincible frames come from frame-data notes, not the box data.
 
@@ -238,7 +241,8 @@ Not needed for the current frame-data work; useful for an input-display / valida
 1. ~~Fix `SF3Hitbox.get_rect` facing + centering (§6) + regression test.~~ ✅ **Done** (`anchor` field + `tests/test_hitbox_geometry.py`).
 2. ~~Resolve remaining move names~~ ✅ **Done** — all 7 verified (§7), st.MP/LK/MK via Baston
    cross-match. Minor caveat: HEAVY_KICK uses Close HK (`1b08`); far st.HK not separately named.
-3. **Capture per-move `v_hb`** vulnerability extensions, layered on the base hurtbox (§3).
+3. ~~Capture per-move `v_hb`~~ — pipeline + viewer done; LP/LK/MK seeded from Baston. **Remaining:**
+   run `tools/rom_extract/` to backfill authoritative per-move `v_hb` for all moves from the ROM.
 4. **Invincibility** from frame-data notes (not missing hurtbox).
 5. Optional: live emulator memory-reader (§8) to auto-validate boxes/inputs.
 

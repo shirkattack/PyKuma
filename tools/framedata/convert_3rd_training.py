@@ -219,8 +219,24 @@ def load_combat(combat_path):
     return out
 
 
-def build_move(rom_id, entry, names, combat):
+def load_vhb_supplement(path):
+    """Return {state: {"status", "rom_id", "boxes": [raw box dicts]}}.
+
+    Per-move *vulnerability* boxes (a limb that becomes hittable during a move)
+    are NOT in the 3rd_training_lua ROM dump (only idle has them). This optional
+    supplement carries Baston-sourced v_hb until the ROM-extraction step
+    (tools/rom_extract/) backfills them; raw boxes use the same {left,width,
+    height,bottom} convention as the ROM JSON.
+    """
+    if not path or not Path(path).exists():
+        return {}
+    data = json.loads(Path(path).read_text())
+    return {k: v for k, v in data.items() if not k.startswith("_")}
+
+
+def build_move(rom_id, entry, names, combat, vhb=None):
     """Build one move record dict, or None if it has no attack frames."""
+    vhb = vhb or {}
     frames = entry.get("frames", [])
     timing = compute_timing(frames)
     if timing is None:
@@ -228,18 +244,40 @@ def build_move(rom_id, entry, names, combat):
 
     active = _active_indices(frames)
     name_info = names.get(rom_id)
+    state = name_info["state"] if name_info else None
+
+    # Per-move vulnerability extension boxes (centered), applied to every active
+    # frame: from the ROM JSON if present, else from the Baston supplement.
+    supp = vhb.get(state) if state else None
+    supp_template = []
+    if supp:
+        for b in supp.get("boxes", []):
+            c = convert_box(b, centered=True)
+            c["status"] = supp.get("status", "baston")
+            c["rom_id"] = supp.get("rom_id", "baston")
+            supp_template.append(c)
 
     out_frames = []
     for idx in active:
         attack_boxes = []
+        vuln_boxes = []
         for b in frames[idx].get("boxes", []):
-            if b["type"] != "attack":
-                continue
-            conv = convert_box(b, centered=False)
-            conv["status"] = "verified"
-            conv["rom_id"] = rom_id
-            attack_boxes.append(conv)
-        out_frames.append({"frame": idx + 1, "attack": attack_boxes})
+            if b["type"] == "attack":
+                conv = convert_box(b, centered=False)
+                conv["status"] = "verified"
+                conv["rom_id"] = rom_id
+                attack_boxes.append(conv)
+            elif b["type"] == "vulnerability":
+                conv = convert_box(b, centered=True)
+                conv["status"] = "verified"
+                conv["rom_id"] = rom_id
+                vuln_boxes.append(conv)
+        # Supplement applies to all active frames; copy so YAML emits no anchors.
+        vuln_boxes.extend(dict(b) for b in supp_template)
+        frame_rec = {"frame": idx + 1, "attack": attack_boxes}
+        if vuln_boxes:
+            frame_rec["vulnerability"] = vuln_boxes
+        out_frames.append(frame_rec)
 
     record = {
         "rom_id": rom_id,
@@ -269,7 +307,7 @@ def build_move(rom_id, entry, names, combat):
     return record
 
 
-def build_document(source_json, name, names, combat):
+def build_document(source_json, name, names, combat, vhb=None):
     data = json.loads(Path(source_json).read_text())
 
     pushbox, throwbox, base_hurtbox = extract_base_boxes(data["idle"])
@@ -287,7 +325,7 @@ def build_document(source_json, name, names, combat):
             continue
         if not isinstance(entry, dict) or "frames" not in entry:
             continue
-        rec = build_move(rom_id, entry, names, combat)
+        rec = build_move(rom_id, entry, names, combat, vhb)
         if rec is not None:
             moves[rom_id] = rec
 
@@ -347,17 +385,22 @@ def main(argv=None):
                              "data/characters/<name>/sf3_authentic_frame_data.yaml)")
     parser.add_argument("--out", default=None,
                         help="output yaml (default: data/characters/<name>/hitboxes.yaml)")
+    parser.add_argument("--vhb", default=None,
+                        help="per-move vulnerability supplement json (default: "
+                             "data/characters/<name>/vhb_supplement.json if present)")
     args = parser.parse_args(argv)
 
     char_dir = Path("data/characters") / args.name
     names_path = args.names or (char_dir / "move_names.json")
     combat_path = args.combat or (char_dir / "sf3_authentic_frame_data.yaml")
     out_path = args.out or (char_dir / "hitboxes.yaml")
+    vhb_path = args.vhb or (char_dir / "vhb_supplement.json")
 
     names = load_names(names_path)
     combat = load_combat(combat_path)
+    vhb = load_vhb_supplement(vhb_path)
 
-    doc = build_document(args.source, args.name, names, combat)
+    doc = build_document(args.source, args.name, names, combat, vhb)
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     n_moves = len(doc["moves"])
     dump_yaml(doc, out_path)
