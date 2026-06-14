@@ -52,7 +52,7 @@ class PlayerInput:
 
         # Joystick
         self.joystick: Optional[pygame.joystick.Joystick] = None
-        self.joystick_deadzone = 0.5  # For analog sticks
+        self.joystick_deadzone = 0.3  # For analog sticks (lower = diagonals register more easily)
 
         # Frame number of the motion start input last consumed, per motion name.
         # A matched motion is "used up": the same buffered directions can't
@@ -309,8 +309,11 @@ class PlayerInput:
                 except (pygame.error, IndexError):
                     continue
 
-            # If no button directions, check analog stick and hat
-            if not (up or down or left or right):
+            # Always OR-combine analog stick + D-pad with the button directions,
+            # so diagonals from any/mixed input source register reliably. (The
+            # old code skipped analog/hat whenever a direction button was set,
+            # which dropped jump-diagonals and the down-forward of a QCF.)
+            if True:
                 # Check analog stick
                 try:
                     if self.joystick.get_numaxes() >= 2:
@@ -325,12 +328,16 @@ class PlayerInput:
                         #         print(f"Analog stick: X={x_axis:.2f}, Y={y_axis:.2f}")
                         #         self._last_analog_values = (x_axis, y_axis)
 
-                        if abs(x_axis) > self.joystick_deadzone:
-                            right = x_axis > 0
-                            left = x_axis < 0
-                        if abs(y_axis) > self.joystick_deadzone:
-                            down = y_axis > 0
-                            up = y_axis < 0
+                        # OR-combine: only ever SET a direction True, never clear
+                        # one another source already set (preserves diagonals).
+                        if x_axis > self.joystick_deadzone:
+                            right = True
+                        elif x_axis < -self.joystick_deadzone:
+                            left = True
+                        if y_axis > self.joystick_deadzone:
+                            down = True
+                        elif y_axis < -self.joystick_deadzone:
+                            up = True
                 except (pygame.error, IndexError):
                     pass
 
@@ -345,12 +352,14 @@ class PlayerInput:
                         #     if hat != self._last_hat_value:
                         #         print(f"D-pad/Hat: {hat}")
                         #         self._last_hat_value = hat
-                        if hat[0] != 0:
-                            right = hat[0] > 0
-                            left = hat[0] < 0
-                        if hat[1] != 0:
-                            up = hat[1] > 0
-                            down = hat[1] < 0
+                        if hat[0] > 0:
+                            right = True
+                        elif hat[0] < 0:
+                            left = True
+                        if hat[1] > 0:
+                            up = True
+                        elif hat[1] < 0:
+                            down = True
                 except (pygame.error, IndexError):
                     pass
 

@@ -19,7 +19,7 @@ DASH_SPEED = 6.0
 
 # Input system
 INPUT_BUFFER_SIZE = 60  # Store last 60 frames (1 second at 60 FPS)
-MOTION_INPUT_WINDOW = 12  # Frames to complete a motion input (e.g., 236P)
+MOTION_INPUT_WINDOW = 16  # Frames to complete a motion input (e.g., 236P) - slightly lenient for pad/keyboard
 NEGATIVE_EDGE_ENABLED = True  # Allow specials on button release
 
 # Parry system (SF3 specific)
