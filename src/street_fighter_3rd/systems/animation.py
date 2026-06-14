@@ -3,12 +3,23 @@
 import logging
 import os
 import pygame
+from pathlib import Path
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 
 from street_fighter_3rd.util.logging_config import get_logger, log_once
 
 log = get_logger(__name__)
+
+# Repo root: src/street_fighter_3rd/systems/animation.py -> parents[3].
+# Asset paths (e.g. "tools/sprite_extraction/...") are stored repo-relative, so
+# resolve them against the repo root to stay independent of the working dir.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _resolve_asset(path: str) -> str:
+    """Make a repo-relative asset path absolute (CWD-independent)."""
+    return path if os.path.isabs(path) else str(_REPO_ROOT / path)
 
 
 @dataclass
@@ -183,8 +194,8 @@ class SpriteManager:
         if cache_key in self.sprite_cache:
             return self.sprite_cache[cache_key]
 
-        # Load from file
-        sprite_path = os.path.join(self.sprite_directory, f"{sprite_number}.png")
+        # Load from file (resolve repo-relative path so CWD doesn't matter)
+        sprite_path = _resolve_asset(os.path.join(self.sprite_directory, f"{sprite_number}.png"))
 
         if not os.path.exists(sprite_path):
             log_once(log, ("sprite_miss", sprite_path), logging.WARNING, "Sprite %s.png not found at %s", sprite_number, sprite_path)
@@ -238,8 +249,8 @@ class SpriteManager:
         if cache_key in self.sprite_cache:
             return self.sprite_cache[cache_key]
 
-        # Load from file
-        sprite_path = os.path.join(folder_path, f"frame_{frame_index:03d}.png")
+        # Load from file (resolve repo-relative path so CWD doesn't matter)
+        sprite_path = _resolve_asset(os.path.join(folder_path, f"frame_{frame_index:03d}.png"))
 
         if not os.path.exists(sprite_path):
             log_once(log, ("sprite_miss", sprite_path), logging.WARNING, "Frame %s not found at %s", frame_index, sprite_path)
