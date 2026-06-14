@@ -85,9 +85,12 @@ class Game:
         self.vfx_manager = VFXManager()
         self.round_manager = RoundManager()
 
-        # Load stage background
+        # Load stage background. Resolve against the repo root so it loads no
+        # matter the working directory the game is launched from.
+        from pathlib import Path
+        stage_path = Path(__file__).resolve().parents[3] / "assets" / "stages" / "ryu-stage.gif"
         try:
-            self.stage_background = pygame.image.load("assets/stages/ryu-stage.gif").convert()
+            self.stage_background = pygame.image.load(str(stage_path)).convert()
         except (pygame.error, OSError, FileNotFoundError) as e:
             log_once(log, ("stage_load",), logging.WARNING, "Could not load stage background: %s", e)
             self.stage_background = None
