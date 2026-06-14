@@ -89,7 +89,7 @@ def test_take_damage_respects_hit_effect():
     a = Akuma(200, STAGE_FLOOR, 1)
     a.take_damage(10, 16, HitEffect.KNOCKDOWN)
     assert a.state == CharacterState.KNOCKDOWN
-    assert a.health == 135
+    assert a.health == a.max_health - 10
 
 
 def test_reaction_animations_resolve():

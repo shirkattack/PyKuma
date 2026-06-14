@@ -23,7 +23,7 @@ def test_akuma_creation():
 
     assert akuma.name == "Akuma"
     assert akuma.player_number == 1
-    assert akuma.max_health == 145, "Akuma's SF3 max health is 145"
+    assert akuma.max_health == 1050, "Akuma vitality is on the Baston damage scale (1050)"
     assert akuma.health == akuma.max_health, "Akuma must start at full health"
 
     # Single animation path: the controller exists and resolves a stance sprite
