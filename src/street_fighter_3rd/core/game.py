@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from collections import deque
 import pygame
 from typing import Dict
 
@@ -33,6 +34,18 @@ from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
 # Round-start positions
 P1_START_X = 200
 P2_START_X = 440
+
+# Input-display glyphs. Directions are facing-relative (FORWARD = toward the
+# opponent), keyed by InputDirection numpad value.
+_DIR_GLYPHS = {
+    8: "↑", 9: "↗", 6: "→", 3: "↘",
+    2: "↓", 1: "↙", 4: "←", 7: "↖", 5: "·",
+}
+# Short labels for held attack buttons, in canonical LP..HK order.
+_BUTTON_LABELS = [
+    ("LIGHT_PUNCH", "LP"), ("MEDIUM_PUNCH", "MP"), ("HEAVY_PUNCH", "HP"),
+    ("LIGHT_KICK", "LK"), ("MEDIUM_KICK", "MK"), ("HEAVY_KICK", "HK"),
+]
 
 
 class Game:
@@ -126,6 +139,12 @@ class Game:
             f"{self.player2.name.upper()} - P2", True, COLOR_WHITE)
         self.controls_label = self.small_font.render(
             "P1: WASD + JKLUIO | P2: Arrows + NumPad", True, (150, 150, 150))
+
+        # --- Training display state (rendered by _render_training_overlays) ---
+        # Floating damage numbers: each is {x, y, amount, age, player}.
+        self._damage_popups: list = []
+        # Rolling log of recent damage events for the F10 issue report.
+        self._recent_damage: deque = deque(maxlen=8)
 
     def _render_text(self, font: pygame.font.Font, text: str, color) -> pygame.Surface:
         """Render text through a cache so repeated frames don't re-render."""
@@ -227,6 +246,11 @@ class Game:
         # Note when damage was last dealt (either player lost health this frame)
         if p1.health < self._prev_p1_health or p2.health < self._prev_p2_health:
             self.last_damage_frame = self.frame_count
+        # Spawn a floating damage number for each player that lost health.
+        if p1.health < self._prev_p1_health:
+            self._on_damage(p1, self._prev_p1_health - p1.health)
+        if p2.health < self._prev_p2_health:
+            self._on_damage(p2, self._prev_p2_health - p2.health)
 
         # Training mode: after a no-damage lull, regenerate both to full
         if self.config.regen_after_idle:
@@ -241,6 +265,9 @@ class Game:
         self._prev_p1_health = p1.health
         self._prev_p2_health = p2.health
 
+        # Age + retire floating damage numbers.
+        self._update_damage_popups()
+
         # Ghost/chip layer: snaps UP instantly on heal, eases DOWN to meet
         # current health over ~0.3s so damage reads as a draining chip.
         self.p1_ghost_health = self._ease_ghost(self.p1_ghost_health, p1.health)
@@ -253,6 +280,38 @@ class Game:
             return actual
         # ease out, with a minimum step so it always finishes promptly
         return max(actual, ghost - max(1.0, (ghost - actual) * 0.25))
+
+    # Frames a floating damage number lives before it fades out.
+    DAMAGE_POPUP_LIFETIME = 48
+
+    def _on_damage(self, player, amount: float):
+        """Record a health-loss event: spawn a floating number + log it (F10)."""
+        amount = int(round(amount))
+        if amount <= 0:
+            return
+        # Anchor above the damaged character's head; it rises as it ages.
+        self._damage_popups.append({
+            "x": float(player.x),
+            "y": float(player.y) - 110.0,
+            "amount": amount,
+            "age": 0,
+            "player": player.player_number,
+        })
+        self._recent_damage.append({
+            "frame": self.frame_count,
+            "player": player.player_number,
+            "amount": amount,
+        })
+
+    def _update_damage_popups(self):
+        """Rise + age floating damage numbers, retiring expired ones."""
+        for p in self._damage_popups:
+            p["age"] += 1
+            p["y"] -= 0.8  # drift upward
+        self._damage_popups = [
+            p for p in self._damage_popups
+            if p["age"] < self.DAMAGE_POPUP_LIFETIME
+        ]
 
     def _update_pre_round(self):
         """Update pre-round state (characters frozen)."""
@@ -344,6 +403,12 @@ class Game:
                 self._render_fight()
             elif state == GameState.CONTINUE_SCREEN:
                 self._render_continue_screen()
+
+        # Training/dev diagnostic overlays (inputs, damage, frame data) on the
+        # real, un-shaken screen so they never jitter. Each sub-display is gated
+        # on its own mode-config flag.
+        if fight_state:
+            self._render_training_overlays()
 
         # Render debug info (on the real, un-shaken screen)
         if self.debug_display:
@@ -575,6 +640,147 @@ class Game:
         hint = self._render_text(self.small_font, "F1 debug  F10 report  F11 clip  F12 snapshot", (150, 150, 150))
         self.screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 18))
 
+    # -- training/dev display layer ---------------------------------------
+
+    def _render_training_overlays(self):
+        """Draw the mode-gated training diagnostics: input history, floating
+        damage numbers, combo counter, and the per-move frame-data strip."""
+        cfg = self.config
+        if cfg.show_input_display:
+            self._render_input_display(self.input_system.player1, side="left")
+            self._render_input_display(self.input_system.player2, side="right")
+        if cfg.show_damage_numbers:
+            self._render_damage_popups()
+        if cfg.show_combo_counter:
+            self._render_combo_counters()
+        if cfg.show_frame_data:
+            self._render_frame_data(self.player1, side="left")
+            self._render_frame_data(self.player2, side="right")
+
+    @staticmethod
+    def _buttons_label(buttons) -> str:
+        """'LP+HK'-style label for a set of held Button enum members."""
+        names = {getattr(b, "name", str(b)) for b in buttons}
+        return "+".join(lbl for key, lbl in _BUTTON_LABELS if key in names)
+
+    @staticmethod
+    def _input_entry_str(entry) -> str:
+        """One-line text form of an InputHistoryEntry (for the F10 report)."""
+        glyph = _DIR_GLYPHS.get(entry.direction.value, "?")
+        btns = Game._buttons_label(entry.buttons)
+        s = glyph + (" " + btns if btns else "")
+        if entry.repeat > 1:
+            s += f" x{entry.repeat}"
+        return s
+
+    def _render_input_display(self, player_input, side: str):
+        """Vertical input-history strip (oldest top, newest bottom)."""
+        history = player_input.get_input_history(10)
+        if not history:
+            return
+        x = 12 if side == "left" else SCREEN_WIDTH - 92
+        y0, row_h = 120, 16
+        bg = pygame.Surface((84, len(history) * row_h + 6))
+        bg.set_alpha(140)
+        bg.fill((0, 0, 0))
+        self.screen.blit(bg, (x - 4, y0 - 3))
+        for i, e in enumerate(history):
+            glyph = _DIR_GLYPHS.get(e.direction.value, "·")
+            btns = self._buttons_label(e.buttons)
+            text = glyph + ("  " + btns if btns else "")
+            if e.repeat > 1:
+                text += f" x{e.repeat}"
+            color = (235, 235, 120) if btns else (185, 185, 185)
+            self.screen.blit(self.small_font.render(text, True, color), (x, y0 + i * row_h))
+
+    def _render_damage_popups(self):
+        """Floating damage numbers that rise and fade above the hit character."""
+        for p in self._damage_popups:
+            t = p["age"] / self.DAMAGE_POPUP_LIFETIME
+            surf = self.font.render(str(p["amount"]), True,
+                                    (255, int(220 * (1 - t)), int(90 * (1 - t))))
+            surf.set_alpha(max(0, int(255 * (1.0 - t))))
+            self.screen.blit(surf, (int(p["x"] - surf.get_width() / 2), int(p["y"])))
+
+    def _render_combo_counters(self):
+        """Per-player combo readout (hits + cumulative damage) when active."""
+        if not hasattr(self.collision_system, "get_combo_info"):
+            return
+        center_x = SCREEN_WIDTH // 2
+        for pid, anchor in ((1, center_x - 150), (2, center_x + 150)):
+            c = self.collision_system.get_combo_info(pid)
+            if c.get("active") and c.get("count", 0) > 1:
+                txt = f"{c['count']} HITS  {c.get('damage', 0)} DMG"
+                surf = self.small_font.render(txt, True, (255, 220, 80))
+                self.screen.blit(surf, (anchor - surf.get_width() // 2, 70))
+
+    def _render_frame_data(self, player, side: str):
+        """Per-move frame-data panel: name, startup/active/recovery + advantage,
+        and a phase-colored timeline strip with the current frame marked."""
+        if not player.is_attacking():
+            return
+        from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
+        fd = get_move_frame_data(player.state)
+        if not fd:
+            return
+
+        startup, active_n, recovery = fd.startup, len(fd.active), fd.recovery
+        total = min(max(1, startup + active_n + recovery), 60)
+        cell_w, cell_h, gap = 6, 12, 1
+        strip_w = total * (cell_w + gap)
+        panel_w = max(strip_w, 210)
+        px = 20 if side == "left" else SCREEN_WIDTH - 20 - panel_w
+        py = SCREEN_HEIGHT - 118
+
+        bg = pygame.Surface((panel_w + 8, 64))
+        bg.set_alpha(150)
+        bg.fill((0, 0, 0))
+        self.screen.blit(bg, (px - 4, py - 4))
+
+        self.screen.blit(self.small_font.render(fd.name, True, COLOR_WHITE), (px, py))
+        info = (f"S{startup} A{active_n} R{recovery}   "
+                f"hit {fd.on_hit:+d}  blk {fd.on_block:+d}")
+        self.screen.blit(self.small_font.render(info, True, (200, 200, 200)), (px, py + 16))
+
+        ty = py + 38
+        cur = max(0, min(player.state_frame, total - 1))
+        for i in range(total):
+            if i < startup:
+                col = (110, 110, 110)      # startup
+            elif i < startup + active_n:
+                col = (210, 60, 60)        # active
+            else:
+                col = (70, 120, 210)       # recovery
+            cx = px + i * (cell_w + gap)
+            pygame.draw.rect(self.screen, col, (cx, ty, cell_w, cell_h))
+            if i == cur:
+                pygame.draw.rect(self.screen, COLOR_WHITE, (cx, ty, cell_w, cell_h), 1)
+
+    def _training_debug(self) -> dict:
+        """Training-display state for snapshots / F10 reports: recent inputs,
+        recent damage events, and each player's current move frame data."""
+        from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
+        moves = {}
+        for p in (self.player1, self.player2):
+            if p.is_attacking():
+                fd = get_move_frame_data(p.state)
+                if fd:
+                    moves[f"p{p.player_number}"] = {
+                        "name": fd.name, "startup": fd.startup, "active": fd.active,
+                        "recovery": fd.recovery, "on_hit": fd.on_hit,
+                        "on_block": fd.on_block, "state_frame": p.state_frame,
+                    }
+        return {
+            "inputs": {
+                "p1": [self._input_entry_str(e)
+                       for e in self.input_system.player1.get_input_history(8)],
+                "p2": [self._input_entry_str(e)
+                       for e in self.input_system.player2.get_input_history(8)],
+            },
+            "recent_damage": list(self._recent_damage),
+            "current_moves": moves,
+        }
+
     def debug_state(self) -> dict:
         """Full game numerical state for snapshots / crash reports / clips."""
         return {
@@ -583,6 +789,7 @@ class Game:
             "stage_floor": STAGE_FLOOR,
             "screen": [SCREEN_WIDTH, SCREEN_HEIGHT],
             "players": [self.player1.get_debug_state(), self.player2.get_debug_state()],
+            "training": self._training_debug(),
         }
 
     def save_debug_snapshot(self, out_dir="debug_snapshots", name=None):
@@ -651,6 +858,26 @@ class Game:
                       f"(f{s['state_frame']}), pos {s['pos']}, hp {s['health']}/{s['max_health']}, "
                       f"anim `{anim.get('animation')}` spr `{anim.get('sprite_number', anim.get('source'))}`"
                       + (", **MISSING ART**" if s.get("rendering_fallback") else ""))
+        # Training diagnostics: the inputs/damage/move that led into this frame.
+        tr = self._training_debug()
+        md += ["", "## Recent inputs (oldest first)"]
+        for pid in ("p1", "p2"):
+            rows = tr["inputs"][pid]
+            md.append(f"- **{pid.upper()}**: {'  '.join(rows) if rows else '(none)'}")
+        md += ["", "## Recent damage"]
+        if tr["recent_damage"]:
+            md += [f"- f{d['frame']} P{d['player']} took {d['amount']}"
+                   for d in tr["recent_damage"]]
+        else:
+            md.append("- none")
+        if tr["current_moves"]:
+            md += ["", "## Current move frame data"]
+            for pid, m in tr["current_moves"].items():
+                md.append(f"- **{pid.upper()}** `{m['name']}` "
+                          f"S{m['startup']} A{len(m['active'])} R{m['recovery']} "
+                          f"(on hit {m['on_hit']:+d}, on block {m['on_block']:+d}, "
+                          f"now f{m['state_frame']})")
+
         md += ["", "## Recent invariant violations"]
         if violations:
             md += [f"- f{v['frame']} `{v['type']}` p{v['player']} {v['values']}" for v in violations[-15:]]
