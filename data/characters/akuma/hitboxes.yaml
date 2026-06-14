@@ -192,6 +192,20 @@ moves:
         height: 18.0
         status: verified
         rom_id: 14e8
+    state: MEDIUM_PUNCH
+    name_status: baston
+    confidence: verified
+    combat:
+      damage: 115
+      stun: 7
+      on_hit: 2
+      on_block: 1
+      hitstun: 15
+      blockstun: 12
+      hit_type: MID
+      hit_effect: NORMAL
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   '1598':
     rom_id: '1598'
     timing:
@@ -394,18 +408,17 @@ moves:
         height: 12.0
         status: verified
         rom_id: '1818'
-    state: HEAVY_KICK
-    name_status: inferred
-    confidence: low
+    state: HEAVY_PUNCH
+    name_status: metadata
     combat:
-      damage: 200
+      damage: 180
       stun: 12
-      on_hit: -1
-      on_block: -4
-      hitstun: 20
-      blockstun: 15
+      on_hit: 1
+      on_block: -2
+      hitstun: 18
+      blockstun: 14
       hit_type: HIGH
-      hit_effect: NORMAL
+      hit_effect: JUGGLE
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   '1908':
@@ -453,6 +466,20 @@ moves:
         height: 10.0
         status: verified
         rom_id: '1908'
+    state: LIGHT_KICK
+    name_status: baston
+    confidence: verified
+    combat:
+      damage: 70
+      stun: 3
+      on_hit: 4
+      on_block: 2
+      hitstun: 13
+      blockstun: 11
+      hit_type: HIGH
+      hit_effect: NORMAL
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   '1988':
     rom_id: '1988'
     timing:
@@ -518,6 +545,20 @@ moves:
         height: 16.0
         status: verified
         rom_id: '1988'
+    state: MEDIUM_KICK
+    name_status: baston
+    confidence: verified
+    combat:
+      damage: 130
+      stun: 7
+      on_hit: 1
+      on_block: -1
+      hitstun: 16
+      blockstun: 13
+      hit_type: HIGH
+      hit_effect: NORMAL
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   1a38:
     rom_id: 1a38
     timing:
@@ -690,6 +731,19 @@ moves:
         height: 22.0
         status: verified
         rom_id: 1b08
+    state: HEAVY_KICK
+    name_status: metadata
+    combat:
+      damage: 200
+      stun: 12
+      on_hit: -1
+      on_block: -4
+      hitstun: 20
+      blockstun: 15
+      hit_type: HIGH
+      hit_effect: NORMAL
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   1bf8:
     rom_id: 1bf8
     timing:
@@ -904,20 +958,6 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1dd8
-    state: MEDIUM_KICK
-    name_status: inferred
-    confidence: low
-    combat:
-      damage: 130
-      stun: 7
-      on_hit: 1
-      on_block: -1
-      hitstun: 16
-      blockstun: 13
-      hit_type: HIGH
-      hit_effect: NORMAL
-      status: community
-      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   1e88:
     rom_id: 1e88
     timing:
@@ -989,20 +1029,6 @@ moves:
         height: 12.0
         status: verified
         rom_id: 1e88
-    state: HEAVY_PUNCH
-    name_status: inferred
-    confidence: low
-    combat:
-      damage: 180
-      stun: 12
-      on_hit: 1
-      on_block: -2
-      hitstun: 18
-      blockstun: 14
-      hit_type: HIGH
-      hit_effect: JUGGLE
-      status: community
-      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
   1f68:
     rom_id: 1f68
     timing:

@@ -266,6 +266,7 @@ class SF3CollisionAdapter:
                     blockstun=hitbox_data.blockstun,
                     hit_level=hit_level,
                     status=attack_status,
+                    anchor="edge",  # attack offset_x = forward-positive near edge
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.ATTACK, sf3_hitbox)
 
@@ -281,6 +282,7 @@ class SF3CollisionAdapter:
                     hitstun=0,
                     blockstun=0,
                     status="verified",
+                    anchor="center",  # hurtbox offset_x = center of the box
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.BODY, sf3_hurtbox)
 
@@ -632,17 +634,17 @@ class SF3CollisionAdapter:
             if not work:
                 continue
 
+            # Use the SAME math as live collision (get_rect: facing mirror +
+            # per-box anchor) so the overlay matches what actually hits.
+            px, py, face = work.work.position.x, work.work.position.y, work.work.face
+
             for hitbox in manager.get_current_hitboxes(SF3HitboxType.ATTACK):
-                screen_x = work.work.position.x + hitbox.offset_x
-                screen_y = work.work.position.y + hitbox.offset_y
-                rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                rect = hitbox.get_rect(px, py, face)
                 hit_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hitboxes.append(rect)
 
             for hitbox in manager.get_current_hitboxes(SF3HitboxType.BODY):
-                screen_x = work.work.position.x + hitbox.offset_x
-                screen_y = work.work.position.y + hitbox.offset_y
-                rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                rect = hitbox.get_rect(px, py, face)
                 hurt_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hurtboxes.append(rect)
 

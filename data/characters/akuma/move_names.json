@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "method": "Move names are taken from framedata_meta.lua (Grouflon/3rd_training_lua) where that file annotates the ROM pointer (name_source=metadata, AUTHORITATIVE). Pointers it does not annotate fall back to timing/geometry inference against community frame data (name_source=inferred, a guess). Box geometry + timing remain ROM-verified in all cases.",
+    "method": "Move names come from three sources: name_source=metadata (verbatim from framedata_meta.lua, AUTHORITATIVE); name_source=baston (active-box geometry cross-matched pixel/sequence-exact to a unique ROM pointer against Baston ESN3S, AUTHORITATIVE for st.MP/LK/MK which the meta does not annotate); name_source=inferred (timing/geometry guess, a fallback). Box geometry + timing remain ROM-verified in all cases.",
     "name_metadata_source": "https://github.com/Grouflon/3rd_training_lua/blob/master/data/sfiii3nr1/framedata_meta.lua",
     "name_metadata_commit": "73ec4c062108fd3494c4fae6b81a61f9cf518b81"
   },
@@ -32,10 +32,15 @@
   "OVERHEAD":           { "rom_id": "98f8", "name_source": "metadata", "meta_name": "UOH",
     "rationale": "framedata_meta.lua GOUKI: \"98f8\" -- UOH (universal overhead)" },
 
-  "HEAVY_PUNCH":        { "rom_id": "1e88", "name_source": "inferred", "confidence": "low",
-    "rationale": "tallest non-moving box, s/a/r approx 5/5/25; NOT annotated in framedata_meta.lua" },
-  "MEDIUM_KICK":        { "rom_id": "1dd8", "name_source": "inferred", "confidence": "low",
-    "rationale": "longer-reach non-moving kick, s/a/r approx 5/4/13; NOT annotated in framedata_meta.lua" },
-  "HEAVY_KICK":         { "rom_id": "1818", "name_source": "inferred", "confidence": "low",
-    "rationale": "longest reach, big, s/a/r approx 8/5/25; NOT annotated in framedata_meta.lua" }
+  "HEAVY_PUNCH":        { "rom_id": "1818", "name_source": "metadata", "meta_name": "HP",
+    "rationale": "framedata_meta.lua GOUKI: Target HP \"3850\" is a proxy to \"1818\", i.e. 1818 = HP  (corrects prior guess 1e88)" },
+  "HEAVY_KICK":         { "rom_id": "1b08", "name_source": "metadata", "meta_name": "Close HK",
+    "rationale": "framedata_meta.lua GOUKI: \"1b08\" -- Close HK  (corrects prior guess 1818, which is HP)" },
+
+  "MEDIUM_PUNCH":       { "rom_id": "14e8", "name_source": "baston", "confidence": "verified",
+    "rationale": "Baston ESN3S 'Strong' (fd_normals/002) active box [-56,24,18,48] -> PyKuma (32,-66,24,18): pixel-exact, unique match to 14e8 (active=4). Not in framedata_meta.lua." },
+  "LIGHT_KICK":         { "rom_id": "1908", "name_source": "baston", "confidence": "verified",
+    "rationale": "Baston ESN3S 'Short' (fd_normals/014) active box [-72,38,10,14] -> PyKuma (34,-24,38,10): pixel-exact, unique match to 1908 (active=4). Not in framedata_meta.lua." },
+  "MEDIUM_KICK":        { "rom_id": "1988", "name_source": "baston", "confidence": "verified",
+    "rationale": "Baston ESN3S 'Forward' (fd_normals/015) active-box sequence [(36,-78,24,20)+(28,-62,18,14) then (36,-72,20,16)]: frame-by-frame unique match to 1988 (active=5). Corrects prior guess 1dd8. Not in framedata_meta.lua." }
 }
