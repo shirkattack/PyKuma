@@ -490,9 +490,14 @@ class Character:
                 self._transition_to_state(CharacterState.DASH_BACKWARD)
                 return
 
-        # Jump
+        # Jump. Must be jumpable out of walking too: to jump forward/back on a
+        # pad you hold the direction first (-> WALKING_*), then press up. Gating
+        # jump to STANDING/CROUCHING only made forward/back jumps impossible.
         if direction in [InputDirection.UP, InputDirection.UP_FORWARD, InputDirection.UP_BACK]:
-            if self.is_grounded and self.state in [CharacterState.STANDING, CharacterState.CROUCHING]:
+            if self.is_grounded and self.state in [
+                CharacterState.STANDING, CharacterState.CROUCHING,
+                CharacterState.WALKING_FORWARD, CharacterState.WALKING_BACKWARD,
+            ]:
                 self.jump_direction = direction  # Store jump direction for animation
                 self._transition_to_state(CharacterState.JUMP_STARTUP)
                 return
