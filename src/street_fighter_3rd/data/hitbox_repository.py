@@ -180,7 +180,10 @@ class HitboxRepository:
         for move in self._moves.values():
             if move.state == state_name:
                 return move
-        log_once(log, ("no_move_for_state", state_name), logging.INFO,
+        # Most states (STANDING, JUMPING, walking, ...) legitimately have no ROM
+        # attack move; this is the common, expected path. Keep it at debug so it
+        # doesn't flood the console every frame.
+        log_once(log, ("no_move_for_state", state_name), logging.DEBUG,
                  "No ROM move mapped to state %s; returning None.", state_name)
         return None
 

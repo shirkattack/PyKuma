@@ -95,7 +95,10 @@ SPARK_TABLE = {
     HitSparkType.PARRY:   ("hitsparks", 30619, 30628),  # blue parry starburst
 }
 
-_EFFECTS_ROOT = "assets/vfx/ingame_effects"
+# Resolve against the repo root so effects load regardless of working directory
+# (src/street_fighter_3rd/systems/vfx.py -> parents[3] == repo root).
+from pathlib import Path as _Path
+_EFFECTS_ROOT = str(_Path(__file__).resolve().parents[3] / "assets" / "vfx" / "ingame_effects")
 
 
 class VFXManager:
