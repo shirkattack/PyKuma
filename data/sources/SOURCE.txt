@@ -32,3 +32,19 @@ Damage and stun are read from live RAM by the training tool at runtime; they are
 NOT part of this static dump. In this project those gameplay values come from the
 community frame-data tier (see data/characters/akuma/sf3_authentic_frame_data.yaml),
 NOT from this ROM source.
+
+==================================================
+Second vendored source: framedata_meta.lua
+==================================================
+
+Repository:   https://github.com/Grouflon/3rd_training_lua
+Commit:       73ec4c062108fd3494c4fae6b81a61f9cf518b81
+File path:    data/sfiii3nr1/framedata_meta.lua
+Vendored as:  data/sources/framedata_meta.lua
+
+This file annotates ROM pointers with human move names (as Lua comments, e.g.
+`"1f68" = {...} -- Cr LK`). It is the AUTHORITATIVE source for the ROM-pointer ->
+move-name mapping, replacing the prior timing/geometry inference for the moves it
+covers (see data/characters/akuma/move_names.json, name_source=metadata). It does
+not annotate every move; pointers it omits remain inferred or unnamed. Underlying
+data is (c) Capcom; vendored for educational recreation.

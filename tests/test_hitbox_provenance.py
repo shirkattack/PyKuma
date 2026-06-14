@@ -18,14 +18,25 @@ from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
 
 _TIERS = {"verified", "inferred", "community", "pending"}
 
+# States that resolve to a ROM move WITH community combat (damage > 0). Standing
+# MP and LK are intentionally absent: framedata_meta.lua disproved their old rom_ids
+# and does not name their real pointers, so they stay unmapped (no made-up data).
+# OVERHEAD is named but has no community combat block, so it's excluded here.
 _MAPPED_STATES = [
     CharacterState.LIGHT_PUNCH,
-    CharacterState.MEDIUM_PUNCH,
     CharacterState.HEAVY_PUNCH,
-    CharacterState.LIGHT_KICK,
     CharacterState.MEDIUM_KICK,
     CharacterState.HEAVY_KICK,
+    CharacterState.CROUCH_LIGHT_PUNCH,
+    CharacterState.CROUCH_LIGHT_KICK,
+    CharacterState.CROUCH_MEDIUM_KICK,
     CharacterState.CROUCH_HEAVY_KICK,
+    CharacterState.JUMP_LIGHT_PUNCH,
+    CharacterState.JUMP_MEDIUM_PUNCH,
+    CharacterState.JUMP_HEAVY_PUNCH,
+    CharacterState.JUMP_LIGHT_KICK,
+    CharacterState.JUMP_MEDIUM_KICK,
+    CharacterState.JUMP_HEAVY_KICK,
 ]
 
 

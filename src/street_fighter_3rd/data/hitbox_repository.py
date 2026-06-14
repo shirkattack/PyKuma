@@ -227,6 +227,8 @@ class HitboxRepository:
         """Human-readable summary of inferred / low-confidence / community items."""
         lines = ["Hitbox provenance report:"]
         lines.append(f"  moves loaded: {len(self._moves)}")
+        named = [m for m in self._moves.values() if m.name_status == "metadata"]
+        lines.append(f"  authoritative move names (framedata_meta.lua): {len(named)}")
         inferred = [m for m in self._moves.values() if m.name_status == "inferred"]
         lines.append(f"  inferred move names: {len(inferred)}")
         for m in inferred:
@@ -234,6 +236,6 @@ class HitboxRepository:
             tier = " (LOW CONFIDENCE)" if conf == "low" else ""
             combat = "community combat" if m.combat else "no combat"
             lines.append(f"    {m.rom_id} -> {m.state} [{conf}]{tier}, {combat}")
-        unmapped = [m for m in self._moves.values() if m.name_status != "inferred"]
+        unmapped = [m for m in self._moves.values() if not m.state]
         lines.append(f"  unmapped (geometry-only) moves: {len(unmapped)}")
         return "\n".join(lines)

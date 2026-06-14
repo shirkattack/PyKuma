@@ -52,13 +52,22 @@ _CENTERED_TYPES = {"vulnerability", "push", "throwable"}
 # hitstun/blockstun are preserved here to keep existing gameplay behavior.
 # Keyed by CharacterState name -> (yaml_key, hit_type, hit_effect, hitstun, blockstun)
 COMBAT_MAP = {
-    "LIGHT_PUNCH":       ("standing_light_punch",  "HIGH", "NORMAL",    12, 10),
-    "MEDIUM_PUNCH":      ("standing_medium_punch", "MID",  "NORMAL",    15, 12),
-    "HEAVY_PUNCH":       ("standing_heavy_punch",  "HIGH", "JUGGLE",    18, 14),
-    "LIGHT_KICK":        ("standing_light_kick",   "HIGH", "NORMAL",    13, 11),
-    "MEDIUM_KICK":       ("standing_medium_kick",  "HIGH", "NORMAL",    16, 13),
-    "HEAVY_KICK":        ("standing_heavy_kick",   "HIGH", "NORMAL",    20, 15),
-    "CROUCH_HEAVY_KICK": ("crouching_heavy_kick",  "LOW",  "KNOCKDOWN", 20, 15),
+    "LIGHT_PUNCH":         ("standing_light_punch",   "HIGH", "NORMAL",    12, 10),
+    "MEDIUM_PUNCH":        ("standing_medium_punch",  "MID",  "NORMAL",    15, 12),
+    "HEAVY_PUNCH":         ("standing_heavy_punch",   "HIGH", "JUGGLE",    18, 14),
+    "LIGHT_KICK":          ("standing_light_kick",    "HIGH", "NORMAL",    13, 11),
+    "MEDIUM_KICK":         ("standing_medium_kick",   "HIGH", "NORMAL",    16, 13),
+    "HEAVY_KICK":          ("standing_heavy_kick",    "HIGH", "NORMAL",    20, 15),
+    "CROUCH_LIGHT_PUNCH":  ("crouching_light_punch",  "MID",  "NORMAL",    12, 10),
+    "CROUCH_LIGHT_KICK":   ("crouching_light_kick",   "LOW",  "NORMAL",    13, 11),
+    "CROUCH_MEDIUM_KICK":  ("crouching_medium_kick",  "LOW",  "NORMAL",    16, 13),
+    "CROUCH_HEAVY_KICK":   ("crouching_heavy_kick",   "LOW",  "KNOCKDOWN", 20, 15),
+    "JUMP_LIGHT_PUNCH":    ("jump_light_punch",       "HIGH", "NORMAL",    12, 10),
+    "JUMP_MEDIUM_PUNCH":   ("jump_medium_punch",      "HIGH", "NORMAL",    15, 13),
+    "JUMP_HEAVY_PUNCH":    ("jump_heavy_punch",       "HIGH", "NORMAL",    18, 14),
+    "JUMP_LIGHT_KICK":     ("jump_light_kick",        "HIGH", "NORMAL",    13, 11),
+    "JUMP_MEDIUM_KICK":    ("jump_medium_kick",       "HIGH", "NORMAL",    16, 13),
+    "JUMP_HEAVY_KICK":     ("jump_heavy_kick",        "HIGH", "NORMAL",    20, 15),
 }
 
 COMBAT_SOURCE = ("Baston ESN3S frame data + existing gameplay tuning; "
@@ -72,8 +81,12 @@ BANNER = (
     "# Provenance tiers:\n"
     "#   verified : box geometry + frame timing, dumped from the SF3:3S ROM "
     "(3rd_training_lua).\n"
-    "#   inferred : the ROM-pointer -> CharacterState (move name) assignment; "
-    "geometry is ROM-verified, the NAME is a guess.\n"
+    "# name_status on each move:\n"
+    "#   metadata : ROM-pointer -> move name taken verbatim from framedata_meta.lua "
+    "(authoritative).\n"
+    "#   inferred : ROM-pointer -> move name guessed from timing/geometry "
+    "(geometry ROM-verified, NAME is a guess).\n"
+    "#   (unnamed): geometry-only ROM animation, not yet mapped to a move.\n"
     "#   community: damage / stun / frame advantage, from Baston ESN3S + "
     "gameplay tuning; NOT ROM-verified.\n"
     "# Do not hand-edit; regenerate from the vendored source instead.\n"
@@ -173,7 +186,8 @@ def load_names(names_path):
             continue
         out[info["rom_id"]] = {
             "state": state,
-            "confidence": info.get("confidence", "low"),
+            "name_source": info.get("name_source", "inferred"),
+            "confidence": info.get("confidence"),
             "rationale": info.get("rationale", ""),
         }
     return out
@@ -241,8 +255,12 @@ def build_move(rom_id, entry, names, combat):
 
     if name_info:
         record["state"] = name_info["state"]
-        record["name_status"] = "inferred"
-        record["confidence"] = name_info["confidence"]
+        # metadata = name taken verbatim from framedata_meta.lua (authoritative);
+        # inferred = name guessed from timing/geometry.
+        src = name_info.get("name_source", "inferred")
+        record["name_status"] = "metadata" if src == "metadata" else "inferred"
+        if name_info.get("confidence"):
+            record["confidence"] = name_info["confidence"]
         combat_block = combat.get(name_info["state"])
         if combat_block:
             record["combat"] = combat_block
@@ -285,9 +303,10 @@ def build_document(source_json, name, names, combat):
             },
             "notes": (
                 "NO INVENTED DATA. geometry+timing = ROM verified "
-                "(3rd_training_lua); move names = inferred (ROM-pointer to "
-                "CharacterState is a guess); combat values (damage/stun/"
-                "advantage) = community (Baston ESN3S + tuning, NOT ROM-verified)."
+                "(3rd_training_lua); move names = metadata (from framedata_meta.lua) "
+                "where annotated, else inferred (a guess) or unnamed; combat values "
+                "(damage/stun/advantage) = community (Baston ESN3S + tuning, NOT "
+                "ROM-verified)."
             ),
         },
         "base_hurtbox": [tag_base(b) for b in base_hurtbox],

@@ -49,13 +49,15 @@ def test_yaml_hitbox_loading():
 
 
 def test_collision_detection():
-    """A medium punch on its active frame must hit a nearby defender."""
+    """A light punch on its active frame must hit a nearby defender."""
     attacker = Akuma(200, STAGE_FLOOR, player_number=1)
     defender = Akuma(250, STAGE_FLOOR, player_number=2)  # Close enough to hit
 
-    attacker._transition_to_state(CharacterState.MEDIUM_PUNCH)
-    # Standing MP is active on frames 6-9 (1-indexed): state_frame=5 -> frame 6
-    attacker.state_frame = 5
+    # Standing MP/LK rom pointers are unidentified (framedata_meta.lua disproved
+    # the old guesses), so use LP (rom 1438), which is authoritatively named.
+    attacker._transition_to_state(CharacterState.LIGHT_PUNCH)
+    # Standing LP is active on frame 5 (1-indexed); adapter reads state_frame + 1.
+    attacker.state_frame = 4
 
     adapter = SF3CollisionAdapter()
     vfx_manager = VFXManager()
@@ -65,7 +67,7 @@ def test_collision_detection():
     adapter.tick()  # advance the SF3 core one game frame
     hit_occurred = adapter.check_attack_collision(attacker, defender, vfx_manager)
 
-    assert hit_occurred, "MP active frame at 50px range must register a hit"
+    assert hit_occurred, "LP active frame at 50px range must register a hit"
     assert defender.health < initial_health, (
         f"hit must deal damage: health stayed at {defender.health}"
     )
