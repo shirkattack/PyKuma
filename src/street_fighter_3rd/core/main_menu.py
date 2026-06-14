@@ -81,6 +81,7 @@ class MainMenu:
                 MenuItem("START GAME", self._start_normal_game),
                 MenuItem("TRAINING MODE", self._start_training_mode),
                 MenuItem("DEV MODE", self._start_dev_mode),
+                MenuItem("HITBOX VIEWER", self._open_hitbox_viewer),
                 MenuItem("CONTROLS", submenu=MenuState.CONTROLS),
                 MenuItem("MOVES LIST", submenu=MenuState.MOVES),
                 MenuItem("MODE SELECT", submenu=MenuState.MODE_SELECT),
@@ -110,6 +111,7 @@ class MainMenu:
         self.start_game = False
         self.selected_mode = GameMode.NORMAL
         self.quit_game = False
+        self.open_viewer = False  # set by the HITBOX VIEWER item
 
     def _first_available(self, state) -> int:
         """Index of the first selectable item in a menu (0 if none)."""
@@ -424,10 +426,18 @@ class MainMenu:
         """Select demo mode."""
         self.game_mode_manager.set_mode(GameMode.DEMO)
         
+    def _open_hitbox_viewer(self):
+        """Open the frame-step hitbox viewer (data-verification tool)."""
+        self.open_viewer = True
+
     def _exit_game(self):
         """Exit the game."""
         self.quit_game = True
-        
+
+    def should_open_viewer(self) -> bool:
+        """Check if the hitbox viewer should open."""
+        return self.open_viewer
+
     def should_start_game(self) -> bool:
         """Check if game should start."""
         return self.start_game

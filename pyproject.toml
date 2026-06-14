@@ -22,6 +22,7 @@ sf3 = "street_fighter_3rd.main:main"
 sf3-menu = "street_fighter_3rd.main_with_menu:main"
 sf3-training = "street_fighter_3rd.main_with_menu:main_training"
 sf3-dev = "street_fighter_3rd.main_with_menu:main_dev"
+sf3-viewer = "street_fighter_3rd.main_with_menu:main_viewer"
 
 [dependency-groups]
 dev = [

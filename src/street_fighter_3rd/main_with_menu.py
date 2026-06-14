@@ -65,7 +65,11 @@ def parse_arguments():
                        type=int,
                        default=FPS,
                        help=f'Set target FPS (default: {FPS})')
-    
+
+    parser.add_argument('--viewer',
+                       action='store_true',
+                       help='Open the frame-step hitbox viewer (data-verification tool)')
+
     return parser.parse_args()
 
 
@@ -117,6 +121,11 @@ def run_menu_loop(screen, window, clock) -> tuple[bool, GameMode, GameModeManage
         # Check menu state
         if menu.should_quit():
             return False, GameMode.NORMAL, menu.get_game_mode_manager()
+        elif menu.should_open_viewer():
+            # Run the hitbox viewer inline, then drop back to the menu.
+            from street_fighter_3rd.core.hitbox_viewer import run_hitbox_viewer
+            run_hitbox_viewer(screen, window, clock)
+            menu.open_viewer = False
         elif menu.should_start_game():
             return True, menu.get_selected_mode(), menu.get_game_mode_manager()
         
@@ -212,7 +221,12 @@ def main():
     log.info("Description: %s", game_mode_manager.get_mode_description())
 
     try:
-        if args.no_menu:
+        if args.viewer:
+            # Frame-step hitbox viewer (data-verification tool).
+            from street_fighter_3rd.core.hitbox_viewer import run_hitbox_viewer
+            log.info("Opening hitbox viewer...")
+            run_hitbox_viewer(screen, window, clock, args.fps)
+        elif args.no_menu:
             # Skip menu and start game directly
             log.info("Skipping menu, starting game directly...")
             run_game_loop(screen, window, clock, game_mode_manager, args.fps)
@@ -250,6 +264,13 @@ def main_dev():
     """Entry point for dev mode."""
     import sys
     sys.argv = ['sf3-dev', '--dev', '--no-menu']
+    main()
+
+
+def main_viewer():
+    """Entry point for the frame-step hitbox viewer."""
+    import sys
+    sys.argv = ['sf3-viewer', '--viewer']
     main()
 
 
