@@ -30,7 +30,12 @@ from .sf3_combo_system import SF3ComboSystem
 from .hitbox_data import HitboxData
 from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
-from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
+# Canonical frame-data loader (single source of truth; replaces data/akuma_hitboxes.py).
+from ..data.frame_data_loader import (
+    get_hitboxes as get_akuma_hitboxes,
+    get_hurtboxes as get_akuma_hurtboxes,
+    get_move_frame_data,
+)
 from ..characters.character import apply_reaction
 from .vfx import HitSparkType
 

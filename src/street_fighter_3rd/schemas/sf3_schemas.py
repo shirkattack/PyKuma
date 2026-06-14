@@ -25,6 +25,7 @@ from ..systems.sf3_core import (
     SF3Position, SF3HitData, SF3_DAMAGE_SCALING, SF3_PARRY_WINDOW
 )
 from ..systems.sf3_hitboxes import SF3HitboxType, SF3HitLevel
+from ..data.enums import HitType, HitEffect, CharacterState
 from ..util.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -456,10 +457,126 @@ class SF3GameConfig(BaseModel):
         }
 
 
+# ============================================================================
+# Canonical frame-data schema (the single source of truth for hitbox/hurtbox)
+#
+# PRIME DIRECTIVE: we do NOT make up data. Every move MUST declare `provenance`:
+#   verified   = transcribed from the game's actual hitbox data (Baston/esn3s)
+#   unverified = hand-authored placeholder, pending verification
+#   derived    = computed from another verified move (must name `derived_from`)
+# Enforced by: the required `provenance` field below, the loader's boot-time
+# VERIFIED/UNVERIFIED tally, and tests/test_data_provenance.py.
+# ============================================================================
+
+_HIT_TYPE_NAMES = {m.name for m in HitType}
+_HIT_EFFECT_NAMES = {m.name for m in HitEffect}
+_STATE_NAMES = {m.name for m in CharacterState}
+
+
+class Provenance(BaseModel):
+    """Where a move's numbers came from. No move may omit this."""
+    status: Literal["verified", "unverified", "derived"]
+    source: Optional[str] = None        # Baston URL the boxes were read from
+    ichar: Optional[int] = None         # Baston character id (Akuma/Gouki = 14)
+    imove: Optional[int] = None         # Baston iMove
+    move_type: Optional[str] = None     # fd_normals / fd_specials / fd_supers
+    scraped: Optional[str] = None       # ISO date the data was pulled
+    derived_from: Optional[str] = None  # move key, required when status == derived
+    note: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _check_required(self):
+        if self.status == "verified" and not self.source:
+            raise ValueError("verified provenance requires a `source` URL")
+        if self.status == "derived" and not self.derived_from:
+            raise ValueError("derived provenance requires `derived_from`")
+        return self
+
+
+class AttackBoxSchema(BaseModel):
+    """An offensive box, in pixels relative to the character's facing-forward origin."""
+    offset_x: int
+    offset_y: int
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+    damage: int = Field(ge=0)
+    hitstun: int = Field(ge=0)
+    blockstun: int = Field(ge=0)
+    hit_type: str = "MID"
+
+    @field_validator("hit_type")
+    @classmethod
+    def _valid_hit_type(cls, v):
+        if v not in _HIT_TYPE_NAMES:
+            raise ValueError(f"hit_type must be one of {sorted(_HIT_TYPE_NAMES)}")
+        return v
+
+
+class HurtBoxSchema(BaseModel):
+    """A vulnerable box, in pixels relative to the character origin."""
+    offset_x: int
+    offset_y: int
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+
+
+class FrameGroup(BaseModel):
+    """One or more (1-indexed) active frames sharing the same attack box(es).
+
+    Field is named `frames` (not `on`) because YAML 1.1 parses a bare `on:` key as
+    the boolean True.
+    """
+    frames: List[int] = Field(min_length=1)
+    boxes: List[AttackBoxSchema] = Field(default_factory=list)
+
+
+class MoveFrames(BaseModel):
+    """A single move: frame data, per-frame attack boxes, hurtboxes, and provenance."""
+    state: str
+    name: str
+    command: Optional[str] = None
+    startup: int = Field(ge=0)
+    active: List[int] = Field(default_factory=list)
+    recovery: int = Field(ge=0)
+    on_hit: int = 0
+    on_block: int = 0
+    hit_effect: str = "NORMAL"
+    provenance: Provenance                 # REQUIRED — no default, no made-up data
+    hitboxes: List[FrameGroup] = Field(default_factory=list)
+    hurtboxes: List[HurtBoxSchema] = Field(default_factory=list)
+
+    @field_validator("state")
+    @classmethod
+    def _valid_state(cls, v):
+        if v not in _STATE_NAMES:
+            raise ValueError(f"unknown CharacterState '{v}'")
+        return v
+
+    @field_validator("hit_effect")
+    @classmethod
+    def _valid_effect(cls, v):
+        if v not in _HIT_EFFECT_NAMES:
+            raise ValueError(f"hit_effect must be one of {sorted(_HIT_EFFECT_NAMES)}")
+        return v
+
+
+class CharacterFrames(BaseModel):
+    """A whole character's canonical frame data, keyed by move slug."""
+    character: str
+    moves: Dict[str, MoveFrames]
+
+
+def load_character_frames(file_path: Path) -> CharacterFrames:
+    """Load + validate a canonical per-character frames.yaml (rejects bad data at boot)."""
+    with open(file_path, "r") as f:
+        raw = yaml.safe_load(f)
+    return CharacterFrames(**raw)
+
+
 def load_character_data(file_path: Path) -> CharacterData:
     """
     Load and validate character data from YAML file
-    
+
     This provides a clean interface for loading character data with
     full Pydantic validation.
     """

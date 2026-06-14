@@ -2,10 +2,33 @@
 """Test script to verify hitbox data integration"""
 
 from street_fighter_3rd.data.enums import CharacterState
-from street_fighter_3rd.data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
+# Canonical loader (replaces the old data/akuma_hitboxes.py).
+from street_fighter_3rd.data.frame_data_loader import (
+    get_hitboxes as get_akuma_hitboxes,
+    get_hurtboxes as get_akuma_hurtboxes,
+    get_move_frame_data,
+)
+
+
+def test_normals_load_from_canonical_loader():
+    """Every standing normal resolves, has active-frame hitboxes, and ≥1 hurtbox."""
+    for state in (
+        CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
+        CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
+    ):
+        move = get_move_frame_data(state)
+        assert move is not None, f"{state} missing from canonical frames.yaml"
+        assert move.active, f"{state} has no active frames"
+        # A hitbox is present on each active frame.
+        for frame in move.active:
+            assert get_akuma_hitboxes(state, frame), f"{state} frame {frame} has no hitbox"
+        # Startup/recovery frames are not active.
+        assert not get_akuma_hitboxes(state, move.startup), f"{state} hits during startup"
+        assert get_akuma_hurtboxes(state), f"{state} has no hurtbox"
+
 
 def test_hitbox_data():
-    """Test that hitbox data is loaded correctly"""
+    """Smoke print of the loaded data (kept for manual inspection)."""
     print("Testing Akuma Hitbox Data Integration\n" + "="*50)
 
     # Test all standing normals

@@ -61,11 +61,31 @@ import them from `src/`. (Git remembers everything if you want to delete it.)
 Characters `ken.py` / `shoto_base.py` remain in `src/` but are **experimental**:
 nothing constructs Ken yet; both players are Akuma (`core/game.py`).
 
-## Known frame-data debt
+## Frame data — canonical source & the no-made-up-data rule
 
-Akuma's numbers still live in several places: `data/frame_data.py`,
-`data/akuma_hitboxes.py`, `data/animations.yaml`, and
-`data/characters/akuma/sf3_authentic_frame_data.yaml`. The collision adapter
-reads `akuma_hitboxes.py` first, then YAML, then hardcoded fallbacks.
-The plan is one validated YAML per character (Pydantic schema exists in
-`schemas/`); until then, `data/akuma_hitboxes.py` is what the live path reads.
+**PRIME DIRECTIVE: we do NOT make up hitbox/frame data. Every value must be
+referenced from the game (Baston/esn3s).** This is enforced in code, not just by
+convention — see the five enforcement points below.
+
+- **Canonical source of truth:** `data/characters/<char>/frames.yaml` (one file per
+  character), loaded and validated through `schemas/sf3_schemas.py:CharacterFrames`
+  by `data/frame_data_loader.py`. The collision adapter reads **only** the loader
+  (`get_hitboxes` / `get_hurtboxes` / `get_move_frame_data`).
+- **Provenance is mandatory.** Every move declares `provenance.status` —
+  `verified` (transcribed from Baston), `unverified` (hand-authored placeholder), or
+  `derived` (computed from a verified move). The field has no default; a move cannot
+  be defined without it.
+- **Enforcement (5 points):** (1) the required `provenance` schema field; (2) the
+  loader's boot-time `VERIFIED/UNVERIFIED` log; (3) `tests/test_data_provenance.py`,
+  which fails on any unverified move not in its shrinking `UNVERIFIED_BACKLOG`;
+  (4) the hitbox viewer shows each move's tag on screen; (5) quarantined fabricated
+  files live in `attic/` so nothing reads them by accident.
+- **Pipeline:** real numbers come from Baston via `scripts/baston_to_yaml.py`
+  (Phase 3), then get visually confirmed in the hitbox viewer before flipping to
+  `verified`.
+
+Quarantined (do not use): `attic/data/akuma_hitboxes.py` and
+`attic/data/characters/akuma/sf3_authentic_frame_data.yaml` were hand-approximated
+placeholders. `data/frame_data.py` still defines shared dataclasses (`MoveData` used
+by `characters/character.py`) and `data/animations.yaml` holds animation timing —
+neither is a hitbox source.
