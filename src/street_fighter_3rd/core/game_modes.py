@@ -12,6 +12,7 @@ class GameMode(Enum):
     DEV = auto()         # Full debug mode for development
     VERSUS = auto()      # 2-player versus mode
     DEMO = auto()        # AI vs AI demonstration
+    HITBOX_VIEWER = auto()  # Standalone ROM-accurate hitbox visualization
 
 
 @dataclass
@@ -102,6 +103,17 @@ GAME_MODE_CONFIGS = {
         show_combo_counter=True,
         show_damage_numbers=True,
         no_timer=True
+    ),
+
+    GameMode.HITBOX_VIEWER: GameModeConfig(
+        # Standalone hitbox/hurtbox visualization (no gameplay)
+        show_hitboxes=True,
+        show_hurtboxes=True,
+        show_frame_data=True,
+        show_collision_info=True,
+        infinite_health=True,
+        no_rounds=True,
+        no_timer=True
     )
 }
 
@@ -150,6 +162,7 @@ class GameModeManager:
             GameMode.TRAINING: "Practice mode with infinite health and debug tools",
             GameMode.DEV: "Full development mode with all debug features",
             GameMode.VERSUS: "Local 2-player versus matches",
-            GameMode.DEMO: "AI demonstration mode"
+            GameMode.DEMO: "AI demonstration mode",
+            GameMode.HITBOX_VIEWER: "ROM-accurate hitbox visualization viewer"
         }
         return descriptions.get(self.current_mode, "Unknown mode")

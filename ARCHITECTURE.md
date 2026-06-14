@@ -63,29 +63,29 @@ nothing constructs Ken yet; both players are Akuma (`core/game.py`).
 
 ## Frame data — canonical source & the no-made-up-data rule
 
-**PRIME DIRECTIVE: we do NOT make up hitbox/frame data. Every value must be
-referenced from the real game data.** This is enforced in code, not just by
-convention — see the five enforcement points below.
+**PRIME DIRECTIVE: we do NOT make up hitbox/frame data.** Box geometry and timing are
+ROM-accurate, dumped from the SF3:3S ROM; every box/move is tagged with its provenance
+tier so nothing fabricated can pass as real.
 
-- **Canonical source of truth:** `data/characters/<char>/frames.yaml` (one file per
-  character), loaded and validated through `schemas/sf3_schemas.py:CharacterFrames`
-  by `data/frame_data_loader.py`. The collision adapter reads **only** the loader
-  (`get_hitboxes` / `get_hurtboxes` / `get_move_frame_data`).
-- **Provenance is mandatory.** Every move declares `provenance.status` —
-  `verified` (transcribed from real game data, must cite a `source`), `unverified`
-  (hand-authored placeholder), or `derived` (computed from a verified move). The field
-  has no default; a move cannot be defined without it.
-- **Enforcement (5 points):** (1) the required `provenance` schema field; (2) the
-  loader's boot-time `VERIFIED/UNVERIFIED` log; (3) `tests/test_data_provenance.py`,
-  which fails on any unverified move not in its shrinking `UNVERIFIED_BACKLOG`;
-  (4) the hitbox viewer shows each move's tag on screen; (5) quarantined fabricated
-  files live in `attic/` so nothing reads them by accident.
-- **Verification:** once real numbers are ingested into `frames.yaml` (tagged
-  `verified` with a `source`), confirm each move visually in the hitbox viewer
-  (`sf3-viewer`) and remove it from `UNVERIFIED_BACKLOG`.
+- **Vendored source:** `data/sources/gouki_framedata.json` — per-frame box geometry
+  (attack / vulnerability / push / throwable) dumped from the `sfiii3nr1` ROM by the
+  [3rd_training_lua](https://github.com/Grouflon/3rd_training_lua) project. Full
+  attribution in `data/sources/SOURCE.txt`.
+- **Converter:** `tools/framedata/convert_3rd_training.py` reads that JSON, applies the
+  PyKuma coordinate transform, and emits `data/characters/akuma/hitboxes.yaml`. It
+  self-checks the idle base boxes and refuses to run if they don't match the source.
+  Regenerate from source; do not hand-edit the output.
+- **Runtime:** `data/hitbox_repository.py:HitboxRepository` loads `hitboxes.yaml`; the
+  collision adapter and the hitbox viewer (`core/hitbox_viewer.py`) read it.
+- **Provenance tiers** (each box/move is tagged): `verified` = box geometry + frame
+  timing from the ROM dump; `inferred` = the ROM-pointer→`CharacterState` *name*
+  assignment (geometry is ROM-verified, the name is a guess, see
+  `data/characters/akuma/move_names.json`); `community` = damage / stun / frame
+  advantage from Baston ESN3S tuning in `data/characters/akuma/sf3_authentic_frame_data.yaml`
+  (NOT ROM-verified). Enforced by `tests/test_hitbox_provenance.py`.
+- **Verification:** the hitbox viewer (`--hitbox-viewer`) draws non-`verified` boxes
+  **dashed** so they're never mistaken for ROM-accurate geometry.
 
-Quarantined (do not use): `attic/data/akuma_hitboxes.py` and
-`attic/data/characters/akuma/sf3_authentic_frame_data.yaml` were hand-approximated
-placeholders. `data/frame_data.py` still defines shared dataclasses (`MoveData` used
-by `characters/character.py`) and `data/animations.yaml` holds animation timing —
-neither is a hitbox source.
+`data/frame_data.py` still defines shared dataclasses (`MoveData` used by
+`characters/character.py`); `data/animations.yaml` holds animation timing — neither is a
+hitbox source.

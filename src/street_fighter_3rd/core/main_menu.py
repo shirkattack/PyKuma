@@ -81,7 +81,7 @@ class MainMenu:
                 MenuItem("START GAME", self._start_normal_game),
                 MenuItem("TRAINING MODE", self._start_training_mode),
                 MenuItem("DEV MODE", self._start_dev_mode),
-                MenuItem("HITBOX VIEWER", self._open_hitbox_viewer),
+                MenuItem("HITBOX VIEWER", self._start_hitbox_viewer_mode),
                 MenuItem("CONTROLS", submenu=MenuState.CONTROLS),
                 MenuItem("MOVES LIST", submenu=MenuState.MOVES),
                 MenuItem("MODE SELECT", submenu=MenuState.MODE_SELECT),
@@ -97,6 +97,7 @@ class MainMenu:
                 MenuItem("NORMAL MODE", self._select_normal_mode),
                 MenuItem("TRAINING MODE", self._select_training_mode),
                 MenuItem("DEV MODE", self._select_dev_mode),
+                MenuItem("HITBOX VIEWER", self._select_hitbox_viewer_mode),
                 # Not yet distinct from Normal (no CPU AI / no separate versus flow)
                 MenuItem("VERSUS MODE", self._select_versus_mode, available=False),
                 MenuItem("DEMO MODE", self._select_demo_mode, available=False),
@@ -111,7 +112,6 @@ class MainMenu:
         self.start_game = False
         self.selected_mode = GameMode.NORMAL
         self.quit_game = False
-        self.open_viewer = False  # set by the HITBOX VIEWER item
 
     def _first_available(self, state) -> int:
         """Index of the first selectable item in a menu (0 if none)."""
@@ -365,10 +365,11 @@ class MainMenu:
         descriptions = {
             0: "Standard fighting game experience",
             1: "Practice with infinite health and debug tools",
-            2: "Full development mode with all debug features", 
-            3: "Local 2-player versus matches",
-            4: "AI demonstration mode",
-            5: ""  # Back button
+            2: "Full development mode with all debug features",
+            3: "ROM-accurate hitbox visualization viewer",
+            4: "Local 2-player versus matches",
+            5: "AI demonstration mode",
+            6: ""  # Back button
         }
         
         # Menu items
@@ -406,6 +407,12 @@ class MainMenu:
         self.selected_mode = GameMode.DEV
         self.start_game = True
         
+    def _start_hitbox_viewer_mode(self):
+        """Start the standalone hitbox viewer."""
+        self.game_mode_manager.set_mode(GameMode.HITBOX_VIEWER)
+        self.selected_mode = GameMode.HITBOX_VIEWER
+        self.start_game = True
+
     def _select_normal_mode(self):
         """Select normal mode."""
         self.game_mode_manager.set_mode(GameMode.NORMAL)
@@ -417,6 +424,10 @@ class MainMenu:
     def _select_dev_mode(self):
         """Select dev mode."""
         self.game_mode_manager.set_mode(GameMode.DEV)
+
+    def _select_hitbox_viewer_mode(self):
+        """Select the hitbox viewer mode."""
+        self.game_mode_manager.set_mode(GameMode.HITBOX_VIEWER)
         
     def _select_versus_mode(self):
         """Select versus mode."""
@@ -426,18 +437,10 @@ class MainMenu:
         """Select demo mode."""
         self.game_mode_manager.set_mode(GameMode.DEMO)
         
-    def _open_hitbox_viewer(self):
-        """Open the frame-step hitbox viewer (data-verification tool)."""
-        self.open_viewer = True
-
     def _exit_game(self):
         """Exit the game."""
         self.quit_game = True
-
-    def should_open_viewer(self) -> bool:
-        """Check if the hitbox viewer should open."""
-        return self.open_viewer
-
+        
     def should_start_game(self) -> bool:
         """Check if game should start."""
         return self.start_game

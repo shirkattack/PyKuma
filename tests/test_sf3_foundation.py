@@ -113,10 +113,7 @@ def test_authentic_frame_data():
     print("=" * 50)
     
     # Load authentic frame data
-    # Quarantined placeholder data (hand-approximated, NOT verified). The canonical
-    # source is now src/street_fighter_3rd/data/characters/akuma/frames.yaml; this old
-    # file lives in attic/ pending real Baston transcription (Phase 3).
-    frame_data_path = Path("attic/data/characters/akuma/sf3_authentic_frame_data.yaml")
+    frame_data_path = Path("data/characters/akuma/sf3_authentic_frame_data.yaml")
     
     if not frame_data_path.exists():
         print(f"❌ Frame data file not found: {frame_data_path}")
@@ -231,10 +228,7 @@ def test_hitbox_system():
     hitbox_manager = SF3HitboxManager("Akuma")
     
     # Load frame data
-    # Quarantined placeholder data (hand-approximated, NOT verified). The canonical
-    # source is now src/street_fighter_3rd/data/characters/akuma/frames.yaml; this old
-    # file lives in attic/ pending real Baston transcription (Phase 3).
-    frame_data_path = Path("attic/data/characters/akuma/sf3_authentic_frame_data.yaml")
+    frame_data_path = Path("data/characters/akuma/sf3_authentic_frame_data.yaml")
     
     if frame_data_path.exists():
         with open(frame_data_path, 'r') as f:

@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "method": "matched ROM (startup,active,recovery,total) + box geometry against community frame data (Baston ESN3S, via sf3_authentic_frame_data.yaml); geometry+timing are ROM-verified, the move-NAME assignment is INFERRED and may be imperfect for low-confidence entries",
+    "name_status": "inferred"
+  },
+  "LIGHT_PUNCH": {
+    "rom_id": "13a8",
+    "confidence": "medium",
+    "rationale": "fast small jab, chest height, s/a/r approx 3/3/9"
+  },
+  "MEDIUM_PUNCH": {
+    "rom_id": "1d28",
+    "confidence": "low",
+    "rationale": "mid-height, non-moving, s/a/r approx 4/3/8"
+  },
+  "HEAVY_PUNCH": {
+    "rom_id": "1e88",
+    "confidence": "low",
+    "rationale": "tallest non-moving box, big, s/a/r approx 5/5/25"
+  },
+  "LIGHT_KICK": {
+    "rom_id": "1438",
+    "confidence": "high",
+    "rationale": "exact match s/a/r=4/3/7"
+  },
+  "MEDIUM_KICK": {
+    "rom_id": "1dd8",
+    "confidence": "low",
+    "rationale": "longer-reach non-moving kick, s/a/r approx 5/4/13"
+  },
+  "HEAVY_KICK": {
+    "rom_id": "1818",
+    "confidence": "low",
+    "rationale": "longest reach, big, s/a/r approx 8/5/25"
+  },
+  "CROUCH_HEAVY_KICK": {
+    "rom_id": "2008",
+    "confidence": "medium",
+    "rationale": "low ground box, long reach, s/a/r approx 6/5/20"
+  }
+}

@@ -28,14 +28,18 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Street Fighter III: 3rd Strike - Python Edition')
     
-    parser.add_argument('--mode', '-m', 
-                       choices=['normal', 'training', 'dev', 'versus', 'demo'],
+    parser.add_argument('--mode', '-m',
+                       choices=['normal', 'training', 'dev', 'versus', 'demo', 'hitbox-viewer'],
                        default=None,
                        help='Start directly in specified game mode')
-    
-    parser.add_argument('--no-menu', 
+
+    parser.add_argument('--no-menu',
                        action='store_true',
                        help='Skip main menu and start game directly')
+
+    parser.add_argument('--hitbox-viewer',
+                       action='store_true',
+                       help='Launch the standalone ROM-accurate hitbox viewer')
     
     parser.add_argument('--debug', '-d',
                        action='store_true', 
@@ -65,11 +69,7 @@ def parse_arguments():
                        type=int,
                        default=FPS,
                        help=f'Set target FPS (default: {FPS})')
-
-    parser.add_argument('--viewer',
-                       action='store_true',
-                       help='Open the frame-step hitbox viewer (data-verification tool)')
-
+    
     return parser.parse_args()
 
 
@@ -81,9 +81,12 @@ def determine_game_mode(args) -> GameMode:
             'training': GameMode.TRAINING,
             'dev': GameMode.DEV,
             'versus': GameMode.VERSUS,
-            'demo': GameMode.DEMO
+            'demo': GameMode.DEMO,
+            'hitbox-viewer': GameMode.HITBOX_VIEWER
         }
         return mode_map[args.mode]
+    elif getattr(args, 'hitbox_viewer', False):
+        return GameMode.HITBOX_VIEWER
     elif args.debug:
         return GameMode.DEV
     elif args.training:
@@ -121,11 +124,6 @@ def run_menu_loop(screen, window, clock) -> tuple[bool, GameMode, GameModeManage
         # Check menu state
         if menu.should_quit():
             return False, GameMode.NORMAL, menu.get_game_mode_manager()
-        elif menu.should_open_viewer():
-            # Run the hitbox viewer inline, then drop back to the menu.
-            from street_fighter_3rd.core.hitbox_viewer import run_hitbox_viewer
-            run_hitbox_viewer(screen, window, clock)
-            menu.open_viewer = False
         elif menu.should_start_game():
             return True, menu.get_selected_mode(), menu.get_game_mode_manager()
         
@@ -182,6 +180,19 @@ def run_game_loop(screen, window, clock, game_mode_manager: GameModeManager, tar
             running = False     # release: leave the game loop gracefully
 
 
+def run_hitbox_viewer_loop(screen, window, clock, target_fps: int):
+    """Run the standalone hitbox viewer until the user exits (ESC/Q)."""
+    from street_fighter_3rd.core.hitbox_viewer import HitboxViewer
+    viewer = HitboxViewer(screen)
+    try:
+        viewer.run(window=window, clock=clock, target_fps=target_fps)
+    except Exception as exc:
+        report = write_crash_report(exc, None)
+        log.exception("Hitbox viewer crashed; report at %s", report)
+        if is_strict():
+            raise
+
+
 def main():
     """Main entry point."""
     args = parse_arguments()
@@ -221,15 +232,14 @@ def main():
     log.info("Description: %s", game_mode_manager.get_mode_description())
 
     try:
-        if args.viewer:
-            # Frame-step hitbox viewer (data-verification tool).
-            from street_fighter_3rd.core.hitbox_viewer import run_hitbox_viewer
-            log.info("Opening hitbox viewer...")
-            run_hitbox_viewer(screen, window, clock, args.fps)
-        elif args.no_menu:
-            # Skip menu and start game directly
-            log.info("Skipping menu, starting game directly...")
-            run_game_loop(screen, window, clock, game_mode_manager, args.fps)
+        if args.no_menu or initial_mode == GameMode.HITBOX_VIEWER:
+            # Skip menu and start the requested mode directly.
+            if initial_mode == GameMode.HITBOX_VIEWER:
+                log.info("Launching hitbox viewer...")
+                run_hitbox_viewer_loop(screen, window, clock, args.fps)
+            else:
+                log.info("Skipping menu, starting game directly...")
+                run_game_loop(screen, window, clock, game_mode_manager, args.fps)
         else:
             # Show menu first
             while True:
@@ -238,9 +248,12 @@ def main():
                 if not should_start:
                     break
 
-                # Start game with selected mode
-                run_game_loop(screen, window, clock, menu_game_mode_manager, args.fps)
-                
+                # Start the selected mode (viewer is its own standalone loop).
+                if menu_game_mode_manager.current_mode == GameMode.HITBOX_VIEWER:
+                    run_hitbox_viewer_loop(screen, window, clock, args.fps)
+                else:
+                    run_game_loop(screen, window, clock, menu_game_mode_manager, args.fps)
+
                 # After game ends, return to menu
                 log.info("Returning to main menu...")
 
@@ -264,13 +277,6 @@ def main_dev():
     """Entry point for dev mode."""
     import sys
     sys.argv = ['sf3-dev', '--dev', '--no-menu']
-    main()
-
-
-def main_viewer():
-    """Entry point for the frame-step hitbox viewer."""
-    import sys
-    sys.argv = ['sf3-viewer', '--viewer']
     main()
 
 

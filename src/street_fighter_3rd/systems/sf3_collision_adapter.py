@@ -30,12 +30,8 @@ from .sf3_combo_system import SF3ComboSystem
 from .hitbox_data import HitboxData
 from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
-# Canonical frame-data loader (single source of truth; replaces data/akuma_hitboxes.py).
-from ..data.frame_data_loader import (
-    get_hitboxes as get_akuma_hitboxes,
-    get_hurtboxes as get_akuma_hurtboxes,
-    get_move_frame_data,
-)
+from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
+from ..data.hitbox_repository import HitboxRepository
 from ..characters.character import apply_reaction
 from .vfx import HitSparkType
 
@@ -235,6 +231,14 @@ class SF3CollisionAdapter:
         akuma_attack_hitboxes = get_akuma_hitboxes(character.state, frame_number)
         akuma_hurtboxes = get_akuma_hurtboxes(character.state)
 
+        # Attack-box provenance: geometry is ROM-verified, but if the move's
+        # NAME is only inferred, surface that as the box status so the debug
+        # viewer can flag it (PENDING/INFERRED). Hurtboxes are always verified.
+        repo_move = HitboxRepository.instance().get_move_by_state(character.state.name)
+        attack_status = "verified"
+        if repo_move is not None and repo_move.name_status == "inferred":
+            attack_status = "inferred"
+
         # Create a frame with the hitboxes
         sf3_frame = SF3HitboxFrame(frame_number=frame_number)
 
@@ -260,7 +264,8 @@ class SF3CollisionAdapter:
                     damage=hitbox_data.damage,
                     hitstun=hitbox_data.hitstun,
                     blockstun=hitbox_data.blockstun,
-                    hit_level=hit_level
+                    hit_level=hit_level,
+                    status=attack_status,
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.ATTACK, sf3_hitbox)
 
@@ -274,7 +279,8 @@ class SF3CollisionAdapter:
                     height=float(hurtbox_data.height),
                     damage=0,  # Hurtboxes don't deal damage
                     hitstun=0,
-                    blockstun=0
+                    blockstun=0,
+                    status="verified",
                 )
                 sf3_frame.add_hitbox(SF3HitboxType.BODY, sf3_hurtbox)
 
@@ -336,135 +342,16 @@ class SF3CollisionAdapter:
 
             return hitboxes
 
-        # Try YAML animation data as fallback
-        yaml_hitbox = self._get_yaml_hitbox(character)
-        if yaml_hitbox:
-            hitboxes.append(yaml_hitbox)
-            return hitboxes
-
-        # Final fallback to basic hardcoded hitboxes
-        return self._get_fallback_hitboxes(character)
-    
-    def _get_yaml_hitbox(self, character) -> Tuple[HitboxData, pygame.Rect] | None:
-        """Get hitbox from YAML animation data if available"""
-        try:
-            import yaml
-            from pathlib import Path
-
-            # Load animation data (relative to this file)
-            data_dir = Path(__file__).parent.parent / 'data'
-            animations_file = data_dir / 'animations.yaml'
-            with open(animations_file, 'r') as f:
-                anim_data = yaml.safe_load(f)
-            
-            # Map character states to animation names
-            state_to_anim = {
-                CharacterState.LIGHT_PUNCH: 'light_punch',
-                CharacterState.MEDIUM_PUNCH: 'medium_punch', 
-                CharacterState.HEAVY_PUNCH: 'heavy_punch',
-                CharacterState.LIGHT_KICK: 'light_kick',
-                CharacterState.MEDIUM_KICK: 'medium_kick',
-                CharacterState.HEAVY_KICK: 'heavy_kick',
-                CharacterState.CROUCHING: 'crouch_light_punch'  # Example for crouching attacks
-            }
-            
-            anim_name = state_to_anim.get(character.state)
-            if not anim_name:
-                return None
-            
-            # Get character animation data
-            char_data = anim_data.get('characters', {}).get('akuma', {})
-            animations = char_data.get('animations', {})
-            anim = animations.get(anim_name, {})
-            
-            if 'hitbox' not in anim:
-                return None
-            
-            hitbox_data_yaml = anim['hitbox']
-            frame_data = anim.get('frame_data', {})
-            
-            # Check if we're in active frames
-            active_frames = hitbox_data_yaml.get('active_frames', [])
-            current_anim_frame = character.current_frame + 1  # Convert to 1-indexed
-            
-            if current_anim_frame not in active_frames:
-                return None  # Not in active frames
-            
-            # Convert hit type string to enum
-            hit_type_str = hitbox_data_yaml.get('hit_type', 'MID')
-            hit_type_map = {
-                'HIGH': HitType.HIGH,
-                'MID': HitType.MID, 
-                'LOW': HitType.LOW,
-                'OVERHEAD': HitType.OVERHEAD
-            }
-            hit_type = hit_type_map.get(hit_type_str, HitType.MID)
-            
-            # Create hitbox data from YAML
-            hitbox_data = HitboxData(
-                x=hitbox_data_yaml.get('offset_x', 0),
-                y=hitbox_data_yaml.get('offset_y', 0),
-                width=hitbox_data_yaml.get('width', 50),
-                height=hitbox_data_yaml.get('height', 50),
-                damage=hitbox_data_yaml.get('damage', 10),
-                hitstun=hitbox_data_yaml.get('hitstun', 10),
-                hit_type=hit_type
-            )
-            
-            # Create rectangle in world coordinates
-            offset_x = hitbox_data.x
-            offset_y = hitbox_data.y
-            
-            # Apply facing direction
-            if character.is_facing_right():
-                rect = pygame.Rect(
-                    character.x + offset_x,
-                    character.y + offset_y,
-                    hitbox_data.width,
-                    hitbox_data.height
-                )
-            else:
-                rect = pygame.Rect(
-                    character.x - offset_x - hitbox_data.width,
-                    character.y + offset_y,
-                    hitbox_data.width,
-                    hitbox_data.height
-                )
-            
-            return (hitbox_data, rect)
-            
-        except (pygame.error, OSError, FileNotFoundError) as e:
-            log_once(log, ("yaml_hitbox_load",), logging.WARNING, "Could not load YAML hitbox data: %s", e)
-            return None
-    
-    def _get_fallback_hitboxes(self, character) -> List[Tuple[HitboxData, pygame.Rect]]:
-        """Fallback hardcoded hitboxes if YAML data unavailable"""
-        hitboxes = []
-        
-        # Basic attack hitboxes based on state (simplified versions)
-        if character.state == CharacterState.LIGHT_PUNCH:
-            hitbox_data = HitboxData(45, -70, 50, 35, 12, 12, HitType.HIGH)
-            rect = pygame.Rect(character.x + 45, character.y - 70, 50, 35)
-            if not character.is_facing_right():
-                rect.x = character.x - 95
-            hitboxes.append((hitbox_data, rect))
-            
-        elif character.state == CharacterState.MEDIUM_PUNCH:
-            hitbox_data = HitboxData(50, -65, 60, 40, 18, 15, HitType.HIGH)
-            rect = pygame.Rect(character.x + 50, character.y - 65, 60, 40)
-            if not character.is_facing_right():
-                rect.x = character.x - 110
-            hitboxes.append((hitbox_data, rect))
-            
-        elif character.state == CharacterState.HEAVY_PUNCH:
-            hitbox_data = HitboxData(35, -85, 55, 50, 25, 18, HitType.HIGH)
-            rect = pygame.Rect(character.x + 35, character.y - 85, 55, 50)
-            if not character.is_facing_right():
-                rect.x = character.x - 90
-            hitboxes.append((hitbox_data, rect))
-        
+        # No ROM-verified frame data for this state/frame. Never fabricate
+        # boxes -- return empty and note it once.
+        log_once(
+            log, ("no_attack_hitboxes", getattr(character.state, "name", character.state)),
+            logging.INFO,
+            "No frame-data attack hitboxes for state %s; returning none.",
+            getattr(character.state, "name", character.state),
+        )
         return hitboxes
-    
+
     def _get_character_hurtboxes(self, character) -> List[pygame.Rect]:
         """Get hurtboxes from character using frame data"""
         hurtboxes = []
@@ -702,45 +589,86 @@ class SF3CollisionAdapter:
         if DEBUG_MODE:
             log.debug("SF3 Throw Applied: %s damage", hit_status.damage)
     
+    @staticmethod
+    def _draw_dashed_rect(screen, color, rect, dash=4, width=2):
+        """Draw a rectangle outline as a dashed line (for non-verified boxes)."""
+        x, y, w, h = rect.x, rect.y, rect.width, rect.height
+        corners = [((x, y), (x + w, y)), ((x + w, y), (x + w, y + h)),
+                   ((x + w, y + h), (x, y + h)), ((x, y + h), (x, y))]
+        for (x0, y0), (x1, y1) in corners:
+            length = max(abs(x1 - x0), abs(y1 - y0))
+            if length == 0:
+                continue
+            steps = int(length // (dash * 2)) + 1
+            for i in range(steps):
+                t0 = (i * dash * 2) / length
+                t1 = min(1.0, (i * dash * 2 + dash) / length)
+                sx = x0 + (x1 - x0) * t0
+                sy = y0 + (y1 - y0) * t0
+                ex = x0 + (x1 - x0) * t1
+                ey = y0 + (y1 - y0) * t1
+                pygame.draw.line(screen, color, (sx, sy), (ex, ey), width)
+
     def render_debug(self, screen: pygame.Surface, show_hitboxes: bool = None, show_hurtboxes: bool = None):
-        """Render debug visualization - compatible with old CollisionSystem"""
+        """Render debug visualization - compatible with old CollisionSystem.
+
+        Verified boxes are drawn solid (hitboxes red, hurtboxes blue). Any box
+        whose provenance status is not ``verified`` (inferred / community /
+        pending) is drawn DASHED in yellow, with a one-time "PENDING/INFERRED
+        DATA" legend so the operator knows it is not ROM-verified.
+        """
         if not (show_hitboxes or show_hurtboxes):
             return
-        
-        # Update debug rectangles from current hitbox managers
+
+        YELLOW = (255, 255, 0)
+        # (rect, status) pairs so we can choose solid vs dashed per box.
         self.debug_hitboxes.clear()
         self.debug_hurtboxes.clear()
-        
+        hit_pairs = []
+        hurt_pairs = []
+
         for player_id, manager in self.hitbox_managers.items():
             work = self.player_works.get(player_id)
             if not work:
                 continue
-                
-            # Get attack hitboxes
-            attack_hitboxes = manager.get_current_hitboxes(SF3HitboxType.ATTACK)
-            for hitbox in attack_hitboxes:
+
+            for hitbox in manager.get_current_hitboxes(SF3HitboxType.ATTACK):
                 screen_x = work.work.position.x + hitbox.offset_x
                 screen_y = work.work.position.y + hitbox.offset_y
                 rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                hit_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hitboxes.append(rect)
 
-            # Get body hurtboxes
-            body_hitboxes = manager.get_current_hitboxes(SF3HitboxType.BODY)
-            for hitbox in body_hitboxes:
+            for hitbox in manager.get_current_hitboxes(SF3HitboxType.BODY):
                 screen_x = work.work.position.x + hitbox.offset_x
                 screen_y = work.work.position.y + hitbox.offset_y
                 rect = pygame.Rect(screen_x, screen_y, hitbox.width, hitbox.height)
+                hurt_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hurtboxes.append(rect)
-        
-        # Render hitboxes in red
+
+        has_pending = False
+
         if show_hitboxes:
-            for rect in self.debug_hitboxes:
-                pygame.draw.rect(screen, (255, 0, 0), rect, 2)
-        
-        # Render hurtboxes in blue
+            for rect, status in hit_pairs:
+                if status == "verified":
+                    pygame.draw.rect(screen, (255, 0, 0), rect, 2)
+                else:
+                    self._draw_dashed_rect(screen, YELLOW, rect)
+                    has_pending = True
+
         if show_hurtboxes:
-            for rect in self.debug_hurtboxes:
-                pygame.draw.rect(screen, (0, 0, 255), rect, 2)
+            for rect, status in hurt_pairs:
+                if status == "verified":
+                    pygame.draw.rect(screen, (0, 0, 255), rect, 2)
+                else:
+                    self._draw_dashed_rect(screen, YELLOW, rect)
+                    has_pending = True
+
+        if has_pending:
+            if not hasattr(self, "_pending_legend_font"):
+                self._pending_legend_font = pygame.font.Font(None, 18)
+            label = self._pending_legend_font.render("PENDING/INFERRED DATA", True, YELLOW)
+            screen.blit(label, (8, 8))
     
     def get_combo_info(self, player_id: int) -> Dict[str, Any]:
         """Get combo information for a player (for UI display)"""

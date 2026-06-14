@@ -1,4 +1,10 @@
-"""Runtime hitbox data shared by the collision pipeline."""
+"""Runtime hitbox data container used by the collision adapter.
+
+This is a lightweight, mutable hitbox record produced from frame data at
+collision time (distinct from the validated ``schemas.sf3_schemas.HitboxData``
+and from the persistent ``SF3Hitbox``). It carries the per-attack values the
+collision adapter needs while a hit is being resolved.
+"""
 
 from street_fighter_3rd.data.enums import HitType
 

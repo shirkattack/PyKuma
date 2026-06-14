@@ -1,281 +1,258 @@
 """
-Frame-step hitbox viewer — the data-verification tool.
+Standalone hitbox viewer screen.
 
-Pick a move, step it frame-by-frame, and see the hitboxes/hurtboxes from the canonical
-loader (data/frame_data_loader.py) drawn over Akuma's sprite, alongside a data panel and
-the move's PROVENANCE tag. This is how unverified placeholder boxes get visually confirmed
-against the game and flipped to `verified` once real data is ingested.
+Reads the ROM-verified `HitboxRepository` directly and draws Akuma's per-move
+attack boxes over the composed base hurtbox / pushbox / throwbox. Geometry is
+already in PyKuma forward-positive offsets, so the character faces right and no
+mirroring is needed.
 
-Boxes are anchored to the sprite's FEET line (character.y + feet_offset), which is where the
-box coordinate system's "ground" sits — so correct data lands on the limb. The viewer reads
-ONLY the canonical loader; it never invents numbers.
+PyKuma -> screen mapping (feet at a baseline y):
+  screen_y = baseline_y + offset_y   (offset_y negative = up from feet)
+  attack box  : screen_x = center_x + offset_x          (offset_x = LEFT edge)
+  hurt/push/throw : screen_x = center_x + offset_x - width/2  (offset_x = CENTER)
+
+NO INVENTED DATA: boxes that are not `verified` (inferred names, community data,
+pending) are drawn DASHED with a label so they are never mistaken for verified.
+
+Controls: LEFT/RIGHT cycle moves, UP/DOWN step frames, ESC/Q exit.
 """
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import List, Optional
 
 import pygame
 
-from ..data.constants import SCREEN_WIDTH, SCREEN_HEIGHT, STAGE_FLOOR
-from ..data.enums import CharacterState, FacingDirection
-from ..characters.akuma import Akuma
-from ..data.frame_data_loader import get_character_frames, get_hitboxes, get_hurtboxes
+from street_fighter_3rd.data.constants import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, STAGE_FLOOR,
+    COLOR_BLACK, COLOR_WHITE, COLOR_RED, COLOR_BLUE, COLOR_GREEN, COLOR_YELLOW,
+)
+from street_fighter_3rd.data.hitbox_repository import HitboxRepository
+from street_fighter_3rd.util.logging_config import get_logger
 
-# Box colours: hitboxes red, hurtboxes blue (matches the in-game debug overlay).
-_COL_HIT = (255, 60, 60)
-_COL_HURT = (60, 120, 255)
-_COL_GROUND = (90, 90, 90)
-_COL_ORIGIN = (255, 255, 0)
-_COL_BG = (24, 24, 32)
-_COL_PANEL = (240, 240, 240)
-_COL_DIM = (150, 150, 150)
-# Provenance tag colours.
-_PROV_COL = {"verified": (60, 220, 90), "unverified": (240, 70, 70), "derived": (240, 200, 60)}
+log = get_logger(__name__)
 
-
-@dataclass
-class _MoveEntry:
-    key: str          # frames.yaml slug
-    state: CharacterState
-    name: str
-    command: Optional[str]
-    startup: int
-    active: List[int]
-    recovery: int
-    on_hit: int
-    on_block: int
-    provenance_status: str
-    provenance_source: Optional[str]
-    provenance_ref: Optional[str]
-
-    @property
-    def total_frames(self) -> int:
-        # startup + active window + recovery. At least 1 so stepping never divides by zero.
-        return max(1, self.startup + len(self.active) + self.recovery)
-
-    def phase(self, frame: int) -> str:
-        if frame <= self.startup:
-            return "STARTUP"
-        if frame <= self.startup + len(self.active):
-            return "ACTIVE"
-        return "RECOVERY"
+_CYAN = (0, 220, 220)
+_BADGE_COLORS = {
+    "verified": COLOR_GREEN,
+    "inferred": COLOR_YELLOW,
+    "community": COLOR_YELLOW,
+    "pending": COLOR_YELLOW,
+}
 
 
-def _load_move_entries(character: str = "akuma") -> List[_MoveEntry]:
-    """Build the ordered move list from the canonical loader (insertion order = yaml order)."""
-    entries: List[_MoveEntry] = []
-    for key, mf in get_character_frames(character).moves.items():
-        entries.append(_MoveEntry(
-            key=key, state=CharacterState[mf.state], name=mf.name, command=mf.command,
-            startup=mf.startup, active=list(mf.active), recovery=mf.recovery,
-            on_hit=mf.on_hit, on_block=mf.on_block,
-            provenance_status=mf.provenance.status,
-            provenance_source=mf.provenance.source,
-            provenance_ref=mf.provenance.ref,
-        ))
-    return entries
+def _draw_dashed_rect(surface, color, rect, dash=5, width=2):
+    """Dashed rectangle outline (used for non-verified boxes)."""
+    x, y, w, h = rect.x, rect.y, rect.width, rect.height
+    edges = [((x, y), (x + w, y)), ((x + w, y), (x + w, y + h)),
+             ((x + w, y + h), (x, y + h)), ((x, y + h), (x, y))]
+    for (x0, y0), (x1, y1) in edges:
+        length = max(abs(x1 - x0), abs(y1 - y0))
+        if length == 0:
+            continue
+        steps = int(length // (dash * 2)) + 1
+        for i in range(steps):
+            t0 = (i * dash * 2) / length
+            t1 = min(1.0, (i * dash * 2 + dash) / length)
+            pygame.draw.line(
+                surface, color,
+                (x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0),
+                (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1),
+                width,
+            )
 
 
 class HitboxViewer:
-    """Headless-constructable controller for the frame-step viewer.
+    """Standalone pygame screen for inspecting ROM-accurate hitboxes."""
 
-    The pygame run loop (run_hitbox_viewer) translates key events into the public
-    methods below; everything here is testable without a real window.
-    """
-
-    PLAY_FRAME_TICKS = 6  # hold each frame this many 60fps ticks when playing (~10 fps)
-
-    def __init__(self, screen: pygame.Surface, character: str = "akuma"):
+    def __init__(self, screen: pygame.Surface, repository: HitboxRepository = None):
         self.screen = screen
-        self.character_name = character
-        self.moves = _load_move_entries(character)
-        if not self.moves:
-            raise ValueError(f"no moves found for '{character}' in canonical frames.yaml")
-
+        self.repo = repository or HitboxRepository.instance()
+        self.moves = list(self.repo.iter_moves())
         self.move_index = 0
-        self.frame = 1               # 1-indexed gameplay frame
-        self.playing = False
-        self._play_counter = 0
+        self.frame_index = 0  # index into the current move's active frames
 
-        # One Akuma, centred and facing right (yaml offsets are facing-forward).
-        self.character = Akuma(x=SCREEN_WIDTH // 2, y=STAGE_FLOOR, player_number=1)
-        self.character.facing = FacingDirection.RIGHT
-        self.feet_offset = getattr(self.character, "feet_offset", 0)
+        self.center_x = SCREEN_WIDTH // 2
+        self.baseline_y = STAGE_FLOOR + 136  # feet line (matches sprite.bottom)
 
-        if not pygame.font.get_init():
-            pygame.font.init()
-        self.font = pygame.font.Font(None, 26)
-        self.font_small = pygame.font.Font(None, 20)
-        self._text_cache = {}
+        self.font = pygame.font.Font(None, 22)
+        self.small_font = pygame.font.Font(None, 18)
+        self.running = False
 
-    # --- model / navigation -------------------------------------------------
+    # -- navigation --------------------------------------------------------
 
     @property
-    def current(self) -> _MoveEntry:
-        return self.moves[self.move_index]
+    def current_move(self):
+        if not self.moves:
+            return None
+        return self.moves[self.move_index % len(self.moves)]
 
-    def select_move(self, index: int) -> None:
-        self.move_index = index % len(self.moves)
-        self.frame = 1
-        self._play_counter = 0
+    def _active_frames(self):
+        move = self.current_move
+        return move.active_frames() if move else []
 
-    def next_move(self) -> None:
-        self.select_move(self.move_index + 1)
+    def next_move(self, step=1):
+        if self.moves:
+            self.move_index = (self.move_index + step) % len(self.moves)
+            self.frame_index = 0
 
-    def prev_move(self) -> None:
-        self.select_move(self.move_index - 1)
+    def step_frame(self, step=1):
+        frames = self._active_frames()
+        if frames:
+            self.frame_index = (self.frame_index + step) % len(frames)
 
-    def step(self, delta: int) -> None:
-        """Advance the gameplay frame by delta, wrapping within [1, total]."""
-        self.playing = False
-        total = self.current.total_frames
-        self.frame = (self.frame - 1 + delta) % total + 1
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_ESCAPE, pygame.K_q):
+                self.running = False
+            elif event.key == pygame.K_RIGHT:
+                self.next_move(1)
+            elif event.key == pygame.K_LEFT:
+                self.next_move(-1)
+            elif event.key == pygame.K_UP:
+                self.step_frame(1)
+            elif event.key == pygame.K_DOWN:
+                self.step_frame(-1)
 
-    def toggle_play(self) -> None:
-        self.playing = not self.playing
-        self._play_counter = 0
+    # -- coordinate mapping ------------------------------------------------
 
-    def update(self) -> None:
-        """One 60fps tick; advances the frame when playing."""
-        if not self.playing:
-            return
-        self._play_counter += 1
-        if self._play_counter >= self.PLAY_FRAME_TICKS:
-            self._play_counter = 0
-            total = self.current.total_frames
-            self.frame = self.frame % total + 1
+    def _attack_rect(self, box):
+        # offset_x = LEFT edge, forward-positive.
+        return pygame.Rect(int(self.center_x + box.offset_x),
+                           int(self.baseline_y + box.offset_y),
+                           int(box.width), int(box.height))
 
-    # --- panel text (pure; asserted by tests) -------------------------------
+    def _centered_rect(self, box):
+        # offset_x = CENTER, forward-positive.
+        return pygame.Rect(int(self.center_x + box.offset_x - box.width / 2),
+                           int(self.baseline_y + box.offset_y),
+                           int(box.width), int(box.height))
 
-    def provenance_label(self) -> str:
-        m = self.current
-        if m.provenance_status == "verified":
-            tag = "VERIFIED ✓"
-            if m.provenance_ref:
-                tag += f" ({m.provenance_ref})"
-            return tag
-        if m.provenance_status == "derived":
-            return "DERIVED (computed)"
-        return "UNVERIFIED — placeholder, not from the game"
+    def _draw_box(self, rect, status, solid_color):
+        if status == "verified":
+            pygame.draw.rect(self.screen, solid_color, rect, 2)
+        else:
+            _draw_dashed_rect(self.screen, COLOR_YELLOW, rect)
 
-    # --- rendering ----------------------------------------------------------
+    # -- rendering ---------------------------------------------------------
 
-    def _ground_y(self) -> int:
-        return int(self.character.y) + self.feet_offset
+    def render(self):
+        self.screen.fill(COLOR_BLACK)
 
-    def _set_sprite_frame(self) -> None:
-        """Drive the character's animation to roughly match the gameplay frame."""
-        anim_name = getattr(Akuma, "_STATE_ANIM", {}).get(self.current.state)
-        if not anim_name:
-            return
-        controller = getattr(self.character, "animation_controller", None)
-        if controller is None:
-            return
-        try:
-            controller.play_animation(anim_name)
-        except Exception:
-            return
-        anim = getattr(controller, "current_animation", None)
-        frames = getattr(anim, "frames", None)
-        if not frames:
-            return
-        total = self.current.total_frames
-        progress = (self.frame - 1) / max(1, total - 1)
-        idx = min(len(frames) - 1, max(0, round(progress * (len(frames) - 1))))
-        anim.current_frame_index = idx
+        # Ground line + placeholder silhouette (107px tall, native scale).
+        pygame.draw.line(self.screen, (60, 60, 60),
+                         (0, self.baseline_y), (SCREEN_WIDTH, self.baseline_y), 1)
+        silhouette = pygame.Rect(self.center_x - 16, self.baseline_y - 107, 32, 107)
+        pygame.draw.rect(self.screen, (40, 40, 50), silhouette)
 
-    def _draw_box(self, box, color: tuple, *, centered: bool) -> None:
-        ground_y = self._ground_y()
-        left = int(self.character.x + box.offset_x)
-        if centered:
-            left -= box.width // 2
-        rect = pygame.Rect(left, ground_y + box.offset_y, box.width, box.height)
-        pygame.draw.rect(self.screen, color, rect, 2)
+        has_pending = False
 
-    def _text(self, font, text, color):
-        key = (id(font), text, color)
-        surf = self._text_cache.get(key)
-        if surf is None:
-            surf = font.render(text, True, color)
-            self._text_cache[key] = surf
-        return surf
+        # Pushbox (green) and throwbox (cyan) -- centered boxes.
+        push = self.repo.get_pushbox()
+        if push:
+            self._draw_box(self._centered_rect(push), push.status, COLOR_GREEN)
+        throw = self.repo.get_throwbox()
+        if throw:
+            self._draw_box(self._centered_rect(throw), throw.status, _CYAN)
 
-    def render(self) -> None:
-        self.screen.fill(_COL_BG)
-        ground_y = self._ground_y()
+        # Base hurtboxes (blue) -- centered boxes.
+        for hb in self.repo.get_base_hurtboxes():
+            rect = self._centered_rect(hb)
+            self._draw_box(rect, hb.status, COLOR_BLUE)
+            if hb.status != "verified":
+                has_pending = True
 
-        # Ground line + origin crosshair so box anchoring is legible.
-        pygame.draw.line(self.screen, _COL_GROUND, (0, ground_y), (SCREEN_WIDTH, ground_y), 1)
-        cx = int(self.character.x)
-        pygame.draw.line(self.screen, _COL_ORIGIN, (cx, ground_y - 6), (cx, ground_y + 6), 1)
+        # Current move's attack boxes for the selected active frame (red).
+        move = self.current_move
+        active = self._active_frames()
+        frame_no = active[self.frame_index] if active else None
+        if move and frame_no is not None:
+            for box in move.attack_boxes_for_frame(frame_no):
+                rect = self._attack_rect(box)
+                # Attack geometry is verified, but if the move name is only
+                # inferred, flag the box as non-verified for the viewer.
+                status = box.status
+                if move.name_status == "inferred":
+                    status = "inferred"
+                self._draw_box(rect, status, COLOR_RED)
+                if status != "verified":
+                    has_pending = True
 
-        # Sprite (behind boxes).
-        self._set_sprite_frame()
-        try:
-            self.character.render(self.screen)
-        except Exception:
-            pass  # missing art shouldn't kill the viewer; boxes still verify the data
+        self._render_hud(move, active, frame_no, has_pending)
 
-        m = self.current
-        # Hurtboxes (centred on origin), then active hitboxes (left-anchored at offset_x).
-        for hb in get_hurtboxes(m.state, self.character_name):
-            self._draw_box(hb, _COL_HURT, centered=True)
-        for hb in get_hitboxes(m.state, self.frame, self.character_name):
-            self._draw_box(hb, _COL_HIT, centered=False)
+    def _render_hud(self, move, active, frame_no, has_pending):
+        y = 8
+        lines = []
+        if move is None:
+            lines.append("No moves loaded (hitboxes.yaml missing?)")
+        else:
+            state = move.state or "(unmapped)"
+            lines.append(f"rom_id {move.rom_id}   state: {state}")
+            if move.name_status:
+                conf = move.confidence or "?"
+                lines.append(f"name_status: {move.name_status} (confidence {conf})")
+            timing = move.timing
+            lines.append("timing  s/a/r/total: "
+                         f"{timing.get('startup')}/{timing.get('active')}/"
+                         f"{timing.get('recovery')}/{timing.get('total')}")
+            if active:
+                lines.append(f"active frame {frame_no}  "
+                             f"({self.frame_index + 1}/{len(active)})")
+            src = move.source
+            lines.append(f"source: {src.repo}")
+            lines.append(f"        @{src.commit[:12]}")
 
-        self._render_panel()
+        for text in lines:
+            self.screen.blit(self.font.render(text, True, COLOR_WHITE), (8, y))
+            y += 22
 
-    def _render_panel(self) -> None:
-        x, y = 12, 10
-        self.screen.blit(self._text(self.font, self.current.name, _COL_PANEL), (x, y))
-        y += 28
-        cmd = f"  [{self.current.command}]" if self.current.command else ""
-        info = [
-            f"Frame {self.frame} / {self.current.total_frames}    {self.current.phase(self.frame)}{cmd}",
-            f"startup {self.current.startup}   active {len(self.current.active)}   recovery {self.current.recovery}",
-            f"on-hit {self.current.on_hit:+d}   on-block {self.current.on_block:+d}",
-        ]
-        boxes = get_hitboxes(self.current.state, self.frame, self.character_name)
-        info.append(f"damage {boxes[0].damage}" if boxes else "damage — (not active)")
-        for line in info:
-            self.screen.blit(self._text(self.font_small, line, _COL_DIM), (x, y))
+        # Provenance badge.
+        if move is not None:
+            tier = "verified"
+            if move.name_status == "inferred":
+                tier = "inferred"
+            elif move.combat is not None:
+                tier = "community"
+            badge = self.small_font.render(f"[{tier.upper()}]", True,
+                                           _BADGE_COLORS.get(tier, COLOR_WHITE))
+            self.screen.blit(badge, (8, y))
             y += 20
 
-        # Provenance tag — the on-screen "visibly mark" enforcement point.
-        col = _PROV_COL.get(self.current.provenance_status, _COL_PANEL)
-        self.screen.blit(self._text(self.font, self.provenance_label(), col), (x, y + 4))
+        # Legend.
+        legend = [
+            ("attack (red)", COLOR_RED),
+            ("hurt (blue)", COLOR_BLUE),
+            ("push (green)", COLOR_GREEN),
+            ("throw (cyan)", _CYAN),
+        ]
+        lx = SCREEN_WIDTH - 160
+        ly = 8
+        for text, col in legend:
+            self.screen.blit(self.small_font.render(text, True, col), (lx, ly))
+            ly += 18
+        self.screen.blit(self.small_font.render(
+            "LEFT/RIGHT move  UP/DOWN frame  ESC quit", True, COLOR_WHITE),
+            (8, SCREEN_HEIGHT - 22))
 
-        help_line = "[←→] move   [, .] step frame   [space] play/pause   [esc] quit"
-        self.screen.blit(self._text(self.font_small, help_line, _COL_DIM), (x, SCREEN_HEIGHT - 24))
+        if has_pending:
+            label = self.font.render("PENDING/INFERRED DATA", True, COLOR_YELLOW)
+            self.screen.blit(label, (self.center_x - label.get_width() // 2,
+                                     SCREEN_HEIGHT - 46))
 
+    # -- loop --------------------------------------------------------------
 
-def run_hitbox_viewer(screen: pygame.Surface, window: pygame.Surface, clock, target_fps: int = 60):
-    """Run the viewer loop (mirrors main_with_menu.run_game_loop)."""
-    from ..main_with_menu import present  # local import to avoid a cycle at module load
-
-    viewer = HitboxViewer(screen)
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_ESCAPE,):
-                    running = False
-                elif event.key in (pygame.K_RIGHT, pygame.K_RIGHTBRACKET):
-                    viewer.next_move()
-                elif event.key in (pygame.K_LEFT, pygame.K_LEFTBRACKET):
-                    viewer.prev_move()
-                elif event.key in (pygame.K_PERIOD, pygame.K_d):
-                    viewer.step(+1)
-                elif event.key in (pygame.K_COMMA, pygame.K_a):
-                    viewer.step(-1)
-                elif event.key == pygame.K_SPACE:
-                    viewer.toggle_play()
-
-        clock.tick(target_fps)
-        viewer.update()
-        viewer.render()
-        present(screen, window)
+    def run(self, window=None, clock=None, target_fps=60):
+        """Run the viewer until ESC/Q/quit. ``window``/``clock`` optional."""
+        self.running = True
+        owns_clock = clock is None
+        if owns_clock:
+            clock = pygame.time.Clock()
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                else:
+                    self.handle_event(event)
+            self.render()
+            if window is not None:
+                pygame.transform.scale(self.screen, window.get_size(), window)
+                pygame.display.flip()
+            else:
+                pygame.display.flip()
+            clock.tick(target_fps)

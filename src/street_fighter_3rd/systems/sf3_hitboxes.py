@@ -69,7 +69,11 @@ class SF3Hitbox:
     # Special properties
     priority: int = 0
     counter_hit_damage: int = 0
-    
+
+    # Data provenance of this box: "verified" / "inferred" / "community" /
+    # "pending". Defaults to "verified" so existing call sites are unaffected.
+    status: str = "verified"
+
     def get_rect(self, character_x: float, character_y: float, facing: int) -> pygame.Rect:
         """
         Get pygame Rect for collision detection

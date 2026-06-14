@@ -1,61 +1,48 @@
-"""Turn a crash into an actionable artifact.
+"""Write a crash report when the game loop raises.
 
-On an unhandled per-frame exception, write a folder with the traceback, the
-game's numerical state, recent invariant violations and recent frames, plus the
-final rendered PNG — so a crash can be handed to an assistant verbatim.
+Used by the main loops to record a traceback (plus a little game context) to a
+file so a crash can be diagnosed after the fact, while the loop exits cleanly
+in release mode.
 """
 
-import json
-import os
-import platform
-import sys
+import tempfile
 import traceback
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
 
 from street_fighter_3rd.util.logging_config import get_logger
 
 log = get_logger(__name__)
 
 
-def write_crash_report(exc, game=None, out_root="debug_snapshots"):
-    """Write debug_snapshots/crash_<frame>/ and return its path (or None on failure).
+def write_crash_report(exc: BaseException, game: Optional[Any] = None) -> str:
+    """Write a crash report for ``exc`` and return the report file path.
 
-    Self-guarded: a failure while reporting must not mask the original exception.
+    Args:
+        exc: the exception that was raised.
+        game: optional game object; ``frame_count`` is recorded if present.
+
+    Returns:
+        The path to the written report (best-effort; returns the intended path
+        even if writing failed).
     """
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_dir = Path(tempfile.gettempdir()) / "pykuma_crashes"
+    report_path = report_dir / f"crash_{timestamp}.txt"
+
+    frame = getattr(game, "frame_count", None)
+    lines = [
+        f"PyKuma crash report ({datetime.now().isoformat()})",
+        f"frame_count: {frame}",
+        "",
+        "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+    ]
+
     try:
-        frame = getattr(game, "frame_count", 0) if game else 0
-        out_dir = os.path.join(out_root, f"crash_{frame:06d}")
-        os.makedirs(out_dir, exist_ok=True)
+        report_dir.mkdir(parents=True, exist_ok=True)
+        report_path.write_text("\n".join(lines))
+    except OSError as write_err:
+        log.error("Could not write crash report to %s: %s", report_path, write_err)
 
-        with open(os.path.join(out_dir, "crash.txt"), "w") as f:
-            f.write("PyKuma crash report\n===================\n\n")
-            f.write(f"frame: {frame}\n")
-            f.write(f"python: {platform.python_version()}  platform: {platform.platform()}\n")
-            f.write(f"argv: {sys.argv}\n\n")
-            f.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
-
-        data = {"frame": frame, "error": repr(exc)}
-        if game is not None:
-            try:
-                data.update(game.debug_state())
-            except Exception:
-                pass
-            diagnostics = getattr(game, "diagnostics", None)
-            if diagnostics is not None:
-                data["recent_violations"] = [v.as_dict() for v in diagnostics.recent(20)]
-            recorder = getattr(game, "recorder", None)
-            if recorder is not None:
-                data["recent_frames"] = recorder.recent(60)
-            # Final rendered frame
-            try:
-                game.save_debug_snapshot(out_dir=out_dir, name="final")
-            except Exception:
-                pass
-
-        with open(os.path.join(out_dir, "crash.json"), "w") as f:
-            json.dump(data, f, indent=2, default=str)
-
-        log.error("Crash report written to %s", out_dir)
-        return out_dir
-    except Exception:  # reporting must never mask the real crash
-        log.exception("Failed to write crash report")
-        return None
+    return str(report_path)
