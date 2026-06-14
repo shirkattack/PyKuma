@@ -4,7 +4,9 @@ import pygame
 import pytest
 
 from street_fighter_3rd.characters.akuma import Akuma
+from street_fighter_3rd.systems.input_system import PlayerInput
 from street_fighter_3rd.data.constants import STAGE_FLOOR
+from street_fighter_3rd.data.enums import CharacterState, InputDirection
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -33,3 +35,28 @@ def test_airborne_character_passes_over():
     ax, bx = a.x, b.x
     a._resolve_character_collision(b)
     assert (a.x, b.x) == (ax, bx), "airborne character must pass over (no separation)"
+
+
+def test_can_jump_forward_out_of_walking():
+    """Holding forward (-> WALKING_FORWARD) then up must start a forward jump.
+
+    Regression: jump used to be gated to STANDING/CROUCHING, so a pad forward-jump
+    (hold forward, then up) never left the ground.
+    """
+    a = Akuma(200, STAGE_FLOOR, player_number=1)
+    a.input = PlayerInput(1)
+    a.is_grounded = True
+    a._transition_to_state(CharacterState.WALKING_FORWARD)
+    a._check_movement(InputDirection.UP_FORWARD)
+    assert a.state == CharacterState.JUMP_STARTUP
+    assert a.jump_direction == InputDirection.UP_FORWARD
+
+
+def test_can_jump_backward_out_of_walking():
+    a = Akuma(200, STAGE_FLOOR, player_number=1)
+    a.input = PlayerInput(1)
+    a.is_grounded = True
+    a._transition_to_state(CharacterState.WALKING_BACKWARD)
+    a._check_movement(InputDirection.UP_BACK)
+    assert a.state == CharacterState.JUMP_STARTUP
+    assert a.jump_direction == InputDirection.UP_BACK
