@@ -146,13 +146,17 @@ def _build_move_frame_data(move: MoveRecord) -> MoveFrameData:
     )
 
 
-def _compose_hurtboxes(state: CharacterState) -> List[HurtboxFrame]:
-    """Base (or crouch-scaled) hurtbox stack from the repository."""
+def _compose_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[HurtboxFrame]:
+    """Base (or crouch-scaled) hurtbox stack, plus per-move vulnerability
+    extensions for the given 1-indexed active frame (if any)."""
     repo = _repo()
     if state in _CROUCH_STATES:
         boxes = repo.get_crouch_hurtboxes()
     else:
         boxes = repo.get_base_hurtboxes()
+    # Layer the move's per-frame vulnerability boxes (extended limb) on top.
+    if frame_number > 0:
+        boxes = boxes + repo.get_vulnerability_boxes(state.name, frame_number)
     return [
         HurtboxFrame(
             offset_x=int(round(b.offset_x)),
@@ -173,9 +177,10 @@ def get_akuma_hitboxes(state: CharacterState, frame_number: int) -> List[HitboxF
     return [_hitbox_from_box(b, move) for b in boxes]
 
 
-def get_akuma_hurtboxes(state: CharacterState) -> List[HurtboxFrame]:
-    """Hurtboxes (vulnerable areas) for Akuma's state."""
-    return _compose_hurtboxes(state)
+def get_akuma_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[HurtboxFrame]:
+    """Hurtboxes for Akuma's state: base stack + per-move vulnerability boxes for
+    the given 1-indexed active frame (frame_number=0 -> base only)."""
+    return _compose_hurtboxes(state, frame_number)
 
 
 def get_move_frame_data(state: CharacterState) -> MoveFrameData | None:

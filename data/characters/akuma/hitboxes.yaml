@@ -118,6 +118,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: '1438'
+      vulnerability:
+      - offset_x: 43.0
+        offset_y: -102.0
+        width: 22.0
+        height: 18.0
+        status: baston
+        rom_id: baston
     - frame: 6
       attack:
       - offset_x: 32.0
@@ -126,6 +133,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: '1438'
+      vulnerability:
+      - offset_x: 43.0
+        offset_y: -102.0
+        width: 22.0
+        height: 18.0
+        status: baston
+        rom_id: baston
     - frame: 7
       attack:
       - offset_x: 32.0
@@ -134,6 +148,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: '1438'
+      vulnerability:
+      - offset_x: 43.0
+        offset_y: -102.0
+        width: 22.0
+        height: 18.0
+        status: baston
+        rom_id: baston
     state: LIGHT_PUNCH
     name_status: metadata
     combat:
@@ -442,6 +463,13 @@ moves:
         height: 10.0
         status: verified
         rom_id: '1908'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -54.0
+        width: 38.0
+        height: 34.0
+        status: baston
+        rom_id: baston
     - frame: 6
       attack:
       - offset_x: 34.0
@@ -450,6 +478,13 @@ moves:
         height: 10.0
         status: verified
         rom_id: '1908'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -54.0
+        width: 38.0
+        height: 34.0
+        status: baston
+        rom_id: baston
     - frame: 7
       attack:
       - offset_x: 34.0
@@ -458,6 +493,13 @@ moves:
         height: 10.0
         status: verified
         rom_id: '1908'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -54.0
+        width: 38.0
+        height: 34.0
+        status: baston
+        rom_id: baston
     - frame: 8
       attack:
       - offset_x: 34.0
@@ -466,6 +508,13 @@ moves:
         height: 10.0
         status: verified
         rom_id: '1908'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -54.0
+        width: 38.0
+        height: 34.0
+        status: baston
+        rom_id: baston
     state: LIGHT_KICK
     name_status: baston
     confidence: verified
@@ -507,6 +556,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '1988'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -76.0
+        width: 32.0
+        height: 32.0
+        status: baston
+        rom_id: baston
     - frame: 6
       attack:
       - offset_x: 36.0
@@ -521,6 +577,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '1988'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -76.0
+        width: 32.0
+        height: 32.0
+        status: baston
+        rom_id: baston
     - frame: 7
       attack:
       - offset_x: 36.0
@@ -529,6 +592,13 @@ moves:
         height: 16.0
         status: verified
         rom_id: '1988'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -76.0
+        width: 32.0
+        height: 32.0
+        status: baston
+        rom_id: baston
     - frame: 8
       attack:
       - offset_x: 36.0
@@ -537,6 +607,13 @@ moves:
         height: 16.0
         status: verified
         rom_id: '1988'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -76.0
+        width: 32.0
+        height: 32.0
+        status: baston
+        rom_id: baston
     - frame: 9
       attack:
       - offset_x: 36.0
@@ -545,6 +622,13 @@ moves:
         height: 16.0
         status: verified
         rom_id: '1988'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -76.0
+        width: 32.0
+        height: 32.0
+        status: baston
+        rom_id: baston
     state: MEDIUM_KICK
     name_status: baston
     confidence: verified

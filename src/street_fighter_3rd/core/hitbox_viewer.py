@@ -29,6 +29,7 @@ from street_fighter_3rd.util.logging_config import get_logger
 log = get_logger(__name__)
 
 _CYAN = (0, 220, 220)
+_MAGENTA = (220, 0, 220)  # per-move vulnerability (v_hb) extensions
 _BADGE_COLORS = {
     "verified": COLOR_GREEN,
     "inferred": COLOR_YELLOW,
@@ -174,6 +175,14 @@ class HitboxViewer:
                 if status != "verified":
                     has_pending = True
 
+            # Per-move vulnerability extensions for this frame (magenta) -- the
+            # limb that becomes hittable during the move, layered on the base.
+            for box in move.vulnerability_boxes_for_frame(frame_no):
+                rect = self._centered_rect(box)
+                self._draw_box(rect, box.status, _MAGENTA)
+                if box.status != "verified":
+                    has_pending = True
+
         self._render_hud(move, active, frame_no, has_pending)
 
     def _render_hud(self, move, active, frame_no, has_pending):
@@ -218,6 +227,7 @@ class HitboxViewer:
         legend = [
             ("attack (red)", COLOR_RED),
             ("hurt (blue)", COLOR_BLUE),
+            ("vuln (magenta)", _MAGENTA),
             ("push (green)", COLOR_GREEN),
             ("throw (cyan)", _CYAN),
         ]
