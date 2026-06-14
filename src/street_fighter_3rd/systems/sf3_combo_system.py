@@ -17,6 +17,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 import time
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class SF3ComboType(Enum):
     """Types of combos in SF3"""
@@ -143,7 +147,7 @@ class SF3ComboSystem:
         # Update scaling for next hit
         self._update_scaling_factors(combo_state)
         
-        print(f"🥊 Combo Hit #{combo_state.combo_count}: {base_damage} → {scaled_damage} damage")
+        log.debug("Combo Hit #%s: %s -> %s damage", combo_state.combo_count, base_damage, scaled_damage)
         
         return scaled_damage
     
@@ -198,7 +202,7 @@ class SF3ComboSystem:
         
         if combo_state.combo_active and combo_state.combo_count > 1:
             combo_duration = time.time() - combo_state.combo_start_time
-            print(f"🎯 COMBO ENDED: {combo_state.combo_count} hits, {combo_state.combo_damage} damage, {combo_duration:.1f}s ({reason})")
+            log.debug("COMBO ENDED: %s hits, %s damage, %.1fs (%s)", combo_state.combo_count, combo_state.combo_damage, combo_duration, reason)
         
         combo_state.combo_active = False
     

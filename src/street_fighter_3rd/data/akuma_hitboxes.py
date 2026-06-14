@@ -16,9 +16,9 @@ Position reference:
 - Y offset: negative = up from ground, positive = down
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Tuple
-from street_fighter_3rd.data.enums import HitType, CharacterState
+from street_fighter_3rd.data.enums import HitType, CharacterState, HitEffect
 from street_fighter_3rd.data.character_dimensions import get_default_hurtbox_for_character
 
 @dataclass
@@ -53,6 +53,7 @@ class MoveFrameData:
     on_block: int  # Frame advantage on block
     hitboxes: List[Tuple[List[int], HitboxFrame]]  # (active_frames, hitbox)
     hurtboxes: List[HurtboxFrame]  # Character's vulnerable areas
+    hit_effect: HitEffect = HitEffect.NORMAL  # reaction this move causes on hit
 
 
 # ==========================================
@@ -146,7 +147,8 @@ AKUMA_ST_HP = MoveFrameData(
         # Body hurtbox using SF3 authentic dimensions (half_width=33, height=107)
         HurtboxFrame(offset_x=0, offset_y=-107, width=66, height=107),  # Body (full height)
         HurtboxFrame(offset_x=35, offset_y=-85, width=30, height=30),  # Upper body/arm
-    ]
+    ],
+    hit_effect=HitEffect.JUGGLE,  # Akuma's uppercut s.HP launches on hit
 )
 
 # Standing Light Kick (5LK / st.LK)
@@ -239,6 +241,35 @@ AKUMA_ST_HK = MoveFrameData(
     ]
 )
 
+# Crouching Heavy Kick (2HK / cr.HK) — the sweep. Knocks down on hit.
+# SF3 Authentic: 7f startup, 5f active, 17f recovery | Damage: 18 | Guard: LOW
+AKUMA_CR_HK = MoveFrameData(
+    name="Crouching Heavy Kick (Sweep)",
+    state=CharacterState.CROUCH_HEAVY_KICK,
+    startup=7,
+    active=[8, 9, 10, 11, 12],  # active frames (1-indexed)
+    recovery=17,
+    on_hit=0,      # knockdown
+    on_block=-8,
+    hitboxes=[
+        ([8, 9, 10, 11, 12], HitboxFrame(
+            offset_x=60,
+            offset_y=-25,   # low, near the ground
+            width=70,
+            height=25,
+            damage=18,
+            hitstun=20,
+            blockstun=15,
+            hit_type=HitType.LOW,
+        ))
+    ],
+    hurtboxes=[
+        HurtboxFrame(offset_x=0, offset_y=-60, width=66, height=60),   # crouched body
+        HurtboxFrame(offset_x=55, offset_y=-25, width=45, height=20),  # extended leg
+    ],
+    hit_effect=HitEffect.KNOCKDOWN,  # sweep knocks down
+)
+
 # ==========================================
 # LOOKUP TABLE
 # ==========================================
@@ -250,6 +281,7 @@ AKUMA_MOVE_DATA = {
     CharacterState.LIGHT_KICK: AKUMA_ST_LK,
     CharacterState.MEDIUM_KICK: AKUMA_ST_MK,
     CharacterState.HEAVY_KICK: AKUMA_ST_HK,
+    CharacterState.CROUCH_HEAVY_KICK: AKUMA_CR_HK,
 }
 
 def get_akuma_hitboxes(state: CharacterState, frame_number: int) -> List[HitboxFrame]:

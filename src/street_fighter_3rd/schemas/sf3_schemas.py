@@ -25,7 +25,9 @@ from ..systems.sf3_core import (
     SF3Position, SF3HitData, SF3_DAMAGE_SCALING, SF3_PARRY_WINDOW
 )
 from ..systems.sf3_hitboxes import SF3HitboxType, SF3HitLevel
-from ..systems.sf3_input import SF3InputDirection, SF3ButtonInput
+from ..util.logging_config import get_logger
+
+log = get_logger(__name__)
 
 
 class Vector2(BaseModel):
@@ -479,21 +481,21 @@ def save_character_data(character_data: CharacterData, file_path: Path):
 
 if __name__ == "__main__":
     # Test the Pydantic schemas
-    print("Testing SF3 Pydantic Schemas...")
-    
+    log.info("Testing SF3 Pydantic Schemas...")
+
     # Test basic data structures
     hitbox = HitboxData(
         offset_x=50, offset_y=-65, width=60, height=40,
         damage=115, stun=7, hit_level=SF3HitLevel.MID
     )
-    print(f"✅ HitboxData: {hitbox.damage} damage, {hitbox.hit_level} level")
-    
+    log.info("HitboxData: %s damage, %s level", hitbox.damage, hitbox.hit_level)
+
     # Test frame data validation
     try:
         frame_data = FrameData(startup=5, active=3, recovery=10, total=18)
-        print(f"✅ FrameData: {frame_data.startup}/{frame_data.active}/{frame_data.recovery}")
-    except Exception as e:
-        print(f"❌ FrameData validation failed: {e}")
+        log.info("FrameData: %s/%s/%s", frame_data.startup, frame_data.active, frame_data.recovery)
+    except ValueError as e:
+        log.error("FrameData validation failed: %s", e)
     
     # Test character stats
     stats = CharacterStats(
@@ -504,7 +506,7 @@ if __name__ == "__main__":
         stun=64,
         walk_speed=0.032
     )
-    print(f"✅ CharacterStats: {stats.name} ({stats.archetype}) - {stats.health}HP")
+    log.info("CharacterStats: %s (%s) - %sHP", stats.name, stats.archetype, stats.health)
     
     # Test AI personality
     ai = AIPersonality(
@@ -512,7 +514,6 @@ if __name__ == "__main__":
         zoning_preference=0.8,
         combo_preference=0.6
     )
-    print(f"✅ AIPersonality: Aggression={ai.aggression}, Zoning={ai.zoning_preference}")
-    
-    print("SF3 Pydantic Schemas working correctly! ✅")
-    print("🚀 Ready for Phase 1 implementation!")
+    log.info("AIPersonality: Aggression=%s, Zoning=%s", ai.aggression, ai.zoning_preference)
+
+    log.info("SF3 Pydantic Schemas working correctly!")

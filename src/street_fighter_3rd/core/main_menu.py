@@ -1,9 +1,21 @@
 """Main menu system for Street Fighter 3rd Strike."""
 
+import glob
+import os
 import pygame
 import sys
 from enum import Enum, auto
-from typing import Optional, Callable
+from typing import List, Optional, Callable
+
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+import logging
+
+log = get_logger(__name__)
+
+# Animated intro banner shown at the top of the main menu.
+INTRO_GLOB = "assets/intro/intro_*.png"
+INTRO_MAX_HEIGHT = 180          # banner is scaled to fit within this height
+INTRO_TICKS_PER_FRAME = 10      # menu runs at 60 FPS -> ~6 banner fps
 
 from street_fighter_3rd.data.constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_WHITE, COLOR_RED, COLOR_BLUE, COLOR_YELLOW
@@ -21,16 +33,24 @@ class MenuState(Enum):
 
 
 class MenuItem:
-    """Represents a menu item with text and action."""
-    
-    def __init__(self, text: str, action: Optional[Callable] = None, submenu: Optional[MenuState] = None):
+    """Represents a menu item with text and action.
+
+    `available=False` greys the item out: it's skipped during navigation and
+    does nothing when selected. Flip it to True as the feature comes online.
+    """
+
+    def __init__(self, text: str, action: Optional[Callable] = None,
+                 submenu: Optional[MenuState] = None, available: bool = True):
         self.text = text
         self.action = action
         self.submenu = submenu
+        self.available = available
         self.selected = False
-        
+
     def execute(self):
         """Execute the menu item's action or navigate to submenu."""
+        if not self.available:
+            return None
         if self.action:
             return self.action()
         elif self.submenu:
@@ -50,6 +70,10 @@ class MainMenu:
         self.current_state = MenuState.MAIN
         self.selected_index = 0
         self.game_mode_manager = GameModeManager()
+
+        # Animated intro banner (frames preloaded + pre-scaled once)
+        self.intro_frames = self._load_intro_frames()
+        self.intro_timer = 0
         
         # Menu definitions
         self.menus = {
@@ -72,47 +96,100 @@ class MainMenu:
                 MenuItem("NORMAL MODE", self._select_normal_mode),
                 MenuItem("TRAINING MODE", self._select_training_mode),
                 MenuItem("DEV MODE", self._select_dev_mode),
-                MenuItem("VERSUS MODE", self._select_versus_mode),
-                MenuItem("DEMO MODE", self._select_demo_mode),
+                # Not yet distinct from Normal (no CPU AI / no separate versus flow)
+                MenuItem("VERSUS MODE", self._select_versus_mode, available=False),
+                MenuItem("DEMO MODE", self._select_demo_mode, available=False),
                 MenuItem("BACK TO MAIN", submenu=MenuState.MAIN)
             ]
         }
-        
+
+        # Start selection on the first available item of the current menu
+        self.selected_index = self._first_available(MenuState.MAIN)
+
         # Return values for game state
         self.start_game = False
         self.selected_mode = GameMode.NORMAL
         self.quit_game = False
+
+    def _first_available(self, state) -> int:
+        """Index of the first selectable item in a menu (0 if none)."""
+        for i, item in enumerate(self.menus[state]):
+            if item.available:
+                return i
+        return 0
+
+    def _move_selection(self, step: int):
+        """Move selection by step, skipping unavailable items (no infinite loop)."""
+        menu = self.menus[self.current_state]
+        n = len(menu)
+        idx = self.selected_index
+        for _ in range(n):
+            idx = (idx + step) % n
+            if menu[idx].available:
+                self.selected_index = idx
+                return
         
+    def _load_intro_frames(self) -> List[pygame.Surface]:
+        """Load and pre-scale the intro banner frames once.
+
+        Frames are scaled to fit the menu width while capping height so the
+        menu items still fit beneath the banner. Returns [] if no art is found,
+        in which case the menu falls back to the text title.
+        """
+        frames: List[pygame.Surface] = []
+        paths = sorted(glob.glob(INTRO_GLOB))
+        if not paths:
+            return frames
+        target_w = SCREEN_WIDTH - 40
+        for p in paths:
+            try:
+                img = pygame.image.load(p).convert_alpha()
+                w, h = img.get_size()
+                scale = min(target_w / w, INTRO_MAX_HEIGHT / h)
+                frames.append(pygame.transform.smoothscale(
+                    img, (max(1, int(w * scale)), max(1, int(h * scale)))))
+            except pygame.error as e:
+                log_once(log, ("intro_frame", p), logging.WARNING, "Could not load intro frame %s: %s", os.path.basename(p), e)
+        return frames
+
+    def _current_intro_frame(self) -> Optional[pygame.Surface]:
+        """The banner frame to show this tick, or None if no intro art."""
+        if not self.intro_frames:
+            return None
+        idx = (self.intro_timer // INTRO_TICKS_PER_FRAME) % len(self.intro_frames)
+        return self.intro_frames[idx]
+
     def handle_event(self, event):
         """Handle menu input events."""
         if event.type == pygame.KEYDOWN:
             current_menu = self.menus[self.current_state]
-            
+
             if event.key == pygame.K_UP:
-                self.selected_index = (self.selected_index - 1) % len(current_menu)
-                
+                self._move_selection(-1)
+
             elif event.key == pygame.K_DOWN:
-                self.selected_index = (self.selected_index + 1) % len(current_menu)
-                
+                self._move_selection(1)
+
             elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                 selected_item = current_menu[self.selected_index]
-                result = selected_item.execute()
-                
+                result = selected_item.execute()  # no-op if unavailable
+
                 if isinstance(result, MenuState):
                     self.current_state = result
-                    self.selected_index = 0
-                    
+                    self.selected_index = self._first_available(result)
+
             elif event.key == pygame.K_ESCAPE:
                 if self.current_state != MenuState.MAIN:
                     self.current_state = MenuState.MAIN
-                    self.selected_index = 0
+                    self.selected_index = self._first_available(MenuState.MAIN)
                 else:
                     self.quit_game = True
                     
     def render(self):
         """Render the current menu screen."""
         self.screen.fill((20, 20, 30))  # Dark background
-        
+        self.intro_timer += 1  # advance the banner animation
+
         if self.current_state == MenuState.MAIN:
             self._render_main_menu()
         elif self.current_state == MenuState.CONTROLS:
@@ -122,34 +199,47 @@ class MainMenu:
         elif self.current_state == MenuState.MODE_SELECT:
             self._render_mode_select_screen()
             
+    def _item_label_color(self, item, index):
+        """Label (with '(soon)' suffix if locked) and color for a menu item."""
+        if not item.available:
+            return f"{item.text}  (soon)", (110, 110, 120)  # greyed out
+        color = COLOR_RED if index == self.selected_index else COLOR_WHITE
+        return item.text, color
+
     def _render_main_menu(self):
         """Render the main menu."""
-        # Title
-        title = self.font_large.render("STREET FIGHTER III: 3RD STRIKE", True, COLOR_YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-        
-        # Subtitle
-        subtitle = self.font_medium.render("Python Edition", True, COLOR_WHITE)
-        subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, 140))
-        self.screen.blit(subtitle, subtitle_rect)
-        
+        # Animated intro banner as the title (falls back to text if no art)
+        banner = self._current_intro_frame()
+        if banner is not None:
+            banner_rect = banner.get_rect()
+            banner_rect.centerx = SCREEN_WIDTH // 2
+            banner_rect.top = 12
+            self.screen.blit(banner, banner_rect)
+            content_top = banner_rect.bottom + 8
+        else:
+            title = self.font_large.render("STREET FIGHTER III: 3RD STRIKE", True, COLOR_YELLOW)
+            self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 100)))
+            subtitle = self.font_medium.render("Python Edition", True, COLOR_WHITE)
+            self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, 140)))
+            content_top = 170
+
         # Current mode indicator
         mode_text = f"Current Mode: {self.game_mode_manager.current_mode.name}"
         mode_surface = self.font_small.render(mode_text, True, COLOR_BLUE)
-        mode_rect = mode_surface.get_rect(center=(SCREEN_WIDTH // 2, 180))
+        mode_rect = mode_surface.get_rect(center=(SCREEN_WIDTH // 2, content_top))
         self.screen.blit(mode_surface, mode_rect)
-        
-        # Menu items
+
+        # Menu items, reflowed to fit beneath the banner
         menu_items = self.menus[MenuState.MAIN]
-        start_y = 250
-        
+        start_y = content_top + 22
+        spacing = 32
+
         for i, item in enumerate(menu_items):
-            color = COLOR_RED if i == self.selected_index else COLOR_WHITE
-            text_surface = self.font_medium.render(item.text, True, color)
-            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 50))
+            label, color = self._item_label_color(item, i)
+            text_surface = self.font_medium.render(label, True, color)
+            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * spacing))
             self.screen.blit(text_surface, text_rect)
-            
+
         # Instructions
         instructions = [
             "↑↓ Navigate  ENTER Select  ESC Back/Quit",
@@ -284,11 +374,11 @@ class MainMenu:
         start_y = 150
         
         for i, item in enumerate(menu_items):
-            color = COLOR_RED if i == self.selected_index else COLOR_WHITE
-            text_surface = self.font_medium.render(item.text, True, color)
+            label, color = self._item_label_color(item, i)
+            text_surface = self.font_medium.render(label, True, color)
             text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 60))
             self.screen.blit(text_surface, text_rect)
-            
+
             # Show description for selected item
             if i == self.selected_index and i in descriptions and descriptions[i]:
                 desc_surface = self.font_small.render(descriptions[i], True, COLOR_YELLOW)

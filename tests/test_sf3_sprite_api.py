@@ -1,70 +1,76 @@
-#!/usr/bin/env python3
 """
-Test SF3SpriteManager API
+Tests for the SF3SpriteManager API.
 
-Quick test to understand the correct API for SF3SpriteManager
+Sprite image assets are not shipped in the repository, so these tests verify
+the manager's API contract and its graceful behavior when assets are absent.
 """
 
-import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+import pygame
+import pytest
 
-def test_sf3_sprite_manager():
-    """Test SF3SpriteManager API"""
-    try:
-        print("🧪 Testing SF3SpriteManager API...")
-        
-        # Import SF3SpriteManager
-        from street_fighter_3rd.graphics.sprite_manager import SF3SpriteManager
-        print("✅ SF3SpriteManager import successful")
-        
-        # Create manager
-        manager = SF3SpriteManager("tools/sprite_extraction")
-        print("✅ SF3SpriteManager creation successful")
-        
-        # Check available methods
-        methods = [method for method in dir(manager) if not method.startswith('_')]
-        print(f"📋 Available methods: {methods}")
-        
-        # Test loading character
-        print("\n🎨 Testing character loading...")
-        result = manager.load_character("akuma")
-        print(f"Load result: {result}")
-        
-        # Check loaded characters
-        print(f"Loaded characters: {manager.loaded_characters}")
-        
-        # Test getting animations
-        print("\n🎭 Testing animation access...")
-        animations = manager.get_character_animations("akuma")
-        print(f"Available animations: {list(animations.keys()) if animations else 'None'}")
-        
-        if animations:
-            # Test getting specific animation
-            stance_anim = manager.get_character_animation("akuma", "stance")
-            print(f"Stance animation: {stance_anim}")
-            
-            if stance_anim and stance_anim.frames:
-                print(f"Stance frames: {len(stance_anim.frames)}")
-                first_frame = stance_anim.frames[0]
-                print(f"First frame: {first_frame}")
-                if hasattr(first_frame, 'surface') and first_frame.surface:
-                    print(f"Frame surface size: {first_frame.surface.get_size()}")
-        
-        print("🎉 SF3SpriteManager API test complete!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+from street_fighter_3rd.graphics.sprite_manager import (
+    SF3SpriteManager,
+    SpriteAnimation,
+    SpriteFrame,
+)
 
-if __name__ == "__main__":
-    success = test_sf3_sprite_manager()
-    if success:
-        print("\n🚀 API test PASSED - Ready for integration!")
-    else:
-        print("\n💥 API test FAILED - Need to check implementation")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ASSETS_PATH = PROJECT_ROOT / "tools" / "sprite_extraction"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def pygame_headless():
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    yield
+    pygame.quit()
+
+
+@pytest.fixture
+def manager():
+    return SF3SpriteManager(str(ASSETS_PATH))
+
+
+def test_sprite_manager_construction(manager):
+    """The manager constructs with the expected public API."""
+    assert manager.assets_base_path == ASSETS_PATH
+    assert manager.loaded_characters == set(), "no characters loaded at construction"
+
+    for method in (
+        "load_character_sprites",
+        "get_character_animation",
+        "get_character_animations",
+        "get_animation_frame",
+        "render_character_sprite",
+        "is_character_loaded",
+        "unload_character",
+    ):
+        assert callable(getattr(manager, method, None)), f"missing API method: {method}"
+
+
+def test_unloaded_character_access(manager):
+    """Accessing an unloaded character is safe and returns empty results."""
+    assert not manager.is_character_loaded("akuma")
+    assert manager.get_character_animations("akuma") == {}
+    assert manager.get_character_animation("akuma", "stance") is None
+    assert manager.get_animation_frame("akuma", "stance", 0) is None
+
+
+def test_sprite_animation_frame_access():
+    """SpriteAnimation frame lookup loops and clamps correctly."""
+    surface = pygame.Surface((10, 10))
+    frames = [SpriteFrame(frame_number=i, image=surface) for i in range(3)]
+    animation = SpriteAnimation(animation_name="stance", frames=frames, loop=True)
+
+    assert animation.get_frame(0) is frames[0]
+    assert animation.get_frame(2) is frames[2]
+    assert animation.get_frame(3) is frames[0], "looping animation must wrap around"
+    assert animation.get_total_duration() == 3
+
+    animation.loop = False
+    assert animation.get_frame(99) is frames[-1], "non-looping animation must clamp to last frame"
+
+    empty = SpriteAnimation(animation_name="empty")
+    assert empty.get_frame(0) is None, "empty animation must return None"

@@ -1,9 +1,14 @@
 """Animation system for sprite sequence playback."""
 
+import logging
 import os
 import pygame
 from typing import List, Optional, Dict
 from dataclasses import dataclass
+
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -182,7 +187,7 @@ class SpriteManager:
         sprite_path = os.path.join(self.sprite_directory, f"{sprite_number}.png")
 
         if not os.path.exists(sprite_path):
-            print(f"Warning: Sprite {sprite_number}.png not found at {sprite_path}")
+            log_once(log, ("sprite_miss", sprite_path), logging.WARNING, "Sprite %s.png not found at %s", sprite_number, sprite_path)
             return None
 
         try:
@@ -198,8 +203,8 @@ class SpriteManager:
             self.sprite_cache[cache_key] = sprite
             return sprite
 
-        except Exception as e:
-            print(f"Error loading sprite {sprite_number}: {e}")
+        except (pygame.error, OSError, FileNotFoundError) as e:
+            log_once(log, ("sprite_load_err", sprite_path), logging.WARNING, "Error loading sprite %s: %s", sprite_number, e)
             return None
 
     def preload_sprites(self, sprite_numbers: List[int], scale: float = 2.0):
@@ -237,7 +242,7 @@ class SpriteManager:
         sprite_path = os.path.join(folder_path, f"frame_{frame_index:03d}.png")
 
         if not os.path.exists(sprite_path):
-            print(f"Warning: Frame {frame_index} not found at {sprite_path}")
+            log_once(log, ("sprite_miss", sprite_path), logging.WARNING, "Frame %s not found at %s", frame_index, sprite_path)
             return None
 
         try:
@@ -253,8 +258,8 @@ class SpriteManager:
             self.sprite_cache[cache_key] = sprite
             return sprite
 
-        except Exception as e:
-            print(f"Error loading sprite from {sprite_path}: {e}")
+        except (pygame.error, OSError, FileNotFoundError) as e:
+            log_once(log, ("sprite_load_err", sprite_path), logging.WARNING, "Error loading sprite from %s: %s", sprite_path, e)
             return None
 
 
@@ -288,7 +293,7 @@ class AnimationController:
             force_restart: If True, restart animation even if already playing
         """
         if name not in self.animations:
-            print(f"Warning: Animation '{name}' not found")
+            log_once(log, ("anim_miss", name), logging.WARNING, "Animation '%s' not found", name)
             return
 
         # Check if we're already playing this animation
@@ -333,6 +338,30 @@ class AnimationController:
                 return name
         return None
 
+    def get_current_frame_info(self) -> Dict:
+        """Debug snapshot of what is being displayed right now.
+
+        Returns the animation name, frame index/total, completion, and the
+        exact sprite the current frame resolves to (number for numbered
+        animations, folder/frame for folder animations). This is the data that
+        makes a mislabeled frame obvious (e.g. crouch_hold -> sprite 18439).
+        """
+        anim = self.current_animation
+        if anim is None:
+            return {"animation": None}
+        info = {
+            "animation": self.get_current_animation_name(),
+            "frame_index": anim.current_frame_index,
+            "total_frames": len(anim.frames),
+            "complete": anim.is_complete(),
+        }
+        if isinstance(anim, FolderAnimation):
+            frame = anim.get_current_frame()
+            info["source"] = f"{os.path.basename(frame.folder_path)}/frame_{frame.frame_index:03d}"
+        else:
+            info["sprite_number"] = anim.get_current_sprite_number()
+        return info
+
 
 def create_simple_animation(sprite_numbers: List[int], frame_duration: int = 1,
                            loop: bool = False) -> Animation:
@@ -351,7 +380,7 @@ def create_simple_animation(sprite_numbers: List[int], frame_duration: int = 1,
 
 
 def create_folder_animation(folder_path: str, frame_count: int, frame_duration: int = 1,
-                            loop: bool = False) -> FolderAnimation:
+                            loop: bool = False, start_index: int = 0) -> FolderAnimation:
     """Helper function to create animation from folder with frame_NNN.png files.
 
     Args:
@@ -359,9 +388,12 @@ def create_folder_animation(folder_path: str, frame_count: int, frame_duration: 
         frame_count: Number of frames in the animation
         frame_duration: How many game frames to hold each sprite
         loop: Whether to loop animation
+        start_index: First frame index to use (for sub-range clips within a folder,
+            e.g. splitting a 50-frame hit folder into light/heavy/knockdown ranges)
 
     Returns:
         FolderAnimation object
     """
-    frames = [FolderAnimationFrame(folder_path, i, frame_duration) for i in range(frame_count)]
+    frames = [FolderAnimationFrame(folder_path, start_index + i, frame_duration)
+              for i in range(frame_count)]
     return FolderAnimation(frames, loop)

@@ -13,6 +13,10 @@ from typing import List, Optional, Any
 from dataclasses import dataclass, field
 from enum import IntEnum
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class SF3GamePhase(IntEnum):
     """SF3's routine_no[0] values - main game phases"""
@@ -300,23 +304,23 @@ def create_sf3_player(player_number: int, team: int = None) -> SF3PlayerWork:
 
 if __name__ == "__main__":
     # Test the SF3 structures
-    print("Testing SF3 Core Structures...")
-    
+    log.info("Testing SF3 Core Structures...")
+
     # Create two players like SF3
     player1 = create_sf3_player(1, team=1)
     player2 = create_sf3_player(2, team=2)
-    
-    print(f"Player 1 - Routine: {player1.work.routine_no[:3]}, Health: {player1.work.vitality}")
-    print(f"Player 2 - Routine: {player2.work.routine_no[:3]}, Health: {player2.work.vitality}")
-    
+
+    log.info("Player 1 - Routine: %s, Health: %s", player1.work.routine_no[:3], player1.work.vitality)
+    log.info("Player 2 - Routine: %s, Health: %s", player2.work.routine_no[:3], player2.work.vitality)
+
     # Test state transitions
     player1.work.set_routine_state(SF3GamePhase.GAMEPLAY, SF3StateCategory.ATTACKING, 5)
-    print(f"Player 1 attacking - Routine: {player1.work.routine_no[:3]}")
-    
+    log.info("Player 1 attacking - Routine: %s", player1.work.routine_no[:3])
+
     # Test damage with scaling
     player1.apply_damage(100, combo_scaling=False)  # First hit
     player1.increment_combo()
     player1.apply_damage(100, combo_scaling=True)   # Second hit (90% damage)
-    print(f"Player 1 after combo - Health: {player1.work.vitality}, Combo: {player1.combo_count}")
-    
-    print("SF3 Core Structures working correctly! ✅")
+    log.info("Player 1 after combo - Health: %s, Combo: %s", player1.work.vitality, player1.combo_count)
+
+    log.info("SF3 Core Structures working correctly!")

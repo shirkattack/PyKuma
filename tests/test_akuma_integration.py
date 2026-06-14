@@ -1,55 +1,44 @@
-#!/usr/bin/env python3
 """
-Test Akuma Integration
-
-Simple test to verify that Akuma can be created with SF3 sprite integration
-without crashing.
+Akuma integration test: verifies Akuma can be created with the SF3 sprite
+integration and updated for a frame without crashing.
 """
 
-import sys
-from pathlib import Path
+import pygame
+import pytest
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+from street_fighter_3rd.characters.akuma import Akuma
+
+
+@pytest.fixture(scope="module", autouse=True)
+def pygame_headless():
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    yield
+    pygame.quit()
+
 
 def test_akuma_creation():
-    """Test creating Akuma with SF3 sprite integration"""
-    try:
-        print("🧪 Testing Akuma creation with SF3 sprite integration...")
-        
-        # Import Akuma
-        from street_fighter_3rd.characters.akuma import Akuma
-        print("✅ Akuma import successful")
-        
-        # Create Akuma instance
-        akuma = Akuma(200, 500, player_number=1)
-        print("✅ Akuma creation successful")
-        
-        # Check sprite system status
-        if hasattr(akuma, 'use_sf3_sprites'):
-            if akuma.use_sf3_sprites:
-                print("✅ Using SF3 sprite system")
-            else:
-                print("⚠️ Using fallback sprite system")
-        else:
-            print("⚠️ No sprite system attribute found")
-        
-        # Test basic methods
-        akuma.update(None)
-        print("✅ Akuma update successful")
-        
-        print("🎉 All tests passed! Akuma integration working.")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    """Akuma constructs with SF3-authentic stats and a sprite system flag."""
+    akuma = Akuma(200, 500, player_number=1)
 
-if __name__ == "__main__":
-    success = test_akuma_creation()
-    if success:
-        print("\n🚀 Integration test PASSED - Main game should work!")
-    else:
-        print("\n💥 Integration test FAILED - Need to fix issues")
+    assert akuma.name == "Akuma"
+    assert akuma.player_number == 1
+    assert akuma.max_health == 145, "Akuma's SF3 max health is 145"
+    assert akuma.health == akuma.max_health, "Akuma must start at full health"
+
+    # Single animation path: the controller exists and resolves a stance sprite
+    assert akuma.animation_controller is not None, "Akuma must have an animation controller"
+    assert akuma.animation_controller.get_current_sprite() is not None, \
+        "stance must resolve to a real sprite"
+
+
+def test_akuma_update():
+    """A frame update against an opponent runs and advances the state frame."""
+    akuma = Akuma(200, 500, player_number=1)
+    opponent = Akuma(400, 500, player_number=2)
+
+    start_frame = akuma.state_frame
+    akuma.update(opponent)
+
+    assert akuma.state_frame == start_frame + 1, "update() must advance the state frame"
+    assert akuma.health == akuma.max_health, "a neutral update must not change health"

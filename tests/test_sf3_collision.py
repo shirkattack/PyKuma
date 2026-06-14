@@ -1,94 +1,51 @@
-#!/usr/bin/env python3
 """
-Simple test script to verify SF3 collision system integration
+Tests for the SF3 collision system components and the adapter wiring.
 """
 
-import sys
-import os
+from street_fighter_3rd.systems.sf3_collision import SF3CollisionSystem
+from street_fighter_3rd.systems.sf3_core import SF3PlayerWork
+from street_fighter_3rd.systems.sf3_hitboxes import SF3HitboxManager
+from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
 
-# Add the src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 def test_imports():
-    """Test that all SF3 collision system components can be imported"""
-    try:
-        from street_fighter_3rd.systems.sf3_collision import SF3CollisionSystem
-        print("✅ SF3CollisionSystem imported successfully")
-        
-        from street_fighter_3rd.systems.sf3_core import SF3PlayerWork
-        print("✅ SF3PlayerWork imported successfully")
-        
-        from street_fighter_3rd.systems.sf3_hitboxes import SF3HitboxManager
-        print("✅ SF3HitboxManager imported successfully")
-        
-        from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
-        print("✅ SF3CollisionAdapter imported successfully")
-        
-        return True
-        
-    except ImportError as e:
-        print(f"❌ Import error: {e}")
-        return False
+    """All SF3 collision system components are importable and constructible."""
+    assert SF3CollisionSystem is not None
+    assert SF3PlayerWork is not None
+    assert SF3HitboxManager is not None
+    assert SF3CollisionAdapter is not None
+
+    # Each component must construct without arguments (manager needs a name)
+    assert isinstance(SF3CollisionSystem(), SF3CollisionSystem)
+    assert isinstance(SF3PlayerWork(), SF3PlayerWork)
+    assert isinstance(SF3HitboxManager("test"), SF3HitboxManager)
+
 
 def test_sf3_collision_system():
-    """Test basic SF3CollisionSystem functionality"""
-    try:
-        from street_fighter_3rd.systems.sf3_collision import SF3CollisionSystem
-        
-        # Create collision system
-        collision_system = SF3CollisionSystem()
-        print("✅ SF3CollisionSystem created successfully")
-        
-        # Test basic methods
-        collision_system.update_frame(1)
-        collision_system.enable_throw_checking(True)
-        collision_system.hit_check_main_process()
-        print("✅ SF3CollisionSystem basic methods work")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ SF3CollisionSystem test failed: {e}")
-        return False
+    """Basic SF3CollisionSystem methods work and track frame state."""
+    collision_system = SF3CollisionSystem()
+
+    collision_system.update_frame(1)
+    assert collision_system.current_frame == 1, "update_frame must set the current frame"
+
+    collision_system.enable_throw_checking(True)
+
+    # With no queued collision events, processing must leave the queue empty
+    collision_system.hit_check_main_process()
+    assert collision_system.hit_queue_input == 0, "hit queue must be empty after processing"
+
 
 def test_sf3_adapter():
-    """Test SF3CollisionAdapter functionality"""
-    try:
-        from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
-        
-        # Create adapter
-        adapter = SF3CollisionAdapter()
-        print("✅ SF3CollisionAdapter created successfully")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ SF3CollisionAdapter test failed: {e}")
-        return False
+    """SF3CollisionAdapter initializes persistent per-player state."""
+    adapter = SF3CollisionAdapter()
 
-def main():
-    """Run all tests"""
-    print("🥊 Testing SF3 Collision System Integration")
-    print("=" * 50)
-    
-    success = True
-    
-    print("\n1. Testing imports...")
-    success &= test_imports()
-    
-    print("\n2. Testing SF3CollisionSystem...")
-    success &= test_sf3_collision_system()
-    
-    print("\n3. Testing SF3CollisionAdapter...")
-    success &= test_sf3_adapter()
-    
-    print("\n" + "=" * 50)
-    if success:
-        print("🎉 All tests passed! SF3 collision system is ready for integration.")
-    else:
-        print("💥 Some tests failed. Check the errors above.")
-    
-    return 0 if success else 1
+    assert adapter.frame_counter == 0
+    assert set(adapter.player_works.keys()) == {1, 2}, (
+        "adapter must keep persistent player works for both players"
+    )
+    assert set(adapter.hitbox_managers.keys()) == {1, 2}
 
-if __name__ == "__main__":
-    sys.exit(main())
+    # tick() advances the SF3 core exactly one frame
+    adapter.tick()
+    assert adapter.frame_counter == 1
+    assert adapter.sf3_system.current_frame == 1

@@ -7,6 +7,21 @@ from street_fighter_3rd.core.game import Game
 from street_fighter_3rd.core.main_menu import MainMenu
 from street_fighter_3rd.core.game_modes import GameMode, GameModeManager
 from street_fighter_3rd.data.constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, WINDOW_TITLE
+from street_fighter_3rd.util.logging_config import get_logger, is_strict
+from street_fighter_3rd.util.crash_handler import write_crash_report
+
+log = get_logger(__name__)
+
+# Window is this many times the native render resolution. Everything draws at
+# SCREEN_WIDTH x SCREEN_HEIGHT, then the finished frame is scaled up to the
+# window with nearest-neighbor scaling (crisp pixel art, no blur).
+WINDOW_SCALE = 2
+
+
+def present(render_surface, window):
+    """Scale the native-resolution frame up to the window and flip."""
+    pygame.transform.scale(render_surface, window.get_size(), window)
+    pygame.display.flip()
 
 
 def parse_arguments():
@@ -41,6 +56,10 @@ def parse_arguments():
     parser.add_argument('--no-rounds',
                        action='store_true',
                        help='Disable round system')
+
+    parser.add_argument('--strict',
+                       action='store_true',
+                       help='Fail loud: crash on a frame error instead of logging + continuing')
     
     parser.add_argument('--fps',
                        type=int,
@@ -84,7 +103,7 @@ def apply_custom_config(game_mode_manager: GameModeManager, args):
         config.no_rounds = True
 
 
-def run_menu_loop(screen, clock) -> tuple[bool, GameMode, GameModeManager]:
+def run_menu_loop(screen, window, clock) -> tuple[bool, GameMode, GameModeManager]:
     """Run the main menu loop. Returns (should_start_game, game_mode, game_mode_manager)."""
     menu = MainMenu(screen)
     
@@ -103,95 +122,80 @@ def run_menu_loop(screen, clock) -> tuple[bool, GameMode, GameModeManager]:
         
         # Render
         menu.render()
-        pygame.display.flip()
+        present(screen, window)
         clock.tick(60)
 
 
-def run_game_loop(screen, clock, game_mode_manager: GameModeManager, target_fps: int):
+def run_game_loop(screen, window, clock, game_mode_manager: GameModeManager, target_fps: int):
     """Run the main game loop with the specified configuration."""
     game = Game(screen, game_mode_manager)
     
     running = True
     while running:
-        # Handle events
         try:
-            pygame.event.pump()
-            events = []
-            try:
-                events = pygame.event.get()
-            except Exception as e:
-                print(f"Warning: Error getting events: {e}")
-                try:
-                    pygame.event.clear()
-                except:
-                    pass
-                continue
-            
-            for event in events:
-                try:
-                    if event.type == pygame.QUIT:
-                        running = False
-                    elif event.type == pygame.KEYDOWN:
-                        # Training mode hotkeys
-                        if game_mode_manager.is_training_mode() or game_mode_manager.is_dev_mode():
-                            if event.key == pygame.K_F1:
-                                game_mode_manager.toggle_feature('show_hitboxes')
-                                game_mode_manager.toggle_feature('show_hurtboxes')
-                            elif event.key == pygame.K_F2:
-                                game_mode_manager.toggle_feature('show_frame_data')
-                            elif event.key == pygame.K_F3:
-                                # Reset positions (implement in game)
-                                game.reset_positions()
-                            elif event.key == pygame.K_r:
-                                # Reset health (implement in game)
-                                game.reset_health()
-                            elif event.key == pygame.K_ESCAPE:
-                                # Return to menu
-                                running = False
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    # Training mode hotkeys
+                    if game_mode_manager.is_training_mode() or game_mode_manager.is_dev_mode():
+                        if event.key == pygame.K_F1:
+                            game_mode_manager.toggle_feature('show_hitboxes')
+                            game_mode_manager.toggle_feature('show_hurtboxes')
+                        elif event.key == pygame.K_F2:
+                            game_mode_manager.toggle_feature('show_frame_data')
+                        elif event.key == pygame.K_F3:
+                            game.reset_positions()
+                        elif event.key == pygame.K_r:
+                            game.reset_health()
                         elif event.key == pygame.K_ESCAPE:
-                            running = False
+                            running = False  # return to menu
+                        else:
+                            # Forward unhandled keys (ENTER, F10/F11/F12, ...) to the game
+                            game.handle_event(event)
+                    elif event.key == pygame.K_ESCAPE:
+                        running = False
                     else:
                         game.handle_event(event)
-                except Exception as e:
-                    print(f"Warning: Error handling event {event.type}: {e}")
-                    continue
-        except Exception as e:
-            print(f"Warning: Critical error in event processing: {e}")
-            try:
-                pygame.event.clear()
-            except:
-                pass
-            continue
+                else:
+                    game.handle_event(event)
 
-        # Fixed time step
-        dt = clock.tick(target_fps) / 1000.0
-
-        # Update game state
-        game.update(dt)
-
-        # Render
-        game.render()
-        pygame.display.flip()
+            # Fixed timestep: one loop iteration is one game frame
+            clock.tick(target_fps)
+            game.update()
+            game.render()
+            present(screen, window)
+        except Exception as exc:
+            report = write_crash_report(exc, game)
+            log.exception("Frame %d crashed; report at %s", game.frame_count, report)
+            if is_strict():
+                raise          # dev: surface the bug immediately
+            running = False     # release: leave the game loop gracefully
 
 
 def main():
     """Main entry point."""
     args = parse_arguments()
-    
+
+    from street_fighter_3rd.util.logging_config import setup_logging
+    setup_logging(strict=True if (getattr(args, "strict", False) or args.debug) else None)
+
     # Initialize Pygame
     pygame.init()
     
     # Initialize joystick subsystem with error handling
     try:
         pygame.joystick.init()
-        print("Joystick subsystem initialized successfully")
-    except Exception as e:
-        print(f"Warning: Failed to initialize joystick subsystem: {e}")
-        print("Continuing with keyboard-only input")
+        log.info("Joystick subsystem initialized successfully")
+    except pygame.error as e:
+        log.warning("Failed to initialize joystick subsystem: %s", e)
+        log.info("Continuing with keyboard-only input")
 
-    # Create game window
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    # Create the (larger) window, plus a native-resolution surface that the
+    # menu and game render into. The frame is scaled up to the window each tick.
+    window = pygame.display.set_mode((SCREEN_WIDTH * WINDOW_SCALE, SCREEN_HEIGHT * WINDOW_SCALE))
     pygame.display.set_caption(WINDOW_TITLE)
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # Create clock for frame rate control
     clock = pygame.time.Clock()
@@ -203,38 +207,36 @@ def main():
     # Apply custom configuration from command line
     apply_custom_config(game_mode_manager, args)
     
-    print(f"Starting Street Fighter III: 3rd Strike")
-    print(f"Mode: {game_mode_manager.current_mode.name}")
-    print(f"Description: {game_mode_manager.get_mode_description()}")
-    
+    log.info("Starting Street Fighter III: 3rd Strike")
+    log.info("Mode: %s", game_mode_manager.current_mode.name)
+    log.info("Description: %s", game_mode_manager.get_mode_description())
+
     try:
         if args.no_menu:
             # Skip menu and start game directly
-            print("Skipping menu, starting game directly...")
-            run_game_loop(screen, clock, game_mode_manager, args.fps)
+            log.info("Skipping menu, starting game directly...")
+            run_game_loop(screen, window, clock, game_mode_manager, args.fps)
         else:
             # Show menu first
             while True:
-                should_start, selected_mode, menu_game_mode_manager = run_menu_loop(screen, clock)
-                
+                should_start, selected_mode, menu_game_mode_manager = run_menu_loop(screen, window, clock)
+
                 if not should_start:
                     break
-                    
+
                 # Start game with selected mode
-                run_game_loop(screen, clock, menu_game_mode_manager, args.fps)
+                run_game_loop(screen, window, clock, menu_game_mode_manager, args.fps)
                 
                 # After game ends, return to menu
-                print("Returning to main menu...")
-    
+                log.info("Returning to main menu...")
+
     except KeyboardInterrupt:
-        print("\nGame interrupted by user")
+        log.info("Game interrupted by user")
     except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+        log.exception("Error: %s", e)
     finally:
         pygame.quit()
-        print("Game shutdown complete")
+        log.info("Game shutdown complete")
 
 
 def main_training():

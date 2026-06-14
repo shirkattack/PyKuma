@@ -25,6 +25,10 @@ import pygame
 from .sf3_core import SF3PlayerWork, SF3StateCategory, SF3GamePhase
 from .sf3_hitboxes import SF3Hitbox, SF3HitLevel
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class SF3ParryType(Enum):
     """Types of parries in SF3"""
@@ -154,7 +158,7 @@ class SF3ParrySystem:
             parry_state.parry_window_frames_remaining = self.PARRY_WINDOW_FRAMES
             parry_state.parry_type = parry_type
             
-            print(f"Player {player_id} started {parry_type.value} parry window ({self.PARRY_WINDOW_FRAMES} frames)")
+            logger.debug("Player %s started %s parry window (%s frames)", player_id, parry_type.value, self.PARRY_WINDOW_FRAMES)
     
     def _update_parry_window(self, player: SF3PlayerWork):
         """Update the parry window countdown"""
@@ -168,7 +172,7 @@ class SF3ParrySystem:
             if parry_state.parry_window_frames_remaining <= 0:
                 parry_state.parry_window_active = False
                 parry_state.parry_type = None
-                print(f"Player {player_id} parry window expired")
+                logger.debug("Player %s parry window expired", player_id)
         
         # Update parry advantage
         if parry_state.parry_advantage_frames > 0:
@@ -303,15 +307,17 @@ class SF3ParrySystem:
         parry_state.parry_window_active = False
         parry_state.parry_window_frames_remaining = 0
         
-        # Set character state to parry success
+        # Set character state to parry success. SF3StateCategory has no
+        # dedicated parry category; the defender stays action-ready (NEUTRAL)
+        # with specific state 10 marking the parry-success animation.
         defender.work.set_routine_state(
             SF3GamePhase.GAMEPLAY,
-            SF3StateCategory.SPECIAL,  # Parry is a special state
+            SF3StateCategory.NEUTRAL,
             10  # Parry success animation
         )
         
-        print(f"Player {defender_id} successfully parried! Advantage: {self.PARRY_ADVANTAGE_FRAMES} frames")
-        print(f"Parry counter: {parry_state.parry_counter}")
+        logger.info("Player %s successfully parried! Advantage: %s frames (parry #%s)",
+                    defender_id, self.PARRY_ADVANTAGE_FRAMES, parry_state.parry_counter)
     
     def set_parry_status(self, defender: SF3PlayerWork):
         """
@@ -371,40 +377,40 @@ def create_test_attack_box(hit_level: SF3HitLevel = SF3HitLevel.MID) -> SF3Hitbo
 
 if __name__ == "__main__":
     # Test the SF3 parry system
-    print("Testing SF3 Parry System...")
-    
+    logger.info("Testing SF3 Parry System...")
+
     from .sf3_core import create_sf3_player
-    
+
     parry_system = SF3ParrySystem()
-    
+
     # Create test players
     player1 = create_sf3_player(1)
     player2 = create_sf3_player(2)
-    
+
     # Test parry window activation
     input_state = {'forward': True, 'down_forward': False}
     parry_system.update_parry_inputs(player1, input_state)
-    
+
     assert parry_system.is_in_parry_window(player1), "Player should be in parry window"
     assert parry_system.get_parry_frames_remaining(player1) == 7, f"Should have 7 frames, got {parry_system.get_parry_frames_remaining(player1)}"
-    
-    print(f"✅ Parry window activated: {parry_system.get_parry_frames_remaining(player1)} frames remaining")
-    
+
+    logger.info("Parry window activated: %s frames remaining", parry_system.get_parry_frames_remaining(player1))
+
     # Test parry timing
     attack_box = create_test_attack_box(SF3HitLevel.MID)
     result = parry_system.defense_ground(player2, player1, attack_box, "mid")
-    
+
     if result == SF3ParryResult.PARRY_SUCCESS:
-        print("✅ Parry successful!")
+        logger.info("Parry successful!")
         assert parry_system.has_parry_advantage(player1), "Player should have parry advantage"
-        print(f"✅ Parry advantage: {parry_system.player_parry_states[1].parry_advantage_frames} frames")
-    
+        logger.info("Parry advantage: %s frames", parry_system.player_parry_states[1].parry_advantage_frames)
+
     # Test constants
     assert parry_system.PARRY_WINDOW_FRAMES == 7, f"Parry window should be 7 frames, got {parry_system.PARRY_WINDOW_FRAMES}"
     assert parry_system.PARRY_ADVANTAGE_FRAMES == 8, f"Parry advantage should be 8 frames, got {parry_system.PARRY_ADVANTAGE_FRAMES}"
-    
-    print("SF3 Parry System working correctly! ✅")
-    print(f"✅ 7-frame parry window: {parry_system.PARRY_WINDOW_FRAMES} frames")
-    print(f"✅ 8-frame parry advantage: {parry_system.PARRY_ADVANTAGE_FRAMES} frames")
-    print(f"✅ Guard direction validation working")
-    print(f"✅ Parry counter tracking working")
+
+    logger.info("SF3 Parry System working correctly!")
+    logger.info("7-frame parry window: %s frames", parry_system.PARRY_WINDOW_FRAMES)
+    logger.info("8-frame parry advantage: %s frames", parry_system.PARRY_ADVANTAGE_FRAMES)
+    logger.info("Guard direction validation working")
+    logger.info("Parry counter tracking working")

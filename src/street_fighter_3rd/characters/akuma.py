@@ -1,28 +1,74 @@
 """Akuma character implementation."""
 
-import os
+import logging
 import pygame
-from street_fighter_3rd.characters.character import Character
-from street_fighter_3rd.data.enums import CharacterState, Button, FacingDirection
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+from street_fighter_3rd.characters.character import Character, get_debug_font
+from street_fighter_3rd.data.enums import CharacterState, Button, FacingDirection, InputDirection
 from street_fighter_3rd.systems.animation import (
     SpriteManager,
     AnimationController,
-    create_simple_animation,
-    create_folder_animation
+    create_folder_animation,
 )
-from street_fighter_3rd.systems.animation_loader import AnimationLoader, AnimationLoadError
-
-# Import the working sprite system
-try:
-    from street_fighter_3rd.graphics.sprite_manager import SF3SpriteManager
-    SF3_SPRITES_AVAILABLE = True
-except ImportError:
-    SF3_SPRITES_AVAILABLE = False
 from street_fighter_3rd.core.projectile import Gohadoken
+
+log = get_logger(__name__)
+
+# Extracted per-move sprite folders (one PNG sequence per move). Single source
+# of truth for Akuma's animations now that the legacy numbered path is gone.
+ANIM_BASE = "tools/sprite_extraction/akuma_animations"
+
+# States that must NOT auto-return to STANDING when their (non-looping) animation
+# finishes — recovery is governed by physics/input/stun timers, not animation
+# completion (movement states + hit/block reactions).
+_HOLD_STATES = frozenset({
+    CharacterState.STANDING, CharacterState.CROUCHING,
+    CharacterState.WALKING_FORWARD, CharacterState.WALKING_BACKWARD,
+    CharacterState.DASH_FORWARD, CharacterState.DASH_BACKWARD,
+    CharacterState.JUMP_STARTUP, CharacterState.JUMPING,
+    CharacterState.JUMPING_FORWARD, CharacterState.JUMPING_BACKWARD,
+    CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
+    CharacterState.HITSTUN_AIRBORNE, CharacterState.KNOCKDOWN,
+    CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW,
+})
 
 
 class Akuma(Character):
     """Akuma (Gouki) - The Master of the Fist."""
+
+    # state -> animation name for one-shot states (movement states handled inline)
+    _STATE_ANIM = {
+        CharacterState.LIGHT_PUNCH: "light_punch",
+        CharacterState.MEDIUM_PUNCH: "medium_punch",
+        CharacterState.HEAVY_PUNCH: "heavy_punch",
+        CharacterState.LIGHT_KICK: "light_kick",
+        CharacterState.MEDIUM_KICK: "medium_kick",
+        CharacterState.HEAVY_KICK: "heavy_kick",
+        CharacterState.CROUCH_LIGHT_PUNCH: "crouch_light_punch",
+        CharacterState.CROUCH_MEDIUM_PUNCH: "crouch_medium_punch",
+        CharacterState.CROUCH_HEAVY_PUNCH: "crouch_heavy_punch",
+        CharacterState.CROUCH_LIGHT_KICK: "crouch_light_kick",
+        CharacterState.CROUCH_MEDIUM_KICK: "crouch_medium_kick",
+        CharacterState.CROUCH_HEAVY_KICK: "crouch_heavy_kick",
+        CharacterState.JUMP_LIGHT_PUNCH: "jump_light_punch",
+        CharacterState.JUMP_MEDIUM_PUNCH: "jump_medium_punch",
+        CharacterState.JUMP_HEAVY_PUNCH: "jump_heavy_punch",
+        CharacterState.JUMP_LIGHT_KICK: "jump_light_kick",
+        CharacterState.JUMP_MEDIUM_KICK: "jump_medium_kick",
+        CharacterState.JUMP_HEAVY_KICK: "jump_heavy_kick",
+        CharacterState.DASH_FORWARD: "dash_forward",
+        CharacterState.DASH_BACKWARD: "dash_backward",
+        CharacterState.GOHADOKEN: "gohadoken",
+        CharacterState.GOSHORYUKEN: "goshoryuken",
+        CharacterState.TATSUMAKI: "tatsumaki",
+        # hit / block reactions
+        CharacterState.HITSTUN_STANDING: "hit_medium",
+        CharacterState.HITSTUN_CROUCHING: "crouch_hit",
+        CharacterState.HITSTUN_AIRBORNE: "launch_spin",
+        CharacterState.KNOCKDOWN: "knockdown",
+        CharacterState.BLOCKSTUN_HIGH: "block_high",
+        CharacterState.BLOCKSTUN_LOW: "block_crouch",
+    }
 
     def __init__(self, x: float, y: float, player_number: int):
         """Initialize Akuma.
@@ -35,33 +81,30 @@ class Akuma(Character):
         super().__init__(x, y, player_number)
 
         # Akuma-specific stats (from SF3)
-        self.health = 145  # Akuma has low health
+        self.max_health = 145  # Akuma has low health
+        self.health = self.max_health
         self.walk_speed = 3.2  # Slightly faster than average
 
-        # Initialize animation system - use simple sprite loading approach
-        self.use_sf3_sprites = False
-        self.simple_sprites = {}
-        self.animation_timer = 0
-        
-        # Try to load sprites using simple approach
-        try:
-            self._load_simple_sprites()
-            if self.simple_sprites:
-                self.use_sf3_sprites = True
-                print(f"✅ Akuma using simple SF3 sprite system")
-        except Exception as e:
-            print(f"⚠️ Simple sprites failed, using fallback: {e}")
-            self.use_sf3_sprites = False
-        
-        if not self.use_sf3_sprites:
-            # Fallback to original system
-            sprite_directory = "assets/sprites/akuma/sprite_sheets"
-            self.sprite_manager = SpriteManager(sprite_directory)
-            self.animation_controller = AnimationController(self.sprite_manager)
+        # Single animation path: folder-based sprites through the AnimationController.
+        # sprite_directory is only used by SpriteManager's numbered loader (unused
+        # by Akuma now); folder animations resolve their own paths.
+        self.sprite_manager = SpriteManager("assets/sprites/akuma/sprite_sheets")
+        self.animation_controller = AnimationController(self.sprite_manager)
 
         # Set ground offset for consistent positioning
-        self.ground_offset = 190  # From YAML configuration
-        
+        self.ground_offset = 190  # From YAML configuration (base-class fallback)
+
+        # feet_offset positions the character's actual feet relative to self.y
+        # (STAGE_FLOOR). Tuned so standing height matches the previous look while
+        # every animation now plants its feet on the same line. This is the one
+        # knob to nudge if the whole character sits too high/low on the stage.
+        self.feet_offset = 86
+
+        # Cache of opaque-pixel padding-below-feet per cached sprite surface,
+        # keyed by id(); get_bounding_rect scans pixels and would otherwise run
+        # twice per frame per character.
+        self._feet_pad_cache = {}
+
         # Per-animation ground offsets for sprites with different layouts
         self.animation_ground_offsets = {
             # Dash animations use different sprite range (19xxx) with different layout
@@ -72,11 +115,9 @@ class Akuma(Character):
             "crouch_transition": 190,
         }
 
-        # Load all animations (YAML + hardcoded fallbacks)
-        if not self.use_sf3_sprites:
-            self._setup_animations()
-            # Start with standing idle animation
-            self.animation_controller.play_animation("stance")
+        # Register all folder animations and start idle
+        self._setup_animations()
+        self.animation_controller.play_animation("stance")
 
         # Visual (placeholder - will use sprites later)
         self.color = (128, 0, 128) if player_number == 1 else (75, 0, 130)  # Purple/dark purple
@@ -86,380 +127,89 @@ class Akuma(Character):
         self.projectiles = []  # List of active projectiles
         self.pending_projectile_strength = None  # Store strength for spawning
     
-    def _load_simple_sprites(self):
-        """Load sprites using simple direct file loading"""
-        from pathlib import Path
-        import pygame
-        
-        sprite_base = Path("tools/sprite_extraction/akuma_animations")
-        if not sprite_base.exists():
-            print(f"⚠️ Sprite directory not found: {sprite_base}")
-            return
-        
-        # Load key animations
-        animations_to_load = {
-            "akuma-stance": "akuma-stance",
-            "akuma-walkf": "akuma-walkf", 
-            "akuma-walkb": "akuma-walkb",
-            "akuma-jump": "akuma-jump",
-            "akuma-crouch": "akuma-crouch",
-            "akuma-block-high": "akuma-block-high",
-            "akuma-block-crouch": "akuma-block-crouch",
-            # Standing attacks
-            "akuma-wp": "akuma-wp",
-            "akuma-mp": "akuma-mp",
-            "akuma-hp": "akuma-hp",
-            "akuma-wk": "akuma-wk",
-            "akuma-mk": "akuma-mk",
-            "akuma-hk": "akuma-hk",
-            # Crouching attacks
-            "akuma-crouch-wp": "akuma-crouch-wp",
-            "akuma-crouch-mp": "akuma-crouch-mp",
-            "akuma-crouch-hp": "akuma-crouch-hp",
-            "akuma-crouch-wk": "akuma-crouch-wk",
-            "akuma-crouch-mk": "akuma-crouch-mk",
-            "akuma-crouch-hk": "akuma-crouch-hk",
-            # Special moves
-            "akuma-fireball": "akuma-fireball",
-            "akuma-dp": "akuma-dp",
-            "akuma-hurricane": "akuma-hurricane",
-            # Dashes
-            "akuma-dashf": "akuma-dashf",
-            "akuma-dashb": "akuma-dashb",
-        }
-        
-        for anim_name, folder_name in animations_to_load.items():
-            folder_path = sprite_base / folder_name
-            if folder_path.exists():
-                frames = []
-                # Load all PNG files in the folder
-                for png_file in sorted(folder_path.glob("*.png")):
-                    try:
-                        surface = pygame.image.load(png_file).convert_alpha()
-                        # Scale up for visibility
-                        scaled_surface = pygame.transform.scale(surface, (surface.get_width() * 2, surface.get_height() * 2))
-                        frames.append(scaled_surface)
-                    except Exception as e:
-                        print(f"⚠️ Could not load {png_file}: {e}")
-                
-                if frames:
-                    self.simple_sprites[anim_name] = frames
-                    print(f"✅ Loaded {anim_name}: {len(frames)} frames")
-        
-        print(f"🎨 Loaded {len(self.simple_sprites)} Akuma animations")
-
     def _setup_animations(self):
-        """Set up all Akuma animations."""
-        # === NEW: Load animations from YAML (proof-of-concept) ===
-        print("\n=== Loading animations from YAML ===")
-        try:
-            loader = AnimationLoader("src/street_fighter_3rd/data/animations.yaml")
-            loader.load_character_animations(self, "akuma")
-            print("=== YAML loading complete ===\n")
-        except AnimationLoadError as e:
-            print(f"WARNING: Failed to load YAML animations: {e}")
-            print("Falling back to hardcoded animations...")
-        except Exception as e:
-            print(f"ERROR: Unexpected error loading YAML: {e}")
-            print("Falling back to hardcoded animations...")
+        """Register every animation as a folder clip (single source of truth).
 
-        # === OLD: Hardcoded animations (keeping for animations not yet in YAML) ===
+        Looping clips (stance/walk/crouch idle) never self-complete; one-shot
+        clips (attacks/specials/reactions) drive their own recovery via the
+        completion check in update(). frame_duration values are tuned per move
+        and are the knob for move speed. Folder frame counts are fixed by the
+        extracted assets.
+        """
+        f = create_folder_animation
+        base = ANIM_BASE
+        specs = [
+            # name,                folder,              frames, dur, loop
+            ("stance",             "akuma-stance",      10,  6, True),
+            ("walk_forward",       "akuma-walkf",       11,  3, True),
+            ("walk_backward",      "akuma-walkb",       11,  3, True),
+            ("crouch_hold",        "akuma-crouch",       5,  4, True),
+            ("jump_up",            "akuma-jump",        34,  2, False),
+            ("dash_forward",       "akuma-dashf",       14,  1, False),
+            ("dash_backward",      "akuma-dashb",        9,  1, False),
+            # standing normals
+            ("light_punch",        "akuma-wp",           6,  2, False),
+            ("medium_punch",       "akuma-mp",           8,  2, False),
+            ("heavy_punch",        "akuma-hp",          14,  2, False),
+            ("light_kick",         "akuma-wk",           7,  2, False),
+            ("medium_kick",        "akuma-mk",          11,  2, False),
+            ("heavy_kick",         "akuma-hk",          15,  2, False),
+            # crouch normals
+            ("crouch_light_punch", "akuma-crouch-wp",    7,  2, False),
+            ("crouch_medium_punch","akuma-crouch-mp",    7,  2, False),
+            ("crouch_heavy_punch", "akuma-crouch-hp",   11,  2, False),
+            ("crouch_light_kick",  "akuma-crouch-wk",    7,  2, False),
+            ("crouch_medium_kick", "akuma-crouch-mk",   11,  2, False),
+            ("crouch_heavy_kick",  "akuma-crouch-hk",   13,  2, False),
+            # jump normals
+            ("jump_light_punch",   "akuma-jump-wp",      6,  2, False),
+            ("jump_medium_punch",  "akuma-jump-mp",      8,  2, False),
+            ("jump_heavy_punch",   "akuma-jump-hp",      6,  2, False),
+            ("jump_light_kick",    "akuma-jump-wk",     12,  1, False),
+            ("jump_medium_kick",   "akuma-jump-mk",      6,  2, False),
+            ("jump_heavy_kick",    "akuma-jump-hk",      6,  2, False),
+            # specials
+            ("gohadoken",          "akuma-fireball",    14,  2, False),
+            ("goshoryuken",        "akuma-dp",          20,  2, False),
+            ("tatsumaki",          "akuma-hurricane",   30,  2, False),
+        ]
+        for name, folder, frames, dur, loop in specs:
+            self.animation_controller.add_animation(
+                name, f(f"{base}/{folder}", frames, frame_duration=dur, loop=loop))
 
-        # Walk backward (11 frames)
-        # Using sprites 18300-18310 from akuma-walkb.gif
-        walk_backward_anim = create_simple_animation(
-            [18300, 18301, 18302, 18303, 18304, 18305, 18306, 18307, 18308, 18309, 18310],
-            frame_duration=3,  # Hold each frame for 3 game frames (smooth walk)
-            loop=True
-        )
-        self.animation_controller.add_animation("walk_backward", walk_backward_anim)
+        # Hit/block reactions. Recovery is driven by hitstun/blockstun timers,
+        # not animation completion, so airborne/block clips loop while held.
+        reactions = [
+            # name,          folder,             frames, dur, loop, start
+            ("hit_medium",   "akuma-stand-hit",  10,  2, False, 8),   # stand flinch (mid of stand-hit)
+            ("crouch_hit",   "akuma-crouch-hit", 11,  2, False, 0),
+            ("knockdown",    "akuma-slam",       25,  2, False, 0),
+            ("launch_spin",  "akuma-twist",      27,  2, True,  0),   # juggle spin (loops while airborne)
+            ("crumble",      "akuma-shocked",     3,  6, False, 0),
+            ("block_high",   "akuma-block-high",  6,  3, True,  0),
+            ("block_crouch", "akuma-block-crouch",5,  3, True,  0),
+        ]
+        for name, folder, frames, dur, loop, start in reactions:
+            self.animation_controller.add_animation(
+                name, f(f"{base}/{folder}", frames, frame_duration=dur, loop=loop, start_index=start))
 
-        # Walk backward (11 frames)
-        # Using sprites 18300-18310 from akuma-walkb.gif
-        walk_backward_anim = create_simple_animation(
-            [18300, 18301, 18302, 18303, 18304, 18305, 18306, 18307, 18308, 18309, 18310],
-            frame_duration=3,  # Hold each frame for 3 game frames (smooth walk)
-            loop=True
-        )
-        self.animation_controller.add_animation("walk_backward", walk_backward_anim)
+        # Jump variants reuse the single jump clip for now.
+        for variant in ("jump_forward", "jump_backward"):
+            self.animation_controller.add_animation(
+                variant, f(f"{base}/akuma-jump", 34, frame_duration=2, loop=False))
 
-        # Standing Light Punch (mapped from akuma-wp GIF)
-        # Frame data: 3 startup, 3 active, 6 recovery = 12 total frames
-        light_punch_anim = create_simple_animation(
-            [18664, 18666, 18667, 18669, 18670, 18669, 18671, 18671, 18672, 18672, 18664, 18664],
-            frame_duration=1,  # Each sprite displays for 1 game frame
-            loop=False
-        )
-        self.animation_controller.add_animation("light_punch", light_punch_anim)
+    def reset(self, x: float, y: float):
+        """Reset Akuma to a clean round-start state.
 
-        # Standing Medium Punch (sprites 18673-18682)
-        # Frame data: 5 startup, 4 active, 9 recovery = 18 total frames
-        medium_punch_anim = create_simple_animation(
-            [18673, 18673, 18674, 18675, 18676,  # Frames 1-5 (startup)
-             18677, 18678, 18679, 18680,          # Frames 6-9 (active)
-             18681, 18682, 18682, 18682, 18682,   # Frames 10-14 (recovery)
-             18682, 18673, 18673, 18673],         # Frames 15-18 (recovery)
-            frame_duration=1,  # Each sprite displays for 1 game frame
-            loop=False
-        )
-        self.animation_controller.add_animation("medium_punch", medium_punch_anim)
+        Args:
+            x: Round-start x position
+            y: Round-start y position
+        """
+        super().reset(x, y)
 
-        # Standing Light Kick (sprites 18706-18712)
-        # Frame data: 4 startup, 4 active, 7 recovery = 15 total frames
-        light_kick_anim = create_simple_animation(
-            [18706, 18706, 18707, 18708,                # Frames 1-4 (startup)
-             18709, 18710, 18711, 18711,                # Frames 5-8 (active)
-             18712, 18712, 18712, 18712,                # Frames 9-12 (recovery)
-             18706, 18706, 18706],                      # Frames 13-15 (recovery)
-            frame_duration=1,
-            loop=False
-        )
-        self.animation_controller.add_animation("light_kick", light_kick_anim)
-
-        # Standing Medium Kick (sprites 18696-18705)
-        # Frame data: 5 startup, 5 active, 17 recovery = 27 total frames
-        medium_kick_anim = create_simple_animation(
-            [18696, 18696, 18697, 18697, 18698,         # Frames 1-5 (startup)
-             18698, 18699, 18700, 18700, 18701,         # Frames 6-10 (active)
-             18701, 18702, 18702, 18703, 18703,         # Frames 11-15 (recovery)
-             18704, 18704, 18705, 18705, 18696,         # Frames 16-20 (recovery)
-             18696, 18696, 18696, 18696, 18696,         # Frames 21-25 (recovery)
-             18696, 18696],                             # Frames 26-27 (recovery)
-            frame_duration=1,  # Each sprite displays for 1 game frame
-            loop=False
-        )
-        self.animation_controller.add_animation("medium_kick", medium_kick_anim)
-
-        # Standing Heavy Kick (sprites 18717-18722)
-        # Frame data: 9 startup, 8 active, 25 recovery = 42 total frames
-        heavy_kick_anim = create_simple_animation(
-            [18717, 18717, 18717, 18717, 18717,         # Frames 1-5 (startup)
-             18717, 18717, 18718, 18718,                # Frames 6-9 (startup)
-             18718, 18718, 18720, 18720, 18720,         # Frames 10-14 (active)
-             18720, 18720, 18720,                       # Frames 15-17 (active)
-             18721, 18721, 18721, 18721,                # Frames 18-21 (recovery)
-             18722, 18722, 18722, 18722, 18722,         # Frames 22-26 (recovery)
-             18722, 18722, 18722, 18722, 18722,         # Frames 27-31 (recovery)
-             18722, 18722, 18722, 18717, 18717,         # Frames 32-36 (recovery)
-             18717, 18717, 18717, 18717, 18717,         # Frames 37-41 (recovery)
-             18717],                                    # Frame 42 (recovery)
-            frame_duration=1,
-            loop=False
-        )
-        self.animation_controller.add_animation("heavy_kick", heavy_kick_anim)
-
-        # Standing Heavy Punch / Close s.HP (sprites 18640-18649)
-        # Frame data: 4 startup, 4 active, 17 recovery = 25 total frames
-        # This is Akuma's signature two-hit uppercut!
-        heavy_punch_anim = create_simple_animation(
-            [18640, 18640, 18641, 18642,                # Frames 1-4 (startup - both arms)
-             18643, 18643, 18644, 18644,                # Frames 5-8 (active - uppercut)
-             18645, 18645, 18646, 18646,                # Frames 9-12 (recovery)
-             18647, 18647, 18648, 18648,                # Frames 13-16 (recovery)
-             18649, 18649, 18649, 18649,                # Frames 17-20 (recovery)
-             18640, 18640, 18640, 18640,                # Frames 21-24 (recovery)
-             18640],                                    # Frame 25 (recovery)
-            frame_duration=1,  # Each sprite displays for 1 game frame
-            loop=False
-        )
-        self.animation_controller.add_animation("heavy_punch", heavy_punch_anim)
-
-        # Jump Up (34 frames) - Vertical jump
-        # Sprites 18320-18353
-        jump_up_anim = create_simple_animation(
-            [18320, 18321, 18322, 18323, 18324, 18325, 18326, 18327, 18328, 18329,
-             18330, 18331, 18332, 18333, 18334, 18335, 18336, 18337, 18338, 18339,
-             18340, 18341, 18342, 18343, 18344, 18345, 18346, 18347, 18348, 18349,
-             18350, 18351, 18352, 18353],
-            frame_duration=2,  # Hold each frame for 2 game frames
-            loop=False
-        )
-        self.animation_controller.add_animation("jump_up", jump_up_anim)
-
-        # Jump Forward (37 frames) - Forward jump
-        # Sprites 18354-18390
-        jump_forward_anim = create_simple_animation(
-            [18354, 18355, 18356, 18357, 18358, 18359, 18360, 18361, 18362, 18363,
-             18364, 18365, 18366, 18367, 18368, 18369, 18370, 18371, 18372, 18373,
-             18374, 18375, 18376, 18377, 18378, 18379, 18380, 18381, 18382, 18383,
-             18384, 18385, 18386, 18387, 18388, 18389, 18390],
-            frame_duration=2,
-            loop=False
-        )
-        self.animation_controller.add_animation("jump_forward", jump_forward_anim)
-
-        # Jump Backward (38 frames) - Backward jump
-        # Sprites 18391-18428
-        jump_backward_anim = create_simple_animation(
-            [18391, 18392, 18393, 18394, 18395, 18396, 18397, 18398, 18399, 18400,
-             18401, 18402, 18403, 18404, 18405, 18406, 18407, 18408, 18409, 18410,
-             18411, 18412, 18413, 18414, 18415, 18416, 18417, 18418, 18419, 18420,
-             18421, 18422, 18423, 18424, 18425, 18426, 18427, 18428],
-            frame_duration=2,
-            loop=False
-        )
-        self.animation_controller.add_animation("jump_backward", jump_backward_anim)
-
-        # Crouching - Transition down (11 frames)
-        # Sprites 18429-18439
-        crouch_transition_anim = create_simple_animation(
-            [18429, 18430, 18431, 18432, 18433, 18434, 18435, 18436, 18437, 18438, 18439],
-            frame_duration=2,  # Quick transition
-            loop=False
-        )
-        self.animation_controller.add_animation("crouch_transition", crouch_transition_anim)
-
-        # Crouching - Hold pose (single frame, loops)
-        # Just the final crouch frame
-        crouch_hold_anim = create_simple_animation(
-            [18439],  # Fully crouched pose
-            frame_duration=1,
-            loop=True  # Loop on this single frame
-        )
-        self.animation_controller.add_animation("crouch_hold", crouch_hold_anim)
-
-        # Hitstun - Standing (recoil animation when hit by standing punches)
-        # Sprites 18450-18455 show authentic standing hit reaction
-        hitstun_standing_anim = create_simple_animation(
-            [18450, 18451, 18452, 18453, 18454, 18455],  # Standing punch damage reaction
-            frame_duration=2,  # Quick reaction for responsive feel
-            loop=False
-        )
-        self.animation_controller.add_animation("hitstun_standing", hitstun_standing_anim)
-
-        # Forward Dash (14 frames) - Double forward tap
-        # Sprites 19439-19452
-        dash_forward_anim = create_simple_animation(
-            [19439, 19440, 19441, 19442, 19443, 19444, 19445, 19446, 19447, 19448,
-             19449, 19450, 19451, 19452],
-            frame_duration=1,  # Fast animation for dash
-            loop=False
-        )
-        self.animation_controller.add_animation("dash_forward", dash_forward_anim)
-
-        # Backward Dash (9 frames) - Double back tap
-        # Sprites 19453-19461
-        dash_backward_anim = create_simple_animation(
-            [19453, 19454, 19455, 19456, 19457, 19458, 19459, 19460, 19461],
-            frame_duration=1,  # Fast animation for dash
-            loop=False
-        )
-        self.animation_controller.add_animation("dash_backward", dash_backward_anim)
-
-        # Crouching attacks using extracted GIF animations
-        # Path to extracted animations (from tools/sprite_extraction)
-        anim_base_path = "tools/sprite_extraction/akuma_animations"
-
-        # Crouching Light Punch - cr.LP
-        # Frame data: 4f startup, 2f active, 5f recovery = 11 total frames (7 frames in GIF)
-        crouch_lp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-wp", 7, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("crouch_light_punch", crouch_lp_anim)
-
-        # Crouching Medium Punch - cr.MP
-        # Frame data: 5f startup, 3f active, 7f recovery = 15 total frames (7 frames in GIF)
-        crouch_mp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-mp", 7, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("crouch_medium_punch", crouch_mp_anim)
-
-        # Crouching Heavy Punch - cr.HP
-        # Frame data: 5f startup, 4f active, 19f recovery = 28 total frames (11 frames in GIF)
-        crouch_hp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-hp", 11, frame_duration=3, loop=False
-        )
-        self.animation_controller.add_animation("crouch_heavy_punch", crouch_hp_anim)
-
-        # Crouching Light Kick - cr.LK
-        # Frame data: 4f startup, 2f active, 6f recovery = 12 total frames (7 frames in GIF)
-        crouch_lk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-wk", 7, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("crouch_light_kick", crouch_lk_anim)
-
-        # Crouching Medium Kick - cr.MK
-        # Frame data: 6f startup, 3f active, 10f recovery = 19 total frames (11 frames in GIF)
-        crouch_mk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-mk", 11, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("crouch_medium_kick", crouch_mk_anim)
-
-        # Crouching Heavy Kick - cr.HK (Sweep)
-        # Frame data: 7f startup, 5f active, 17f recovery = 29 total frames (13 frames in GIF)
-        crouch_hk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-crouch-hk", 13, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("crouch_heavy_kick", crouch_hk_anim)
-
-        # Jumping attacks using extracted GIF animations
-        # Jump Light Punch - j.LP
-        # Frame data: 4f startup, 5f active = 9 total frames (6 frames in GIF)
-        jump_lp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-wp", 6, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("jump_light_punch", jump_lp_anim)
-
-        # Jump Medium Punch - j.MP
-        # Frame data: 5f startup, 6f active = 11 total frames (8 frames in GIF)
-        jump_mp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-mp", 8, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("jump_medium_punch", jump_mp_anim)
-
-        # Jump Heavy Punch - j.HP
-        # Frame data: 7f startup, 5f active = 12 total frames (6 frames in GIF)
-        jump_hp_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-hp", 6, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("jump_heavy_punch", jump_hp_anim)
-
-        # Jump Light Kick - j.LK
-        # Frame data: 4f startup, 8f active = 12 total frames (12 frames in GIF)
-        jump_lk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-wk", 12, frame_duration=1, loop=False
-        )
-        self.animation_controller.add_animation("jump_light_kick", jump_lk_anim)
-
-        # Jump Medium Kick - j.MK
-        # Frame data: 6f startup, 6f active = 12 total frames (6 frames in GIF)
-        jump_mk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-mk", 6, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("jump_medium_kick", jump_mk_anim)
-
-        # Jump Heavy Kick - j.HK
-        # Frame data: 8f startup, 4f active = 12 total frames (6 frames in GIF)
-        jump_hk_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-jump-hk", 6, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("jump_heavy_kick", jump_hk_anim)
-
-        # Goshoryuken (Dragon Punch) - DP+P (40 frames)
-        # Frame data: 3f startup, 12f active, 25f recovery = 40 total frames (20 frames in GIF)
-        goshoryuken_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-dp", 20, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("goshoryuken", goshoryuken_anim)
-
-        # Tatsumaki Zankukyaku (Hurricane Kick) - QCB+K (46 frames)
-        # Frame data: 4f startup, 26f active, 16f recovery = 46 total frames (30 frames in GIF)
-        tatsumaki_anim = create_folder_animation(
-            f"{anim_base_path}/akuma-hurricane", 30, frame_duration=2, loop=False
-        )
-        self.animation_controller.add_animation("tatsumaki", tatsumaki_anim)
-
-        # Gohadoken (Fireball) - QCF+P (24 frames)
-        # Sprites 19024-19047
-        # Frame data: 13 startup, 3 active (projectile spawns), 8 recovery = 24 total frames
-        gohadoken_anim = create_simple_animation(
-            [19024, 19024, 19025, 19025, 19026, 19027, 19028, 19029, 19030, 19031, 19032, 19033, 19034,  # Frames 1-13 (startup)
-             19035, 19036, 19037,  # Frames 14-16 (active - spawn projectile on frame 14)
-             19038, 19039, 19040, 19041, 19042, 19043, 19044, 19045],  # Frames 17-24 (recovery)
-            frame_duration=1,
-            loop=False
-        )
-        self.animation_controller.add_animation("gohadoken", gohadoken_anim)
+        self.projectiles.clear()
+        self.pending_projectile_strength = None
+        self.animation_controller.play_animation("stance", force_restart=True)
 
     def _check_special_moves(self) -> bool:
         """Check for Akuma's special moves.
@@ -511,7 +261,7 @@ class Akuma(Character):
         Args:
             strength: Punch button used (determines speed/damage)
         """
-        print(f"GOHADOKEN! ({strength.name})")  # Debug
+        log.debug("GOHADOKEN! (%s)", strength.name)
 
         # Mark special move executed (for cooldown tracking)
         self.last_special_frame = self.total_frames
@@ -532,7 +282,7 @@ class Akuma(Character):
         Args:
             strength: Punch button used (determines height/damage)
         """
-        print(f"⚡ GOSHORYUKEN! ({strength.name})")  # Debug
+        log.debug("GOSHORYUKEN! (%s)", strength.name)
 
         # Mark special move executed (for cooldown tracking)
         self.last_special_frame = self.total_frames
@@ -560,7 +310,7 @@ class Akuma(Character):
         Args:
             strength: Kick button used (determines distance/hits)
         """
-        print(f"🌀 TATSUMAKI! ({strength.name})")  # Debug
+        log.debug("TATSUMAKI! (%s)", strength.name)
 
         # Mark special move executed (for cooldown tracking)
         self.last_special_frame = self.total_frames
@@ -582,7 +332,7 @@ class Akuma(Character):
 
         # If in air, this is air tatsumaki (slightly different)
         if not self.is_grounded:
-            print("  (AIR VERSION)")
+            log.debug("  (AIR VERSION)")
             horizontal_speed *= 0.8  # Air version moves slower
             self.velocity_x = horizontal_speed * direction
 
@@ -601,25 +351,16 @@ class Akuma(Character):
         # Call parent update FIRST (this updates facing direction)
         super().update(opponent)
 
-        # Update animation system (only for original sprite system)
-        if not self.use_sf3_sprites:
-            # THEN update animation controller (after facing is correct)
-            self.animation_controller.update()
-
-            # Get current animation name for debugging
-            anim_name = self.animation_controller.get_current_animation_name()
-
-            # Check if animation completed and return to stance
-            # Don't auto-return for states that should hold (crouching, dashes)
-            if self.animation_controller.is_animation_complete():
-                # Debug: print when animation completes
-                if self.state not in [CharacterState.STANDING, CharacterState.CROUCHING,
-                                     CharacterState.DASH_FORWARD, CharacterState.DASH_BACKWARD]:
-                    print(f"Animation '{anim_name}' complete, returning to standing from {self.state.name}")
-                    self._transition_to_state(CharacterState.STANDING)
-                    self.animation_controller.play_animation("stance")
-                else:
-                    print(f"Animation '{anim_name}' complete but holding state {self.state.name}")
+        # Advance the animation, then recover one-shot moves on completion.
+        self.animation_controller.update()
+        if self.animation_controller.is_animation_complete() and self.state not in _HOLD_STATES:
+            # A one-shot move (attack/special/reaction) finished. If we finished
+            # mid-air, resume the airborne pose and let physics land us; otherwise
+            # return to neutral.
+            if not self.is_grounded:
+                self._transition_to_state(CharacterState.JUMPING)
+            else:
+                self._transition_to_state(CharacterState.STANDING)
 
         # Update projectiles
         for projectile in self.projectiles:
@@ -637,212 +378,82 @@ class Akuma(Character):
         # Call parent transition
         super()._transition_to_state(new_state)
 
-        # Play corresponding animation (only for original sprite system)
-        if not self.use_sf3_sprites:
-            if new_state == CharacterState.STANDING:
-                self.animation_controller.play_animation("stance")
-            elif new_state == CharacterState.WALKING_FORWARD:
-                self.animation_controller.play_animation("walk_forward")
-            elif new_state == CharacterState.WALKING_BACKWARD:
-                self.animation_controller.play_animation("walk_backward")
-            elif new_state == CharacterState.CROUCHING:
-                # Go directly to crouch hold (no transition animation in YAML yet)
-                self.animation_controller.play_animation("crouch_hold")
-            elif new_state == CharacterState.JUMPING:
-                # Determine which jump animation to play based on stored jump direction
-                # Note: InputDirection is already relative to facing (FORWARD/BACK are converted by input system)
-                from street_fighter_3rd.data.enums import InputDirection
+        # Play the animation for this state. Looping idles play without restart
+        # (so re-entering STANDING doesn't stutter); one-shots force-restart.
+        play = self.animation_controller.play_animation
+        if new_state == CharacterState.STANDING:
+            play("stance")
+        elif new_state == CharacterState.WALKING_FORWARD:
+            play("walk_forward")
+        elif new_state == CharacterState.WALKING_BACKWARD:
+            play("walk_backward")
+        elif new_state == CharacterState.CROUCHING:
+            play("crouch_hold")
+        elif new_state == CharacterState.JUMPING:
+            # jump_direction is relative to facing (handled by the input system)
+            if self.jump_direction == InputDirection.UP_FORWARD:
+                play("jump_forward", force_restart=True)
+            elif self.jump_direction == InputDirection.UP_BACK:
+                play("jump_backward", force_restart=True)
+            else:
+                play("jump_up", force_restart=True)
+        else:
+            name = self._STATE_ANIM.get(new_state)
+            if name:
+                play(name, force_restart=True)
 
-                # Jump direction is relative - UP_FORWARD means "jump toward opponent" regardless of which way you face
-                if self.jump_direction == InputDirection.UP_FORWARD:
-                    self.animation_controller.play_animation("jump_forward", force_restart=True)
-                elif self.jump_direction == InputDirection.UP_BACK:
-                    self.animation_controller.play_animation("jump_backward", force_restart=True)
-                else:  # InputDirection.UP
-                    self.animation_controller.play_animation("jump_up", force_restart=True)
-            elif new_state == CharacterState.LIGHT_PUNCH:
-                self.animation_controller.play_animation("light_punch", force_restart=True)
-            elif new_state == CharacterState.MEDIUM_PUNCH:
-                self.animation_controller.play_animation("medium_punch", force_restart=True)
-            elif new_state == CharacterState.HEAVY_PUNCH:
-                self.animation_controller.play_animation("heavy_punch", force_restart=True)
-            elif new_state == CharacterState.LIGHT_KICK:
-                self.animation_controller.play_animation("light_kick", force_restart=True)
-            elif new_state == CharacterState.MEDIUM_KICK:
-                self.animation_controller.play_animation("medium_kick", force_restart=True)
-            elif new_state == CharacterState.HEAVY_KICK:
-                self.animation_controller.play_animation("heavy_kick", force_restart=True)
-            elif new_state == CharacterState.HITSTUN_STANDING:
-                self.animation_controller.play_animation("hitstun_standing", force_restart=True)
-            elif new_state == CharacterState.DASH_FORWARD:
-                self.animation_controller.play_animation("dash_forward", force_restart=True)
-            elif new_state == CharacterState.DASH_BACKWARD:
-                self.animation_controller.play_animation("dash_backward", force_restart=True)
-            elif new_state == CharacterState.GOHADOKEN:
-                self.animation_controller.play_animation("gohadoken", force_restart=True)
-            elif new_state == CharacterState.CROUCH_LIGHT_PUNCH:
-                self.animation_controller.play_animation("crouch_light_punch", force_restart=True)
-            elif new_state == CharacterState.CROUCH_MEDIUM_PUNCH:
-                self.animation_controller.play_animation("crouch_medium_punch", force_restart=True)
-            elif new_state == CharacterState.CROUCH_HEAVY_PUNCH:
-                self.animation_controller.play_animation("crouch_heavy_punch", force_restart=True)
-            elif new_state == CharacterState.CROUCH_LIGHT_KICK:
-                self.animation_controller.play_animation("crouch_light_kick", force_restart=True)
-            elif new_state == CharacterState.CROUCH_MEDIUM_KICK:
-                self.animation_controller.play_animation("crouch_medium_kick", force_restart=True)
-            elif new_state == CharacterState.CROUCH_HEAVY_KICK:
-                self.animation_controller.play_animation("crouch_heavy_kick", force_restart=True)
-            elif new_state == CharacterState.JUMP_LIGHT_PUNCH:
-                self.animation_controller.play_animation("jump_light_punch", force_restart=True)
-            elif new_state == CharacterState.JUMP_MEDIUM_PUNCH:
-                self.animation_controller.play_animation("jump_medium_punch", force_restart=True)
-            elif new_state == CharacterState.JUMP_HEAVY_PUNCH:
-                self.animation_controller.play_animation("jump_heavy_punch", force_restart=True)
-            elif new_state == CharacterState.JUMP_LIGHT_KICK:
-                self.animation_controller.play_animation("jump_light_kick", force_restart=True)
-            elif new_state == CharacterState.JUMP_MEDIUM_KICK:
-                self.animation_controller.play_animation("jump_medium_kick", force_restart=True)
-            elif new_state == CharacterState.JUMP_HEAVY_KICK:
-                self.animation_controller.play_animation("jump_heavy_kick", force_restart=True)
-            elif new_state == CharacterState.GOSHORYUKEN:
-                self.animation_controller.play_animation("goshoryuken", force_restart=True)
-            elif new_state == CharacterState.TATSUMAKI:
-                self.animation_controller.play_animation("tatsumaki", force_restart=True)
+    def get_debug_state(self) -> dict:
+        """Extend the base debug state with live animation/sprite info."""
+        state = super().get_debug_state()
+        state["name"] = self.name
+        state["anim"] = self.animation_controller.get_current_frame_info()
+        # On-screen feet line (constant by design — see _render).
+        state["feet_y"] = round(self.y + self.feet_offset, 1)
+        state["projectiles"] = len(self.projectiles)
+        return state
+
+    def _padding_below_feet(self, sprite: pygame.Surface) -> int:
+        """Transparent pixels between the character's feet and the canvas bottom.
+
+        Cached per sprite surface (get_bounding_rect scans every pixel).
+        Returns 0 for a fully transparent frame.
+        """
+        key = id(sprite)
+        pad = self._feet_pad_cache.get(key)
+        if pad is None:
+            bbox = sprite.get_bounding_rect()
+            pad = sprite.get_height() - bbox.bottom if bbox.height else 0
+            self._feet_pad_cache[key] = pad
+        return pad
 
     def render(self, screen: pygame.Surface):
-        """Render Akuma using animation system.
-
-        Args:
-            screen: Pygame surface to render to
-        """
-        if self.use_sf3_sprites:
-            # Use SF3 sprite system
-            self._render_sf3_sprites(screen)
-        else:
-            # Use original sprite system
-            self._render_original_sprites(screen)
-    
-    def _render_sf3_sprites(self, screen: pygame.Surface):
-        """Render using simple sprite system."""
-        # Map character state to animation name
-        animation_name = self._get_sf3_animation_name()
-        
-        # Get sprite from simple sprite system
-        sprite = None
-        try:
-            if animation_name in self.simple_sprites:
-                frames = self.simple_sprites[animation_name]
-                if frames:
-                    # Simple frame cycling - use frame based on game time
-                    frame_index = (self.animation_timer // 4) % len(frames)
-                    sprite = frames[frame_index]
-        except Exception as e:
-            print(f"⚠️ Simple sprite error: {e}")
-        
-        if sprite:
-            # Flip sprite based on facing direction
-            # SF3 sprites face RIGHT by default, so flip when facing LEFT
-            from street_fighter_3rd.data.enums import FacingDirection
-            if self.facing == FacingDirection.LEFT:
-                sprite = pygame.transform.flip(sprite, True, False)
-
-            # Position sprite
-            sprite_rect = sprite.get_rect()
-            sprite_rect.centerx = int(self.x)
-            sprite_rect.bottom = int(self.y)
-
-            # Apply hit flash effect
-            if self.hitflash_frames > 0:
-                flash_sprite = sprite.copy()
-                flash_sprite.fill((30, 30, 30), special_flags=pygame.BLEND_RGB_ADD)
-                screen.blit(flash_sprite, sprite_rect)
-            else:
-                screen.blit(sprite, sprite_rect)
-            
-            # Update animation timer
-            self.animation_timer += 1
-        else:
-            # Fallback to rectangle
-            self._render_fallback_rectangle(screen)
-    
-    def _render_original_sprites(self, screen: pygame.Surface):
-        """Render using original sprite system."""
-        # Get current sprite from animation controller
+        """Render Akuma's current animation frame, feet aligned to the floor."""
         sprite = self.animation_controller.get_current_sprite()
-        
-        # Debug: Check if sprite is None for certain animations
-        anim_name = self.animation_controller.get_current_animation_name()
-        if sprite is None and anim_name in ["dash_forward", "dash_backward", "crouch_transition"]:
-            print(f"WARNING: No sprite for animation '{anim_name}' - falling back to parent render")
+        self._rendered_fallback = sprite is None
+        if sprite is None:
+            super().render(screen)  # rectangle placeholder
+            return
 
-        if sprite:
-            # Flip sprite based on facing direction
-            # Original sprites face LEFT, so flip when facing RIGHT
-            from street_fighter_3rd.data.enums import FacingDirection
-            if self.facing == FacingDirection.RIGHT:
-                sprite = pygame.transform.flip(sprite, True, False)
+        # Align the character's ACTUAL feet (bottom of opaque pixels) to the
+        # floor line, independent of each frame's transparent padding. Padding is
+        # measured on the unflipped sprite (vertical extent is flip-invariant).
+        pad_below_feet = self._padding_below_feet(sprite)
 
-            # Position sprite with proper ground offset
-            sprite_rect = sprite.get_rect()
-            sprite_rect.centerx = int(self.x)
+        # Folder sprites face RIGHT, so flip when facing LEFT.
+        if self.facing == FacingDirection.LEFT:
+            sprite = pygame.transform.flip(sprite, True, False)
 
-            # Position sprite using animation-specific ground offset
-            anim_name = self.animation_controller.get_current_animation_name()
-            ground_offset = self.animation_ground_offsets.get(anim_name, self.ground_offset)
-            sprite_rect.bottom = int(self.y) + ground_offset
+        sprite_rect = sprite.get_rect()
+        sprite_rect.centerx = int(self.x)
+        sprite_rect.bottom = int(self.y) + self.feet_offset + pad_below_feet
 
-            # Apply hit flash effect
-            if self.hitflash_frames > 0:
-                flash_sprite = sprite.copy()
-                flash_sprite.fill((30, 30, 30), special_flags=pygame.BLEND_RGB_ADD)
-                screen.blit(flash_sprite, sprite_rect)
-            else:
-                screen.blit(sprite, sprite_rect)
-
-            # Draw state text (debug) above sprite
-            font = pygame.font.Font(None, 16)
-            facing_str = "RIGHT" if self.facing == FacingDirection.RIGHT else "LEFT"
-            state_text = font.render(f"{self.state.name} [{facing_str}]", True, (255, 255, 255))
-            screen.blit(state_text, (int(self.x - 30), sprite_rect.top - 20))
+        if self.hitflash_frames > 0:
+            flash_sprite = sprite.copy()
+            flash_sprite.fill((30, 30, 30), special_flags=pygame.BLEND_RGB_ADD)
+            screen.blit(flash_sprite, sprite_rect)
         else:
-            # Fallback to parent rendering if no sprite
-            super().render(screen)
-    
-    def _get_sf3_animation_name(self) -> str:
-        """Map character state to SF3 animation name."""
-        # Map current character state to actual SF3 sprite animation names
-        state_to_animation = {
-            CharacterState.STANDING: "akuma-stance",
-            CharacterState.WALKING_FORWARD: "akuma-walkf",
-            CharacterState.WALKING_BACKWARD: "akuma-walkb", 
-            CharacterState.JUMPING: "akuma-jump",
-            CharacterState.JUMPING_FORWARD: "akuma-jumpf",
-            CharacterState.JUMPING_BACKWARD: "akuma-jumpb",
-            CharacterState.AIRBORNE: "akuma-jump",
-            CharacterState.CROUCHING: "akuma-crouch",
-            CharacterState.BLOCKING_HIGH: "akuma-block-high",
-            CharacterState.BLOCKING_LOW: "akuma-block-crouch",
-            CharacterState.LIGHT_PUNCH: "akuma-wp",  # Weak punch
-            CharacterState.MEDIUM_PUNCH: "akuma-mp",  # Medium punch
-            CharacterState.HEAVY_PUNCH: "akuma-hp",   # Heavy punch
-            CharacterState.LIGHT_KICK: "akuma-wk",    # Weak kick
-            CharacterState.MEDIUM_KICK: "akuma-mk",   # Medium kick
-            CharacterState.HEAVY_KICK: "akuma-hk",    # Heavy kick
-            CharacterState.CROUCH_LIGHT_PUNCH: "akuma-crouch-wp",
-            CharacterState.CROUCH_MEDIUM_PUNCH: "akuma-crouch-mp",
-            CharacterState.CROUCH_HEAVY_PUNCH: "akuma-crouch-hp",
-            CharacterState.CROUCH_LIGHT_KICK: "akuma-crouch-wk",
-            CharacterState.CROUCH_MEDIUM_KICK: "akuma-crouch-mk",
-            CharacterState.CROUCH_HEAVY_KICK: "akuma-crouch-hk",
-            CharacterState.GOHADOKEN: "akuma-fireball",
-            CharacterState.GOSHORYUKEN: "akuma-dp",  # Dragon punch
-            CharacterState.TATSUMAKI: "akuma-hurricane",
-            CharacterState.DASH_FORWARD: "akuma-dashf",
-            CharacterState.DASH_BACKWARD: "akuma-dashb",
-        }
-        
-        return state_to_animation.get(self.state, "akuma-stance")
-    
+            screen.blit(sprite, sprite_rect)
+
     def _render_fallback_rectangle(self, screen: pygame.Surface):
         """Render fallback rectangle when sprites fail."""
         # Draw character as colored rectangle (fallback)
@@ -855,7 +466,7 @@ class Akuma(Character):
         pygame.draw.circle(screen, (255, 255, 255), (eye_x, rect.y + 20), 5)
         
         # Draw state text
-        font = pygame.font.Font(None, 16)
+        font = get_debug_font()
         facing_str = "RIGHT" if self.facing == FacingDirection.RIGHT else "LEFT"
         state_text = font.render(f"{self.state.name} [{facing_str}]", True, (255, 255, 255))
         screen.blit(state_text, (int(self.x - 30), rect.top - 20))
@@ -890,15 +501,6 @@ class Akuma(Character):
                 self.projectiles.append(projectile)
                 self.pending_projectile_strength = None  # Clear after spawning
 
-            if self.state_frame >= 24:  # Animation complete
-                self._transition_to_state(CharacterState.STANDING)
-
-        elif self.state == CharacterState.GOSHORYUKEN:
-            # DP animation (placeholder)
-            if self.state_frame >= 40:
-                self._transition_to_state(CharacterState.STANDING)
-
-        elif self.state == CharacterState.TATSUMAKI:
-            # Hurricane kick animation (placeholder)
-            if self.state_frame >= 45:
-                self._transition_to_state(CharacterState.STANDING)
+        # GOHADOKEN/GOSHORYUKEN/TATSUMAKI now recover when their animation
+        # completes (see update()); the per-state safety timeout still guards
+        # against any soft-lock. No hardcoded state_frame returns here.

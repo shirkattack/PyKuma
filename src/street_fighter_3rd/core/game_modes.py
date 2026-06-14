@@ -31,6 +31,7 @@ class GameModeConfig:
     no_rounds: bool = False
     no_timer: bool = False
     auto_reset_position: bool = False
+    regen_after_idle: bool = False  # restore health to full after a no-damage lull
     
     # Training mode features
     show_damage_numbers: bool = False
@@ -60,7 +61,10 @@ GAME_MODE_CONFIGS = {
         show_damage_numbers=True,
         show_frame_advantage=True,
         show_combo_counter=True,
-        infinite_health=True,
+        # Health drops normally so damage is visible, then regenerates to full
+        # once both players stop trading hits for a few seconds.
+        infinite_health=False,
+        regen_after_idle=True,
         no_rounds=True,
         no_timer=True,
         auto_reset_position=True,

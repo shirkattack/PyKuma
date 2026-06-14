@@ -29,6 +29,26 @@
 
 This is a **non-commercial educational project** created to study fighting game mechanics and game engine design.
 
+## 📌 Current Status / Known Gaps
+
+The features below describe what's implemented; here's an honest snapshot of
+what is and isn't playable at HEAD:
+
+- ✅ **Akuma vs Akuma** is the playable matchup — both players are Akuma.
+  `characters/ken.py` exists but is **experimental and not wired in** (no
+  character select in the live game yet).
+- ✅ **Parry is live**: tap forward (or down-forward for low) within the
+  authentic 7-frame window to parry. Guard-direction nuances and red parry
+  are still simplified.
+- ⚠️ **Sprites are not bundled.** SF3 sprite art is Capcom's copyright and
+  can't be redistributed; without local assets the game runs with placeholder
+  rectangles. The sprite-extraction tooling in `tools/` is a personal-use path.
+- ❌ **No charge motions, no negative edge** — deliberate omissions for now.
+- ❌ No corner-pressure pushback on the attacker, no projectile-vs-projectile
+  resolution yet.
+- 🧭 See `ARCHITECTURE.md` for which module is canonical for each concern;
+  superseded parallel implementations live in `attic/`.
+
 ## ✨ Features
 
 ### Core Fighting Game Mechanics

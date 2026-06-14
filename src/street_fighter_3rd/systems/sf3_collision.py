@@ -23,6 +23,10 @@ import pygame
 from .sf3_core import SF3PlayerWork, SF3WorkStructure
 from .sf3_hitboxes import SF3HitboxManager, SF3HitboxType, SF3Hitbox
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class SF3CollisionResult(IntEnum):
     """SF3's collision result flags"""
@@ -436,7 +440,7 @@ class SF3CollisionSystem:
         
         # This would apply damage, hitstun, etc.
         # For now, we'll just mark that a hit occurred
-        print(f"Hit confirmed: Player {hit_status.attacker_id} hit Player {hit_status.defender_id} for {hit_status.damage} damage")
+        log.info("Hit confirmed: Player %s hit Player %s for %s damage", hit_status.attacker_id, hit_status.defender_id, hit_status.damage)
     
     def _set_caught_status(self, hit_index: int):
         """
@@ -447,11 +451,11 @@ class SF3CollisionSystem:
         hit_status = self.hit_status[hit_index]
         
         # This would apply throw damage, positioning, etc.
-        print(f"Throw confirmed: Player {hit_status.attacker_id} threw Player {hit_status.defender_id}")
+        log.info("Throw confirmed: Player %s threw Player %s", hit_status.attacker_id, hit_status.defender_id)
     
     def _handle_mutual_hit(self):
         """Handle mutual hit scenario"""
-        print("Mutual hit detected! Both players hit each other.")
+        log.info("Mutual hit detected! Both players hit each other.")
     
     def _find_empty_hit_slot(self) -> int:
         """Find an empty slot in the hit status array"""
@@ -471,26 +475,26 @@ class SF3CollisionSystem:
 
 if __name__ == "__main__":
     # Test the SF3 collision system
-    print("Testing SF3 Collision System...")
-    
+    log.info("Testing SF3 Collision System...")
+
     collision_system = SF3CollisionSystem()
-    
+
     # Verify 32-slot hit queue
     assert len(collision_system.hit_status) == 32, f"Expected 32 hit slots, got {len(collision_system.hit_status)}"
-    
+
     # Test hit status
     hit_status = SF3HitStatus()
     hit_status.attacker_id = 1
     hit_status.defender_id = 2
     hit_status.damage = 115
     hit_status.result_flags = SF3CollisionResult.HIT_CONFIRMED
-    
-    print(f"Hit Status: Player {hit_status.attacker_id} -> Player {hit_status.defender_id}, Damage: {hit_status.damage}")
-    
+
+    log.info("Hit Status: Player %s -> Player %s, Damage: %s", hit_status.attacker_id, hit_status.defender_id, hit_status.damage)
+
     # Clear and verify
     hit_status.clear()
     assert hit_status.attacker_id == 0, "Hit status should be cleared"
-    
-    print("SF3 Collision System working correctly! ✅")
-    print(f"32-slot hit queue: {len(collision_system.hit_status)} slots")
-    print(f"Priority processing: Throws -> Attacks -> Special cases")
+
+    log.info("SF3 Collision System working correctly!")
+    log.info("32-slot hit queue: %s slots", len(collision_system.hit_status))
+    log.info("Priority processing: Throws -> Attacks -> Special cases")

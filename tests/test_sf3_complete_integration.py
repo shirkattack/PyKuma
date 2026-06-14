@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Complete SF3 Integration Test
 
@@ -7,180 +6,93 @@ Tests all the major SF3 systems we've integrated:
 2. YAML-based hitbox data loading
 3. Parry system integration
 4. Combo system with damage scaling
-5. Mutual hit detection (aiuchi)
+5. Game wired to the SF3 collision adapter
 """
 
-import sys
-import os
+from pathlib import Path
 
-# Add the src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+import pygame
+import pytest
+import yaml
+
+from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
+from street_fighter_3rd.systems.sf3_combo_system import SF3ComboSystem
+from street_fighter_3rd.systems.sf3_parry import SF3ParrySystem
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ANIMATIONS_YAML = PROJECT_ROOT / "src" / "street_fighter_3rd" / "data" / "animations.yaml"
+
 
 def test_sf3_collision_adapter():
-    """Test SF3CollisionAdapter functionality"""
-    try:
-        from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
-        
-        # Create adapter
-        adapter = SF3CollisionAdapter()
-        print("✅ SF3CollisionAdapter created successfully")
-        
-        # Test combo system
-        combo_info = adapter.get_combo_info(1)
-        print(f"✅ Combo system working: {combo_info}")
-        
-        # Test parry input format
-        test_inputs = {'forward': True, 'down_forward': False}
-        print(f"✅ Parry input format: {test_inputs}")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ SF3CollisionAdapter test failed: {e}")
-        return False
+    """SF3CollisionAdapter exposes combo info in the format the UI expects."""
+    adapter = SF3CollisionAdapter()
+
+    combo_info = adapter.get_combo_info(1)
+    assert combo_info['count'] == 0, "no hits yet: combo count must start at 0"
+    assert combo_info['damage'] == 0, "no hits yet: combo damage must start at 0"
+    assert combo_info['active'] is False, "no combo can be active before any hit"
+    for key in ('count', 'damage', 'active', 'scaling', 'type'):
+        assert key in combo_info, f"combo info missing '{key}' key"
+
 
 def test_combo_system():
-    """Test standalone combo system"""
-    try:
-        from street_fighter_3rd.systems.sf3_combo_system import SF3ComboSystem
-        
-        combo_system = SF3ComboSystem()
-        print("✅ SF3ComboSystem created successfully")
-        
-        # Test damage scaling
-        scaled_damage_1 = combo_system.register_hit(1, 2, 100, "normal")  # 1st hit
-        scaled_damage_2 = combo_system.register_hit(1, 2, 100, "normal")  # 2nd hit
-        scaled_damage_3 = combo_system.register_hit(1, 2, 100, "normal")  # 3rd hit
-        
-        print(f"✅ Damage scaling test:")
-        print(f"   1st hit: 100 → {scaled_damage_1}")
-        print(f"   2nd hit: 100 → {scaled_damage_2}")
-        print(f"   3rd hit: 100 → {scaled_damage_3}")
-        
-        # Verify scaling is working
-        if scaled_damage_1 == 100 and scaled_damage_2 == 90 and scaled_damage_3 == 80:
-            print("✅ Damage scaling working correctly!")
-        else:
-            print("⚠️ Damage scaling values unexpected")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Combo system test failed: {e}")
-        return False
+    """Standalone combo system applies SF3 damage scaling per hit."""
+    combo_system = SF3ComboSystem()
+
+    scaled_damage_1 = combo_system.register_hit(1, 2, 100, "normal")  # 1st hit
+    scaled_damage_2 = combo_system.register_hit(1, 2, 100, "normal")  # 2nd hit
+    scaled_damage_3 = combo_system.register_hit(1, 2, 100, "normal")  # 3rd hit
+
+    print(f"Damage scaling: 100 -> {scaled_damage_1}, {scaled_damage_2}, {scaled_damage_3}")
+    assert scaled_damage_1 == 100, f"1st hit must be unscaled, got {scaled_damage_1}"
+    assert scaled_damage_2 == 90, f"2nd hit must scale to 90, got {scaled_damage_2}"
+    assert scaled_damage_3 == 80, f"3rd hit must scale to 80, got {scaled_damage_3}"
+
 
 def test_yaml_hitbox_loading():
-    """Test YAML hitbox data loading"""
-    try:
-        import yaml
-        
-        # Load animation data
-        with open('src/street_fighter_3rd/data/animations.yaml', 'r') as f:
-            anim_data = yaml.safe_load(f)
-        
-        print("✅ YAML animation data loaded successfully")
-        
-        # Check for hitbox data
-        akuma_anims = anim_data.get('characters', {}).get('akuma', {}).get('animations', {})
-        
-        hitbox_moves = []
-        for move_name, move_data in akuma_anims.items():
-            if 'hitbox' in move_data:
-                hitbox_moves.append(move_name)
-        
-        print(f"✅ Found {len(hitbox_moves)} moves with hitbox data:")
-        for move in hitbox_moves[:5]:  # Show first 5
-            hitbox = akuma_anims[move]['hitbox']
-            print(f"   {move}: {hitbox.get('damage', 0)} damage, {hitbox.get('width', 0)}x{hitbox.get('height', 0)} hitbox")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ YAML hitbox loading test failed: {e}")
-        return False
+    """The animations YAML contains hitbox data for Akuma's moves."""
+    assert ANIMATIONS_YAML.exists(), f"animation data file missing: {ANIMATIONS_YAML}"
+
+    with open(ANIMATIONS_YAML, 'r') as f:
+        anim_data = yaml.safe_load(f)
+
+    akuma_anims = anim_data.get('characters', {}).get('akuma', {}).get('animations', {})
+    assert akuma_anims, "animations.yaml must define animations for akuma"
+
+    hitbox_moves = [name for name, data in akuma_anims.items() if 'hitbox' in data]
+    assert hitbox_moves, "at least one Akuma move must define hitbox data"
+
+    print(f"Found {len(hitbox_moves)} moves with hitbox data")
+    for move in hitbox_moves:
+        hitbox = akuma_anims[move]['hitbox']
+        assert hitbox.get('damage', 0) > 0, f"{move}: hitbox must deal damage"
+        assert hitbox.get('width', 0) > 0, f"{move}: hitbox must have a width"
+        assert hitbox.get('height', 0) > 0, f"{move}: hitbox must have a height"
+
 
 def test_sf3_parry_system():
-    """Test SF3 parry system"""
-    try:
-        from street_fighter_3rd.systems.sf3_parry import SF3ParrySystem
-        
-        parry_system = SF3ParrySystem()
-        print("✅ SF3ParrySystem created successfully")
-        
-        # Test parry window constants
-        print(f"✅ Parry window: {parry_system.PARRY_WINDOW_FRAMES} frames")
-        print(f"✅ Parry advantage: {parry_system.PARRY_ADVANTAGE_FRAMES} frames")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ SF3 parry system test failed: {e}")
-        return False
+    """SF3 parry system uses the authentic frame windows."""
+    parry_system = SF3ParrySystem()
+
+    assert parry_system.PARRY_WINDOW_FRAMES == 7, (
+        f"SF3 parry window must be 7 frames, got {parry_system.PARRY_WINDOW_FRAMES}"
+    )
+    assert parry_system.PARRY_ADVANTAGE_FRAMES == 8, (
+        f"SF3 parry advantage must be 8 frames, got {parry_system.PARRY_ADVANTAGE_FRAMES}"
+    )
+
 
 def test_game_integration():
-    """Test that the game can be imported with SF3 systems"""
+    """The Game wires up the SF3 collision adapter."""
+    from street_fighter_3rd.core.game import Game
+
+    pygame.init()
     try:
-        from street_fighter_3rd.core.game import Game
-        print("✅ Game class with SF3 integration imported successfully")
-        
-        # Test that game has parry input method
-        import pygame
-        pygame.init()
         screen = pygame.display.set_mode((800, 600))
-        
         game = Game(screen)
-        
-        # Check if SF3 collision system is active
-        if hasattr(game.collision_system, 'sf3_combo_system'):
-            print("✅ Game is using SF3CollisionAdapter")
-        else:
-            print("⚠️ Game is not using SF3CollisionAdapter")
-        
+
+        assert hasattr(game.collision_system, 'sf3_combo_system'), (
+            "Game must use SF3CollisionAdapter as its collision system"
+        )
+    finally:
         pygame.quit()
-        return True
-        
-    except Exception as e:
-        print(f"❌ Game integration test failed: {e}")
-        return False
-
-def main():
-    """Run all integration tests"""
-    print("🥊 SF3:3S Complete Integration Test")
-    print("=" * 50)
-    
-    success = True
-    
-    print("\n1. Testing SF3CollisionAdapter...")
-    success &= test_sf3_collision_adapter()
-    
-    print("\n2. Testing Combo System...")
-    success &= test_combo_system()
-    
-    print("\n3. Testing YAML Hitbox Loading...")
-    success &= test_yaml_hitbox_loading()
-    
-    print("\n4. Testing SF3 Parry System...")
-    success &= test_sf3_parry_system()
-    
-    print("\n5. Testing Game Integration...")
-    success &= test_game_integration()
-    
-    print("\n" + "=" * 50)
-    if success:
-        print("🎉 ALL TESTS PASSED!")
-        print("\n🏆 SF3:3S Integration Status:")
-        print("✅ Authentic SF3 collision system active")
-        print("✅ YAML-based hitbox data loading")
-        print("✅ Frame-perfect parry system integrated")
-        print("✅ Combo system with authentic damage scaling")
-        print("✅ Mutual hit detection (aiuchi) support")
-        print("✅ Real-time combo display in game UI")
-        print("\n🎮 Ready to test in-game!")
-        print("Run: uv run python demo_character_expansion.py")
-    else:
-        print("💥 Some tests failed. Check the errors above.")
-    
-    return 0 if success else 1
-
-if __name__ == "__main__":
-    sys.exit(main())

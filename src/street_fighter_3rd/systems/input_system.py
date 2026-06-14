@@ -5,7 +5,10 @@ from dataclasses import dataclass
 from typing import Deque, List, Optional, Dict, Tuple
 import pygame
 
+from street_fighter_3rd.util.logging_config import get_logger
 from street_fighter_3rd.data.enums import InputDirection, Button
+
+log = get_logger(__name__)
 from street_fighter_3rd.data.constants import INPUT_BUFFER_SIZE, MOTION_INPUT_WINDOW
 
 
@@ -50,6 +53,11 @@ class PlayerInput:
         # Joystick
         self.joystick: Optional[pygame.joystick.Joystick] = None
         self.joystick_deadzone = 0.5  # For analog sticks
+
+        # Frame number of the motion start input last consumed, per motion name.
+        # A matched motion is "used up": the same buffered directions can't
+        # trigger the same special again on a later button press.
+        self.consumed_motion_frames: Dict[str, int] = {}
 
         # Configure key bindings
         self._setup_key_bindings()
@@ -172,10 +180,10 @@ class PlayerInput:
         try:
             self.joystick = pygame.joystick.Joystick(joystick_index)
             self.joystick.init()
-            print(f"Player {self.player_number} connected to: {self.joystick.get_name()}")
+            log.info("Player %s connected to: %s", self.player_number, self.joystick.get_name())
             return True
         except pygame.error as e:
-            print(f"Failed to connect joystick {joystick_index}: {e}")
+            log.warning("Failed to connect joystick %s: %s", joystick_index, e)
             return False
 
     def update(self, facing_right: bool = True):
@@ -352,7 +360,7 @@ class PlayerInput:
 
             return self._directions_to_input(up, down, left, right)
 
-        except Exception as e:
+        except (pygame.error, IndexError):
             # If any unexpected error, fall back to neutral
             return InputDirection.NEUTRAL
 
@@ -387,9 +395,9 @@ class PlayerInput:
                             pressed.add(button)
                 except (pygame.error, IndexError):
                     continue
-        except Exception as e:
+        except (pygame.error, IndexError) as e:
             # If any unexpected error, return empty set
-            print(f"Warning: Error reading joystick buttons: {e}")
+            log.warning("Error reading joystick buttons: %s", e)
             return set()
 
         return pressed
@@ -450,9 +458,20 @@ class PlayerInput:
             return False
 
         # Look for the motion pattern in the input buffer
-        return self._search_buffer_for_motion(motion.directions, motion.max_frames)
+        start_frame = self._search_buffer_for_motion(motion.directions, motion.max_frames)
+        if start_frame is None:
+            return False
 
-    def _search_buffer_for_motion(self, directions: List[InputDirection], max_frames: int) -> bool:
+        # Consume-on-match: the motion's starting input must be newer than the
+        # one already used, otherwise a second button press within the window
+        # would re-trigger the same special from the same directions.
+        if start_frame <= self.consumed_motion_frames.get(motion_name, -1):
+            return False
+
+        self.consumed_motion_frames[motion_name] = start_frame
+        return True
+
+    def _search_buffer_for_motion(self, directions: List[InputDirection], max_frames: int) -> Optional[int]:
         """Search the input buffer for a sequence of directions.
 
         Args:
@@ -460,10 +479,11 @@ class PlayerInput:
             max_frames: Maximum frames to complete the motion
 
         Returns:
-            True if motion found in buffer
+            Frame number of the input that started the motion (the match for
+            directions[0]), or None if the motion was not found.
         """
         if len(self.input_buffer) == 0:
-            return False
+            return None
 
         # Start from most recent input
         pattern_index = len(directions) - 1
@@ -471,16 +491,29 @@ class PlayerInput:
 
         for input_state in reversed(self.input_buffer):
             if frames_searched > max_frames:
-                return False
+                return None
 
             if input_state.direction == directions[pattern_index]:
                 pattern_index -= 1
                 if pattern_index < 0:
-                    return True  # Found complete pattern!
+                    return input_state.frame_number  # Found complete pattern!
 
             frames_searched += 1
 
-        return False
+        return None
+
+    def reset(self):
+        """Clear all buffered input.
+
+        Called on round transitions so a motion buffered during the KO/continue
+        screen can't fire on round start.
+        """
+        self.input_buffer.clear()
+        self.buttons_held.clear()
+        self.buttons_pressed_this_frame.clear()
+        self.buttons_released_this_frame.clear()
+        self.current_direction = InputDirection.NEUTRAL
+        self.consumed_motion_frames.clear()
 
     def is_button_pressed(self, button: Button) -> bool:
         """Check if a button is currently held.
@@ -608,15 +641,15 @@ class InputSystem:
         """Automatically connect available joysticks to players."""
         try:
             joystick_count = pygame.joystick.get_count()
-            print(f"Detected {joystick_count} joystick(s)")
+            log.info("Detected %s joystick(s)", joystick_count)
 
             if joystick_count >= 1:
                 self.player1.connect_joystick(0)
             if joystick_count >= 2:
                 self.player2.connect_joystick(1)
-        except Exception as e:
-            print(f"Warning: Failed to auto-connect joysticks: {e}")
-            print("Continuing with keyboard only...")
+        except pygame.error as e:
+            log.warning("Failed to auto-connect joysticks: %s", e)
+            log.info("Continuing with keyboard only...")
 
     def update(self, player1_facing_right: bool = True, player2_facing_right: bool = False):
         """Update input for all players.
@@ -627,3 +660,8 @@ class InputSystem:
         """
         self.player1.update(player1_facing_right)
         self.player2.update(player2_facing_right)
+
+    def reset(self):
+        """Clear buffered input for both players (round transitions)."""
+        self.player1.reset()
+        self.player2.reset()

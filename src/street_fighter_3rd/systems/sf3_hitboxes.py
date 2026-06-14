@@ -17,6 +17,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 import pygame
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class SF3HitboxType(Enum):
     """SF3's hitbox types"""
@@ -347,31 +351,31 @@ class SF3HitboxManager:
 
 if __name__ == "__main__":
     # Test the SF3 hitbox system
-    print("Testing SF3 Hitbox System...")
-    
+    log.info("Testing SF3 Hitbox System...")
+
     # Create test hitboxes
     attack_box = SF3Hitbox(
         offset_x=50, offset_y=-65, width=60, height=40,
         damage=115, stun=7
     )
-    
+
     body_box = SF3Hitbox(
         offset_x=0, offset_y=-80, width=40, height=80
     )
-    
+
     # Test collision
     my_pos = (100, 200)
     other_pos = (150, 200)
-    
+
     collision = attack_box.overlaps(body_box, my_pos, 1, other_pos, -1)
-    print(f"Collision detected: {collision}")
-    
+    log.info("Collision detected: %s", collision)
+
     # Test frame system
     frame = SF3HitboxFrame(frame_number=6)
     frame.add_hitbox(SF3HitboxType.ATTACK, attack_box)
     frame.add_hitbox(SF3HitboxType.BODY, body_box)
-    
-    print(f"Frame has attack boxes: {frame.has_active_hitboxes(SF3HitboxType.ATTACK)}")
-    print(f"Frame has {len(frame.attack_boxes)} attack boxes")
-    
-    print("SF3 Hitbox System working correctly! ✅")
+
+    log.info("Frame has attack boxes: %s", frame.has_active_hitboxes(SF3HitboxType.ATTACK))
+    log.info("Frame has %s attack boxes", len(frame.attack_boxes))
+
+    log.info("SF3 Hitbox System working correctly!")

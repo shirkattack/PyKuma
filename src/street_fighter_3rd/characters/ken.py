@@ -20,6 +20,10 @@ from ..schemas.sf3_schemas import (
     CharacterData, MoveData, FrameData, HitboxData, MoveHitboxes, AIPersonality
 )
 
+from street_fighter_3rd.util.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class KenMasters(ShotoArchetype):
     """
@@ -398,35 +402,35 @@ def create_ken_character() -> CharacterData:
 
 if __name__ == "__main__":
     # Test Ken character creation
-    print("Testing Ken Masters character...")
-    
+    log.info("Testing Ken Masters character...")
+
     ken_data = create_ken_character()
-    
-    print(f"✅ Ken character created:")
-    print(f"   Name: {ken_data.character_info.name}")
-    print(f"   SF3 ID: {ken_data.character_info.sf3_character_id}")
-    print(f"   Health: {ken_data.character_info.health}")
-    print(f"   Walk speed: {ken_data.character_info.walk_speed}")
-    print(f"   Normal attacks: {len(ken_data.normal_attacks)}")
-    print(f"   Special moves: {len(ken_data.special_moves)}")
-    print(f"   Super arts: {len(ken_data.super_arts)}")
-    print(f"   AI aggression: {ken_data.ai_personality.aggression}")
-    
+
+    log.info("Ken character created:")
+    log.info("   Name: %s", ken_data.character_info.name)
+    log.info("   SF3 ID: %s", ken_data.character_info.sf3_character_id)
+    log.info("   Health: %s", ken_data.character_info.health)
+    log.info("   Walk speed: %s", ken_data.character_info.walk_speed)
+    log.info("   Normal attacks: %s", len(ken_data.normal_attacks))
+    log.info("   Special moves: %s", len(ken_data.special_moves))
+    log.info("   Super arts: %s", len(ken_data.super_arts))
+    log.info("   AI aggression: %s", ken_data.ai_personality.aggression)
+
     # Test specific Ken moves
     if "target_combo_1" in ken_data.normal_attacks:
         tc1 = ken_data.normal_attacks["target_combo_1"]
-        print(f"✅ Target Combo 1: {tc1.frame_data.startup}/{tc1.frame_data.active}/{tc1.frame_data.recovery}")
-    
+        log.info("Target Combo 1: %s/%s/%s", tc1.frame_data.startup, tc1.frame_data.active, tc1.frame_data.recovery)
+
     if "shoryureppa" in ken_data.super_arts:
         sa1 = ken_data.super_arts["shoryureppa"]
-        print(f"✅ Shoryureppa: {sa1.frame_data.startup}/{sa1.frame_data.active}/{sa1.frame_data.recovery}")
-    
-    print("Ken Masters implementation complete! ✅")
-    print("🎯 Ken features:")
-    print("   - Faster moves than Ryu")
-    print("   - Multi-hit Shoryuken")
-    print("   - Forward-moving Tatsumaki")
-    print("   - Target combos")
-    print("   - Aggressive AI personality")
-    print("   - 3 unique Super Arts")
-    print("🚀 Ready for character selection system!")
+        log.info("Shoryureppa: %s/%s/%s", sa1.frame_data.startup, sa1.frame_data.active, sa1.frame_data.recovery)
+
+    log.info("Ken Masters implementation complete!")
+    log.info("Ken features:")
+    log.info("   - Faster moves than Ryu")
+    log.info("   - Multi-hit Shoryuken")
+    log.info("   - Forward-moving Tatsumaki")
+    log.info("   - Target combos")
+    log.info("   - Aggressive AI personality")
+    log.info("   - 3 unique Super Arts")
+    log.info("Ready for character selection system!")

@@ -1,9 +1,11 @@
 """Base character class with state machine and physics."""
 
+import logging
 from typing import Optional, Dict, List
 import pygame
 
-from street_fighter_3rd.data.enums import CharacterState, FacingDirection, InputDirection, Button
+from street_fighter_3rd.util.logging_config import get_logger, log_once
+from street_fighter_3rd.data.enums import CharacterState, FacingDirection, InputDirection, Button, HitEffect
 from street_fighter_3rd.data.constants import (
     GRAVITY,
     JUMP_VELOCITY,
@@ -16,6 +18,68 @@ from street_fighter_3rd.data.constants import (
 )
 from street_fighter_3rd.data.frame_data import MoveData
 from street_fighter_3rd.systems.input_system import PlayerInput
+
+log = get_logger(__name__)
+
+_ATTACK_STATES = frozenset({
+    CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
+    CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
+    CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_MEDIUM_PUNCH, CharacterState.CROUCH_HEAVY_PUNCH,
+    CharacterState.CROUCH_LIGHT_KICK, CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK,
+    CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
+    CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
+    CharacterState.GOHADOKEN, CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
+})
+
+_CROUCH_STATES = frozenset({
+    CharacterState.CROUCHING,
+    CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_MEDIUM_PUNCH, CharacterState.CROUCH_HEAVY_PUNCH,
+    CharacterState.CROUCH_LIGHT_KICK, CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK,
+})
+
+# Recovery for these reaction states is governed by hitstun_frames / physics,
+# not by animation completion, so a character subclass should hold them.
+LAUNCH_HITSTUN = 60     # generous; physics lands the character before it expires
+KNOCKDOWN_HITSTUN = 40
+
+
+def apply_reaction(character, hit_effect: HitEffect, hitstun: int):
+    """Put `character` into the reaction state for a given hit effect.
+
+    Shared by the collision adapter and Character.take_damage so direct callers
+    (tests, projectiles) get the same reactions. Recovery is driven by
+    hitstun_frames (decremented in update()), with the floor-land transition for
+    airborne/launch.
+    """
+    character.in_hitstun = True
+    if hit_effect == HitEffect.JUGGLE:
+        character.velocity_y = -14.0
+        character.is_grounded = False
+        character.hitstun_frames = LAUNCH_HITSTUN
+        character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
+    elif hit_effect in (HitEffect.KNOCKDOWN, HitEffect.CRUMPLE,
+                        HitEffect.GROUND_BOUNCE, HitEffect.WALL_BOUNCE):
+        character.hitstun_frames = max(hitstun, KNOCKDOWN_HITSTUN)
+        character._transition_to_state(CharacterState.KNOCKDOWN)
+    else:  # NORMAL
+        character.hitstun_frames = hitstun
+        if not character.is_grounded:
+            character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
+        elif character.state in _CROUCH_STATES:
+            character._transition_to_state(CharacterState.HITSTUN_CROUCHING)
+        else:
+            character._transition_to_state(CharacterState.HITSTUN_STANDING)
+
+
+_debug_font: Optional[pygame.font.Font] = None
+
+
+def get_debug_font() -> pygame.font.Font:
+    """Shared lazily-created font for per-character debug text (Font construction is expensive)."""
+    global _debug_font
+    if _debug_font is None:
+        _debug_font = pygame.font.Font(None, 16)
+    return _debug_font
 
 
 class Character:
@@ -52,7 +116,10 @@ class Character:
         self.total_frames = 0  # Total frames since game start
 
         # Combat stats
-        self.health = MAX_HEALTH
+        # max_health is the single source of truth for this character's health.
+        # Subclasses override it (e.g. Akuma's 145) and health bars normalize against it.
+        self.max_health = MAX_HEALTH
+        self.health = self.max_health
         self.super_meter = 0
         self.stun_meter = 0
         self.combo_counter = 0
@@ -88,6 +155,9 @@ class Character:
         # Colors for placeholder rendering
         self.color = (255, 50, 50) if player_number == 1 else (50, 50, 255)
         self.outline_color = (255, 255, 255)
+
+        # True when the last render drew the rectangle placeholder (missing art)
+        self._rendered_fallback = False
 
     def _get_max_state_frames(self) -> Dict[CharacterState, int]:
         """Define maximum frames allowed for each state to prevent infinite loops.
@@ -211,7 +281,7 @@ class Character:
         # This prevents infinite loops/soft-locks from rapid inputs or bugs
         max_frames = self.max_state_frames.get(self.state, 60)  # Default 60 frames (1 second)
         if self.state_frame > max_frames:
-            print(f"⚠️ STATE TIMEOUT: {self.state.name} exceeded {max_frames} frames, forcing STANDING")
+            log_once(log, ("state_timeout", self.state.name), logging.WARNING, "STATE TIMEOUT: %s exceeded %s frames, forcing STANDING", self.state.name, max_frames)
             self._transition_to_state(CharacterState.STANDING)
 
         # Update facing direction
@@ -221,7 +291,10 @@ class Character:
         if self.hitstun_frames > 0:
             self.hitstun_frames -= 1
             self.can_act = False
-            if self.hitstun_frames == 0:
+            # Recover only on the ground — a launched character stays in its
+            # airborne reaction until physics lands it (which transitions us).
+            if self.hitstun_frames == 0 and self.is_grounded:
+                self.in_hitstun = False
                 self._transition_to_state(CharacterState.STANDING)
         elif self.blockstun_frames > 0:
             self.blockstun_frames -= 1
@@ -400,6 +473,12 @@ class Character:
         Args:
             direction: Current input direction
         """
+        # Holding back (or down-back) on the ground = guarding. The collision
+        # adapter routes an incoming hit to block effects while this is set.
+        # (Block direction high/low is derived from posture at block time.)
+        self.is_blocking = self.is_grounded and direction in (
+            InputDirection.BACK, InputDirection.DOWN_BACK)
+
         # Check for dashes first (highest priority for movement)
         if self.input.check_double_tap_forward():
             if self.is_grounded and self.state == CharacterState.STANDING:
@@ -515,12 +594,25 @@ class Character:
             if self.state_frame >= 9:
                 self._transition_to_state(CharacterState.STANDING)
 
-        # Attack states - handle recovery
+        # Attack states - handle recovery.
+        # Placeholder timing until per-move frame data drives this (see the
+        # animation-controller consolidation phase). Standing/crouch normals
+        # recover to STANDING; crouch normals return to CROUCHING so a held
+        # down-input keeps crouching. Without this, crouch/jump attacks linger
+        # until the state-safety timeout (the CROUCH_HEAVY_PUNCH spam).
         elif self.state in [CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
-                           CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK]:
-            # Placeholder: transition back after 20 frames
+                           CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
+                           CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
+                           CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK]:
             if self.state_frame >= 20:
                 self._transition_to_state(CharacterState.STANDING)
+
+        elif self.state in [CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_MEDIUM_PUNCH,
+                           CharacterState.CROUCH_HEAVY_PUNCH, CharacterState.CROUCH_LIGHT_KICK,
+                           CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK]:
+            self.velocity_x = 0
+            if self.state_frame >= 20:
+                self._transition_to_state(CharacterState.CROUCHING)
 
     def _apply_physics(self):
         """Apply gravity and update position."""
@@ -643,21 +735,10 @@ class Character:
             if new_state == CharacterState.JUMP_STARTUP:
                 self.velocity_x = 0
 
-    def take_damage(self, damage: int, hitstun: int):
-        """Take damage from an attack.
-
-        Args:
-            damage: Amount of damage to take
-            hitstun: Frames of hitstun
-        """
-        self.health -= damage
-        self.hitstun_frames = hitstun
-        self.in_hitstun = True
-        self._transition_to_state(CharacterState.HITSTUN_STANDING)
-
-        if self.health <= 0:
-            self.health = 0
-            # Handle KO
+    def take_damage(self, damage: int, hitstun: int, hit_effect: HitEffect = HitEffect.NORMAL):
+        """Take damage from an attack and enter the matching reaction state."""
+        self.health = max(0, self.health - damage)
+        apply_reaction(self, hit_effect, hitstun)
 
     def render(self, screen: pygame.Surface):
         """Render the character.
@@ -666,6 +747,7 @@ class Character:
             screen: Pygame surface to render to
         """
         # Check if character has a sprite
+        self._rendered_fallback = not (hasattr(self, 'sprite') and self.sprite is not None)
         if hasattr(self, 'sprite') and self.sprite is not None:
             # Flip sprite based on facing direction
             sprite_to_draw = self.sprite
@@ -688,7 +770,7 @@ class Character:
             screen.blit(sprite_to_draw, sprite_rect)
 
             # Draw state text (debug) above sprite
-            font = pygame.font.Font(None, 16)
+            font = get_debug_font()
             state_text = font.render(self.state.name, True, (255, 255, 255))
             screen.blit(state_text, (int(self.x - 30), sprite_rect.top - 20))
         else:
@@ -708,7 +790,7 @@ class Character:
             pygame.draw.circle(screen, (255, 255, 0), (indicator_x, indicator_y), 5)
 
             # Draw state text (debug)
-            font = pygame.font.Font(None, 16)
+            font = get_debug_font()
             state_text = font.render(self.state.name, True, (255, 255, 255))
             screen.blit(state_text, (int(self.x - 30), int(self.y - self.height - 20)))
 
@@ -732,3 +814,75 @@ class Character:
             True if facing right
         """
         return self.facing == FacingDirection.RIGHT
+
+    def is_attacking(self) -> bool:
+        """True while in any attacking state (normals, crouch/jump attacks, specials).
+
+        Used for render z-order so an extended limb isn't hidden behind the
+        opponent's body.
+        """
+        return self.state in _ATTACK_STATES
+
+    def get_debug_state(self) -> Dict:
+        """Full numerical state for the debug overlay and snapshot dumps.
+
+        Subclasses extend this (e.g. Akuma adds the live animation/sprite info).
+        """
+        return {
+            "player": self.player_number,
+            "state": self.state.name,
+            "state_frame": self.state_frame,
+            "pos": [round(self.x, 1), round(self.y, 1)],
+            "vel": [round(self.velocity_x, 2), round(self.velocity_y, 2)],
+            "facing": "R" if self.is_facing_right() else "L",
+            "health": self.health,
+            "max_health": self.max_health,
+            "hitstun": self.hitstun_frames,
+            "blockstun": self.blockstun_frames,
+            "hitfreeze": self.hitfreeze_frames,
+            "grounded": self.is_grounded,
+            "can_act": self.can_act,
+            "invincible": self.is_invincible,
+            "rendering_fallback": self._rendered_fallback,
+        }
+
+    def reset(self, x: float, y: float):
+        """Reset to a clean round-start state at the given position.
+
+        Every transient combat value must be cleared here so a new round
+        is provably a clean slate. Subclasses override to clear their own
+        state (projectiles, pending moves) and must call super().reset().
+
+        Args:
+            x: Round-start x position
+            y: Round-start y position
+        """
+        self.x = x
+        self.y = y
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
+        self.facing = FacingDirection.RIGHT if self.player_number == 1 else FacingDirection.LEFT
+        self.facing_lock_frames = 0
+
+        self.health = self.max_health
+        self.super_meter = 0
+        self.stun_meter = 0
+        self.combo_counter = 0
+        self.hitstun_frames = 0
+        self.blockstun_frames = 0
+        self.hitfreeze_frames = 0
+        self.hitflash_frames = 0
+
+        self.is_grounded = True
+        self.can_act = True
+        self.in_hitstun = False
+        self.in_blockstun = False
+        self.is_blocking = False
+        self.is_invincible = False
+        self.invincibility_frames = []
+        self.jump_direction = InputDirection.NEUTRAL
+
+        self.state = CharacterState.STANDING
+        self.previous_state = CharacterState.STANDING
+        self.state_frame = 0
+        self.animation_frame = 0

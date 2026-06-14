@@ -57,3 +57,12 @@ config.local.json
 
 # Writing and documentation drafts
 writing/
+
+# Debug snapshot dumps (F12 in-game)
+debug_snapshots/
+
+# Audit/catalog filmstrips embed copyrighted sprite art — keep the markdown
+# indexes tracked, but not the rendered PNG/GIF contact sheets.
+docs/animation_audit/
+docs/asset_catalog/**/*.png
+docs/asset_catalog/**/*.gif
