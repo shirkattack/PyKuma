@@ -358,10 +358,16 @@ class Akuma(Character):
         self.animation_controller.update()
         if self.animation_controller.is_animation_complete() and self.state not in _HOLD_STATES:
             # A one-shot move (attack/special/reaction) finished. If we finished
-            # mid-air, resume the airborne pose and let physics land us; otherwise
-            # return to neutral.
+            # mid-air, resume the airborne pose and let physics land us. On the
+            # ground, recover to the posture the player is still holding: crouch
+            # if down is held (so a crouch normal doesn't briefly stand the
+            # character up between presses), otherwise stand.
+            held = self.input.get_direction() if self.input else InputDirection.NEUTRAL
             if not self.is_grounded:
                 self._transition_to_state(CharacterState.JUMPING)
+            elif held in (InputDirection.DOWN, InputDirection.DOWN_FORWARD,
+                          InputDirection.DOWN_BACK):
+                self._transition_to_state(CharacterState.CROUCHING)
             else:
                 self._transition_to_state(CharacterState.STANDING)
 

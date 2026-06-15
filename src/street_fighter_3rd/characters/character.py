@@ -402,8 +402,11 @@ class Character:
         if not self.input:
             return False
 
-        # Standing attacks
-        if self.state == CharacterState.STANDING:
+        # Standing attacks (also available while walking -- a walking normal is
+        # just a standing normal; you can attack out of forward/back movement).
+        if self.state in (CharacterState.STANDING,
+                          CharacterState.WALKING_FORWARD,
+                          CharacterState.WALKING_BACKWARD):
             if self.input.is_button_just_pressed(Button.LIGHT_PUNCH):
                 self._transition_to_state(CharacterState.LIGHT_PUNCH)
                 return True
