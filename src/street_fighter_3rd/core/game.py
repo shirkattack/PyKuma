@@ -23,6 +23,10 @@ from street_fighter_3rd.data.constants import (
     COLOR_BLUE,
     DEBUG_MODE,
     SHOW_FRAME_DATA,
+    CAMERA_MAX_ZOOM,
+    CAMERA_MIN_ZOOM,
+    CAMERA_H_MARGIN,
+    CAMERA_GROUND_Y,
 )
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.systems.input_system import InputSystem
@@ -78,6 +82,12 @@ class Game:
         self.shake_intensity = 0
         self.SHAKE_TOTAL = 8
         self._shake_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+        # World buffer: the fight (stage + characters + boxes + vfx) is composed
+        # here at NATIVE scale, then the dynamic view camera zoom-scales a crop of
+        # it onto the screen. _cam = (crop_x, crop_y, zoom) for world->screen maps.
+        self._world_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._cam = (0.0, 0.0, 1.0)
 
         # Health-bar animation + training regen state (set up after players exist)
         self.p1_ghost_health = 0
@@ -385,30 +395,26 @@ class Game:
                                 GameState.ROUND_END, GameState.MATCH_END)
         shaking = self.shake_frames > 0 and fight_state
 
-        if shaking:
-            # Compose the fight layer into the shake buffer, then blit it offset
-            # onto a black screen. The self.screen swap keeps every sub-renderer
-            # (characters, VFX, UI) unchanged. Overlays draw on the real screen
-            # afterward so they never jitter.
-            self._shake_buf.fill(COLOR_BLACK)
+        if fight_state:
+            # Compose the fight (stage + characters + boxes + VFX) into the world
+            # buffer at native scale, then the dynamic camera zoom-scales a crop of
+            # it onto the screen (screen-shake offsets that final blit). UI +
+            # overlays draw on the real screen afterward so they stay crisp and
+            # never zoom/jitter.
+            self._world_buf.fill(COLOR_BLACK)
             real_screen = self.screen
-            self.screen = self._shake_buf
+            self.screen = self._world_buf
             self._render_fight()
             self.screen = real_screen
             self.screen.fill(COLOR_BLACK)
-            self.screen.blit(self._shake_buf, self.shake_offset())
+            offset = self.shake_offset() if shaking else (0, 0)
+            self._blit_world_zoomed(offset)
+            self._render_ui()
+            self._render_training_overlays()
         else:
             self.screen.fill(COLOR_BLACK)
-            if fight_state:
-                self._render_fight()
-            elif state == GameState.CONTINUE_SCREEN:
+            if state == GameState.CONTINUE_SCREEN:
                 self._render_continue_screen()
-
-        # Training/dev diagnostic overlays (inputs, damage, frame data) on the
-        # real, un-shaken screen so they never jitter. Each sub-display is gated
-        # on its own mode-config flag.
-        if fight_state:
-            self._render_training_overlays()
 
         # Render debug info (on the real, un-shaken screen)
         if self.debug_display:
@@ -459,9 +465,40 @@ class Game:
             show_hitboxes=self.config.show_hitboxes,
             show_hurtboxes=self.config.show_hurtboxes
         )
+        # NOTE: UI (health bars) is drawn on the real screen by render(), AFTER
+        # the camera zoom, so it stays crisp and screen-anchored (not zoomed).
 
-        # Render UI
-        self._render_ui()
+    def _compute_camera(self):
+        """Crop rect (x, y, w, h) of the world buffer to zoom onto the screen.
+
+        Width tracks the fighters' separation (+ margin), clamped so zoom stays in
+        [MIN, MAX]: close fighters -> small crop -> zoomed in; far apart -> wider
+        crop -> zoomed out (SF3-style). Vertically anchored to keep the ground low.
+        """
+        W, H = SCREEN_WIDTH, SCREEN_HEIGHT
+        midx = (self.player1.x + self.player2.x) / 2.0
+        sep = abs(self.player1.x - self.player2.x)
+        crop_w = sep + 2 * CAMERA_H_MARGIN
+        crop_w = max(W / CAMERA_MAX_ZOOM, min(crop_w, W / CAMERA_MIN_ZOOM))
+        crop_w = min(crop_w, W)
+        crop_h = crop_w * H / W
+        crop_x = max(0.0, min(midx - crop_w / 2.0, W - crop_w))
+        crop_y = max(0.0, min(CAMERA_GROUND_Y - crop_h * 0.86, H - crop_h))
+        return crop_x, crop_y, crop_w, crop_h
+
+    def _blit_world_zoomed(self, offset=(0, 0)):
+        """Zoom-scale the camera crop of the world buffer onto the screen."""
+        cx, cy, cw, ch = self._compute_camera()
+        self._cam = (cx, cy, SCREEN_WIDTH / cw)  # for world->screen mapping
+        crop = self._world_buf.subsurface((int(cx), int(cy),
+                                           int(round(cw)), int(round(ch))))
+        scaled = pygame.transform.scale(crop, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen.blit(scaled, offset)
+
+    def _world_to_screen(self, x, y):
+        """Map a world-buffer point to screen coords through the current camera."""
+        cx, cy, zoom = self._cam
+        return (x - cx) * zoom, (y - cy) * zoom
 
     @staticmethod
     def _health_color(percent: float):
@@ -722,13 +759,18 @@ class Game:
                 self.screen.blit(cnt, (x + self._INPUT_COL_W - 8 - cnt.get_width(), ry))
 
     def _render_damage_popups(self):
-        """Floating damage numbers that rise and fade above the hit character."""
+        """Floating damage numbers that rise and fade above the hit character.
+
+        Popups are anchored in world space (at the character), so map them through
+        the view camera to screen so they track the character as the view zooms.
+        """
         for p in self._damage_popups:
             t = p["age"] / self.DAMAGE_POPUP_LIFETIME
             surf = self.font.render(str(p["amount"]), True,
                                     (255, int(220 * (1 - t)), int(90 * (1 - t))))
             surf.set_alpha(max(0, int(255 * (1.0 - t))))
-            self.screen.blit(surf, (int(p["x"] - surf.get_width() / 2), int(p["y"])))
+            sx, sy = self._world_to_screen(p["x"], p["y"])
+            self.screen.blit(surf, (int(sx - surf.get_width() / 2), int(sy)))
 
     def _render_combo_counters(self):
         """Per-player combo readout (hits + cumulative damage) when active."""
