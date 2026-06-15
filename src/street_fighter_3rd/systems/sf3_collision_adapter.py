@@ -194,6 +194,9 @@ class SF3CollisionAdapter:
         # Set facing direction in work structure
         work.work.face = 1 if character.is_facing_right() else -1
 
+        # Feet offset for the debug overlay's scaled-box anchoring (view-only).
+        work.feet_offset = float(getattr(character, "feet_offset", 0))
+
         # Player identification (legacy fields, kept for compatibility)
         work.player_id = work.work.player_number
         work.facing_right = character.is_facing_right()
@@ -635,17 +638,20 @@ class SF3CollisionAdapter:
             if not work:
                 continue
 
-            # Use the SAME math as live collision (get_rect: facing mirror +
-            # per-box anchor) so the overlay matches what actually hits.
-            px, py, face = work.work.position.x, work.work.position.y, work.work.face
+            # Draw with get_screen_rect: same facing-mirror + per-box anchor as
+            # the live collision get_rect, but scaled (SPRITE_SCALE) and anchored
+            # at the on-screen feet line (position.y + feet_offset) so the boxes
+            # line up with the scaled sprite. (Collision math still uses get_rect.)
+            px, face = work.work.position.x, work.work.face
+            feet_y = work.work.position.y + getattr(work, "feet_offset", 0.0)
 
             for hitbox in manager.get_current_hitboxes(SF3HitboxType.ATTACK):
-                rect = hitbox.get_rect(px, py, face)
+                rect = hitbox.get_screen_rect(px, feet_y, face)
                 hit_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hitboxes.append(rect)
 
             for hitbox in manager.get_current_hitboxes(SF3HitboxType.BODY):
-                rect = hitbox.get_rect(px, py, face)
+                rect = hitbox.get_screen_rect(px, feet_y, face)
                 hurt_pairs.append((rect, getattr(hitbox, "status", "verified")))
                 self.debug_hurtboxes.append(rect)
 

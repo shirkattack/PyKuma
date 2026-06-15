@@ -821,6 +821,13 @@ class Character:
             self.hitbox_height
         )
 
+    def screen_feet_y(self) -> float:
+        """On-screen Y of the feet line, where the sprite bottom AND the debug
+        boxes both anchor. Uses ``feet_offset`` when the character defines one
+        (Akuma), else the base ``ground_offset``. Single source for the vertical
+        anchor so boxes line up with the scaled sprite."""
+        return self.y + getattr(self, "feet_offset", self.ground_offset)
+
     def is_facing_right(self) -> bool:
         """Check if character is facing right.
 

@@ -455,7 +455,9 @@ class Akuma(Character):
 
         sprite_rect = sprite.get_rect()
         sprite_rect.centerx = int(self.x)
-        sprite_rect.bottom = int(self.y) + self.feet_offset + pad_below_feet
+        # Feet line shared with the debug box overlay (screen_feet_y); pad seats
+        # the opaque pixels on the line regardless of transparent canvas.
+        sprite_rect.bottom = int(self.screen_feet_y()) + pad_below_feet
 
         if self.hitflash_frames > 0:
             flash_sprite = sprite.copy()
