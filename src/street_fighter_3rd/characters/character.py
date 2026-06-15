@@ -96,6 +96,9 @@ class Character:
         # Position and physics
         self.x = x
         self.y = y
+        self._prev_x = x  # x at the start of this frame (before physics); used to
+                          # keep grounded pushbox order stable so a fast dash can't
+                          # cross/tunnel through the opponent.
         self.velocity_x = 0.0
         self.velocity_y = 0.0
         self.facing = FacingDirection.RIGHT if player_number == 1 else FacingDirection.LEFT
@@ -106,6 +109,9 @@ class Character:
         self.height = 80
         self.hitbox_width = 40
         self.hitbox_height = 75
+        # Pushbox half-width source for character-vs-character separation. Defaults
+        # to hitbox_width; characters override from ROM data (Akuma: 50).
+        self.pushbox_width = self.hitbox_width
 
         # Game state
         self.player_number = player_number
@@ -261,6 +267,9 @@ class Character:
             opponent: The opposing character
         """
         self.total_frames += 1
+        # Remember where we were before this frame's physics so grounded pushbox
+        # resolution can keep left/right order stable (no cross-through on a dash).
+        self._prev_x = self.x
 
         # Update invincibility status based on current frame
         self._update_invincibility()
@@ -666,72 +675,54 @@ class Character:
         if not self.is_grounded or not opponent.is_grounded:
             return
 
-        # Calculate distance between characters
-        distance = abs(self.x - opponent.x)
-        min_distance = (self.hitbox_width + opponent.hitbox_width) / 2
+        # Minimum center-to-center distance from the ROM pushboxes.
+        min_distance = (self.pushbox_width + opponent.pushbox_width) / 2
 
-        # Check if characters are overlapping
-        if distance < min_distance:
-            overlap = min_distance - distance
+        # Determine LEFT/RIGHT order from positions BEFORE this frame's movement,
+        # not the current ones: a fast dash can move past the opponent's center in
+        # a single frame, and using the (crossed) current order would push them out
+        # the wrong side -> tunnelling + a spurious side switch. The prior-frame
+        # order is stable because grounded characters were separated last frame.
+        if self._prev_x <= opponent._prev_x:
+            left, right = self, opponent
+        else:
+            left, right = opponent, self
 
-            # Determine push behavior based on movement
-            self_moving_forward = False
-            opponent_moving_forward = False
+        # Signed overlap along that stable order. If right has crossed to the left
+        # of left, (right.x - left.x) is negative and overlap is large, which pushes
+        # them back apart in the correct order (un-crosses a tunnelling dash).
+        overlap = min_distance - (right.x - left.x)
+        if overlap <= 0:
+            return  # not touching
 
-            # Check if self is moving toward opponent
-            if abs(self.velocity_x) > 0.1:
-                if (self.x < opponent.x and self.velocity_x > 0) or \
-                   (self.x > opponent.x and self.velocity_x < 0):
-                    self_moving_forward = True
+        left_moving = abs(left.velocity_x) > 0.1 and left.velocity_x > 0   # moving right, toward right
+        right_moving = abs(right.velocity_x) > 0.1 and right.velocity_x < 0  # moving left, toward left
 
-            # Check if opponent is moving toward self
-            if abs(opponent.velocity_x) > 0.1:
-                if (opponent.x < self.x and opponent.velocity_x > 0) or \
-                   (opponent.x > self.x and opponent.velocity_x < 0):
-                    opponent_moving_forward = True
+        if left_moving and not right_moving:
+            # left walks/dashes into right: left advances to contact, right is pushed.
+            right.x = left.x + min_distance
+            left.velocity_x = 0
+        elif right_moving and not left_moving:
+            left.x = right.x - min_distance
+            right.velocity_x = 0
+        else:
+            # both (or neither) pressing in: split the correction 50/50.
+            push = overlap / 2
+            left.x -= push
+            right.x += push
+            if left_moving and right_moving:
+                left.velocity_x = 0
+                right.velocity_x = 0
 
-            if self_moving_forward and opponent_moving_forward:
-                # Both moving toward each other - split the push 50/50
-                push_amount = overlap / 2
-                if self.x < opponent.x:
-                    self.x -= push_amount
-                    opponent.x += push_amount
-                else:
-                    self.x += push_amount
-                    opponent.x -= push_amount
-
-                # Stop forward momentum when colliding
-                self.velocity_x = 0
-                opponent.velocity_x = 0
-
-            elif self_moving_forward:
-                # Only self is moving forward - push opponent back
-                if self.x < opponent.x:
-                    opponent.x += overlap
-                else:
-                    opponent.x -= overlap
-                # Self stops at collision point
-                self.velocity_x = 0
-
-            elif opponent_moving_forward:
-                # Only opponent is moving forward - push self back
-                if opponent.x < self.x:
-                    self.x += overlap
-                else:
-                    self.x -= overlap
-                # Opponent stops at collision point
-                opponent.velocity_x = 0
-
-            else:
-                # Neither moving forward (e.g., both backing up into each other)
-                # Just separate them equally
-                push_amount = overlap / 2
-                if self.x < opponent.x:
-                    self.x -= push_amount
-                    opponent.x += push_amount
-                else:
-                    self.x += push_amount
-                    opponent.x -= push_amount
+        # Corner: if separation pushed someone out of bounds, hold them at the
+        # wall and push the other to preserve min_distance (so you can't squeeze
+        # through a cornered opponent).
+        if right.x > STAGE_RIGHT_BOUND:
+            right.x = STAGE_RIGHT_BOUND
+            left.x = min(left.x, right.x - min_distance)
+        if left.x < STAGE_LEFT_BOUND:
+            left.x = STAGE_LEFT_BOUND
+            right.x = max(right.x, left.x + min_distance)
 
     def _transition_to_state(self, new_state: CharacterState):
         """Transition to a new state.
