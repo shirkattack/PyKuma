@@ -11,15 +11,11 @@ from street_fighter_3rd.util.logging_config import get_logger, log_once
 
 log = get_logger(__name__)
 
-# Repo root: src/street_fighter_3rd/systems/animation.py -> parents[3].
-# Asset paths (e.g. "tools/sprite_extraction/...") are stored repo-relative, so
-# resolve them against the repo root to stay independent of the working dir.
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-
-
-def _resolve_asset(path: str) -> str:
-    """Make a repo-relative asset path absolute (CWD-independent)."""
-    return path if os.path.isabs(path) else str(_REPO_ROOT / path)
+# Asset paths are stored repo-relative (e.g. "assets/characters/akuma/...") and
+# resolved against the repo root via the shared helper, so loading is
+# independent of the working directory.
+from street_fighter_3rd.util.assets import REPO_ROOT as _REPO_ROOT
+from street_fighter_3rd.util.assets import resolve_asset as _resolve_asset
 
 
 @dataclass

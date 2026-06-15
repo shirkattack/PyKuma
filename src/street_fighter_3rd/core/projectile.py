@@ -114,8 +114,8 @@ class Gohadoken(Projectile):
         damage_values = {"light": 60, "medium": 70, "heavy": 80}
         damage = damage_values.get(strength, 60)
 
-        # Initialize sprite manager for Gohadoken
-        sprite_directory = "assets/sprites/akuma/sprite_sheets"
+        # Initialize sprite manager for Gohadoken (canonical character asset tree)
+        sprite_directory = "assets/characters/akuma/sprite_sheets"
         sprite_manager = SpriteManager(sprite_directory)
 
         super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager)
