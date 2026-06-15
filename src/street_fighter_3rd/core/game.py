@@ -673,25 +673,39 @@ class Game:
             s += f" x{entry.repeat}"
         return s
 
+    # Input-display column geometry (Fightcade-style ordered, scrolling list).
+    _INPUT_ROWS = 12
+    _INPUT_ROW_H = 15
+    _INPUT_COL_W = 88
+    _INPUT_BASELINE_Y = 380  # bottom of the column; newest row sits just above it
+
     def _render_input_display(self, player_input, side: str):
-        """Vertical input-history strip (oldest top, newest bottom)."""
-        history = player_input.get_input_history(10)
-        if not history:
-            return
-        x = 12 if side == "left" else SCREEN_WIDTH - 92
-        y0, row_h = 120, 16
-        bg = pygame.Surface((84, len(history) * row_h + 6))
-        bg.set_alpha(140)
+        """Fixed, persistent input column like Fightcade/FBNeo: newest input is
+        always anchored at the bottom and older inputs scroll upward, so the list
+        stays in chronological order in stable on-screen positions (it doesn't
+        jump around). Each row: direction arrow + held buttons + held-frame count.
+        """
+        history = player_input.get_input_history(self._INPUT_ROWS)
+        x = 12 if side == "left" else SCREEN_WIDTH - self._INPUT_COL_W - 8
+        row_h = self._INPUT_ROW_H
+        col_h = self._INPUT_ROWS * row_h + 6
+        baseline = self._INPUT_BASELINE_Y
+        # Fixed-size backdrop so the column never resizes as history fills.
+        bg = pygame.Surface((self._INPUT_COL_W, col_h))
+        bg.set_alpha(130)
         bg.fill((0, 0, 0))
-        self.screen.blit(bg, (x - 4, y0 - 3))
-        for i, e in enumerate(history):
+        self.screen.blit(bg, (x - 4, baseline - col_h))
+        # Newest at the bottom: walk history newest-first, place rows upward.
+        for k, e in enumerate(reversed(history)):
+            ry = baseline - row_h - k * row_h
             glyph = _DIR_GLYPHS.get(e.direction.value, "·")
+            self.screen.blit(self.small_font.render(glyph, True, (235, 235, 235)), (x, ry))
             btns = self._buttons_label(e.buttons)
-            text = glyph + ("  " + btns if btns else "")
+            if btns:
+                self.screen.blit(self.small_font.render(btns, True, (245, 235, 90)), (x + 18, ry))
             if e.repeat > 1:
-                text += f" x{e.repeat}"
-            color = (235, 235, 120) if btns else (185, 185, 185)
-            self.screen.blit(self.small_font.render(text, True, color), (x, y0 + i * row_h))
+                cnt = self.small_font.render(str(e.repeat), True, (120, 120, 120))
+                self.screen.blit(cnt, (x + self._INPUT_COL_W - 8 - cnt.get_width(), ry))
 
     def _render_damage_popups(self):
         """Floating damage numbers that rise and fade above the hit character."""
