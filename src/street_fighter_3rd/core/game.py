@@ -644,18 +644,32 @@ class Game:
 
     def _render_training_overlays(self):
         """Draw the mode-gated training diagnostics: input history, floating
-        damage numbers, combo counter, and the per-move frame-data strip."""
+        damage numbers, combo counter, and the per-move frame-data strip.
+
+        Each sub-display is isolated: a failure in one is logged once and skipped
+        so it can't blank the others (or, via the main loop's frame guard, drop
+        every overlay for the frame).
+        """
         cfg = self.config
+        sections = []
         if cfg.show_input_display:
-            self._render_input_display(self.input_system.player1, side="left")
-            self._render_input_display(self.input_system.player2, side="right")
+            sections.append(("input", lambda: (
+                self._render_input_display(self.input_system.player1, side="left"),
+                self._render_input_display(self.input_system.player2, side="right"))))
         if cfg.show_damage_numbers:
-            self._render_damage_popups()
+            sections.append(("damage", self._render_damage_popups))
         if cfg.show_combo_counter:
-            self._render_combo_counters()
+            sections.append(("combo", self._render_combo_counters))
         if cfg.show_frame_data:
-            self._render_frame_data(self.player1, side="left")
-            self._render_frame_data(self.player2, side="right")
+            sections.append(("frame_data", lambda: (
+                self._render_frame_data(self.player1, side="left"),
+                self._render_frame_data(self.player2, side="right"))))
+        for name, fn in sections:
+            try:
+                fn()
+            except Exception:
+                log_once(log, ("overlay_fail", name), logging.WARNING,
+                         "Training overlay %r failed to render; skipping it.", name)
 
     @staticmethod
     def _buttons_label(buttons) -> str:

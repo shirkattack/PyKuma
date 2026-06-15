@@ -41,6 +41,18 @@ def test_jump_apex_and_airtime_match_rom():
     assert abs(airborne - 44) <= 5, f"airborne {airborne} should be ~44 (ROM)"
 
 
+def test_forward_jump_horizontal_distance_matches_rom():
+    a, b = _pair()
+    a.jump_direction = InputDirection.UP_FORWARD
+    a._transition_to_state(CharacterState.JUMP_STARTUP)
+    x0 = a.x
+    for i in range(90):
+        a.update(b)
+        if a.is_grounded and i > 5:
+            break
+    assert abs((a.x - x0) - 90) <= 12, f"forward jump traveled {a.x - x0}px, ROM ~90"
+
+
 def test_forward_dash_distance_matches_rom():
     a, b = _pair()
     a._transition_to_state(CharacterState.DASH_FORWARD)

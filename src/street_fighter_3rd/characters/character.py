@@ -570,14 +570,16 @@ class Character:
             if self.state_frame >= 3:
                 self.velocity_y = JUMP_VELOCITY
 
-                # Set horizontal velocity based on jump direction
+                # Set horizontal velocity based on jump direction. ROM forward
+                # jump travels ~90px over ~44 airborne frames -> ~2.0 px/frame
+                # (was 4.0, which sent the jump ~2x too far). See physics.yaml.
                 if self.jump_direction == InputDirection.UP_FORWARD:
                     # Forward jump
-                    jump_h_speed = 4.0
+                    jump_h_speed = 2.0
                     self.velocity_x = jump_h_speed if self.is_facing_right() else -jump_h_speed
                 elif self.jump_direction == InputDirection.UP_BACK:
                     # Backward jump
-                    jump_h_speed = 4.0
+                    jump_h_speed = 2.0
                     self.velocity_x = -jump_h_speed if self.is_facing_right() else jump_h_speed
                 else:
                     # Neutral jump - no horizontal movement

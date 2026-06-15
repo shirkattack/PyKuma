@@ -22,6 +22,7 @@ observed:
     apex: 83          # px above the ground
     airborne_frames: 44
     initial_vy_raw: 9 # first-frame delta (integer-quantized; arc uses apex+airborne)
+    forward_distance: 90  # horizontal travel of a forward jump (anim 8e20 net dx)
   walk_forward:
     anim: "8910"
     speed_px_per_frame: 3.0
@@ -41,6 +42,7 @@ observed:
 engine:
   gravity: 0.34          # was 0.8 (jump was ~2x too tall)
   jump_velocity: -7.5    # was -16.0  -> apex ~83, airborne ~44
+  jump_h_speed: 2.0      # was 4.0 (jump travelled ~2x too far) -> ~90px forward
   walk_speed: 3.0        # already matched the ROM
   dash_forward_speed: 6.8   # 95px over the 14-frame dash_forward clip
   dash_forward_frames: 14
