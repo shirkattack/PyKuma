@@ -206,6 +206,11 @@ class SF3PlayerWork:
     # Input and control
     operator: bool = True       # True = human player, False = CPU
     input_device: Optional[Any] = None
+
+    # Rendering hint: on-screen feet offset (px below work.position.y) of the
+    # character's sprite, used only by the debug box overlay to anchor scaled
+    # boxes at the same feet line as the sprite. Not part of collision math.
+    feet_offset: float = 0.0
     
     # Combat state
     guard_flag: int = 0         # Blocking state

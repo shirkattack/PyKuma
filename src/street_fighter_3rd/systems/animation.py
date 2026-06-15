@@ -8,6 +8,7 @@ from typing import List, Optional, Dict
 from dataclasses import dataclass
 
 from street_fighter_3rd.util.logging_config import get_logger, log_once
+from street_fighter_3rd.data.constants import SPRITE_SCALE
 
 log = get_logger(__name__)
 
@@ -175,7 +176,7 @@ class SpriteManager:
         self.sprite_directory = sprite_directory
         self.sprite_cache: Dict[int, pygame.Surface] = {}
 
-    def load_sprite(self, sprite_number: int, scale: float = 2.0) -> Optional[pygame.Surface]:
+    def load_sprite(self, sprite_number: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
         """Load a sprite by number.
 
         Args:
@@ -214,7 +215,7 @@ class SpriteManager:
             log_once(log, ("sprite_load_err", sprite_path), logging.WARNING, "Error loading sprite %s: %s", sprite_number, e)
             return None
 
-    def preload_sprites(self, sprite_numbers: List[int], scale: float = 2.0):
+    def preload_sprites(self, sprite_numbers: List[int], scale: float = SPRITE_SCALE):
         """Preload a list of sprites into cache.
 
         Args:
@@ -229,7 +230,7 @@ class SpriteManager:
         """Clear sprite cache to free memory."""
         self.sprite_cache.clear()
 
-    def load_sprite_from_folder(self, folder_path: str, frame_index: int, scale: float = 2.0) -> Optional[pygame.Surface]:
+    def load_sprite_from_folder(self, folder_path: str, frame_index: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
         """Load a sprite from a folder with frame_NNN.png naming.
 
         Args:

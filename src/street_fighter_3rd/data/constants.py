@@ -6,6 +6,11 @@ SCREEN_HEIGHT = 512  # Match stage background height
 FPS = 60  # Fighting games run at 60 FPS (non-negotiable)
 WINDOW_TITLE = "Street Fighter Third Strike - Python Edition"
 
+# Sprites are drawn at this scale from their native frame size. Single source of
+# truth: the sprite renderer AND the debug hitbox overlay both use it, so boxes
+# (stored in ROM-native ~107px units) line up with the on-screen sprite.
+SPRITE_SCALE = 2.0
+
 # Stage boundaries
 STAGE_LEFT_BOUND = 80
 STAGE_RIGHT_BOUND = SCREEN_WIDTH - 80

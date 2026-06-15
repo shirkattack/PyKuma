@@ -18,6 +18,7 @@ from enum import Enum
 import pygame
 
 from street_fighter_3rd.util.logging_config import get_logger
+from street_fighter_3rd.data.constants import SPRITE_SCALE
 
 log = get_logger(__name__)
 
@@ -106,7 +107,31 @@ class SF3Hitbox:
                 left = character_x - self.offset_x - self.width
 
         return pygame.Rect(left, character_y + self.offset_y, self.width, self.height)
-    
+
+    def get_screen_rect(self, center_x: float, feet_y: float, facing: int,
+                        scale: float = SPRITE_SCALE) -> pygame.Rect:
+        """Screen-space rect for the DEBUG overlay, matching the scaled sprite.
+
+        Same anchor/mirror logic as ``get_rect`` (the world-space collision rect),
+        but multiplied by ``scale`` and anchored vertically at the on-screen FEET
+        line (``feet_y``) instead of ``character.y`` — so boxes (stored in ROM-
+        native ~107px units, feet-origin, offset_y negative = up) line up with the
+        sprite drawn at the same scale + feet anchor. View-only: collision math
+        still uses ``get_rect`` in world units.
+        """
+        s = scale
+        if self.anchor == "center":
+            box_center = center_x + (self.offset_x * facing) * s
+            left = box_center - (self.width * s) / 2
+        else:  # "edge": mirror BOTH edges when facing left
+            if facing >= 0:
+                left = center_x + self.offset_x * s
+            else:
+                left = center_x - self.offset_x * s - self.width * s
+        top = feet_y + self.offset_y * s  # offset_y negative = up from feet
+        return pygame.Rect(round(left), round(top),
+                           round(self.width * s), round(self.height * s))
+
     def overlaps(self, other: 'SF3Hitbox',
                  my_pos: Tuple[float, float], my_facing: int,
                  other_pos: Tuple[float, float], other_facing: int) -> bool:

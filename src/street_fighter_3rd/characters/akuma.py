@@ -11,6 +11,7 @@ from street_fighter_3rd.systems.animation import (
     create_folder_animation,
 )
 from street_fighter_3rd.core.projectile import Gohadoken
+from street_fighter_3rd.data.hitbox_repository import HitboxRepository
 
 log = get_logger(__name__)
 
@@ -88,6 +89,12 @@ class Akuma(Character):
         self.max_health = 1050
         self.health = self.max_health
         self.walk_speed = 3.2  # Slightly faster than average
+
+        # Character-vs-character separation uses the ROM pushbox width (50), not
+        # the generic hitbox_width, so spacing/no-cross matches the game.
+        _pb = HitboxRepository.instance().get_pushbox()
+        if _pb is not None:
+            self.pushbox_width = _pb.width
 
         # Single animation path: folder-based sprites through the AnimationController.
         # sprite_directory is only used by SpriteManager's numbered loader (unused
@@ -197,10 +204,14 @@ class Akuma(Character):
             self.animation_controller.add_animation(
                 name, f(f"{base}/{folder}", frames, frame_duration=dur, loop=loop, start_index=start))
 
-        # Jump variants reuse the single jump clip for now.
-        for variant in ("jump_forward", "jump_backward"):
-            self.animation_controller.add_animation(
-                variant, f(f"{base}/akuma-jump", 34, frame_duration=2, loop=False))
+        # Forward/back jumps use Akuma's flip/somersault clips (distinct from the
+        # neutral jump). frame_duration=1 so the ~37-frame flip spans the airborne
+        # window; JUMPING is a hold state so the last pose holds until landing.
+        # (Provisional duration; retuned to the ROM airborne frame count in Phase 5.)
+        self.animation_controller.add_animation(
+            "jump_forward", f(f"{base}/akuma-jumpf", 37, frame_duration=1, loop=False))
+        self.animation_controller.add_animation(
+            "jump_backward", f(f"{base}/akuma-jumpb", 38, frame_duration=1, loop=False))
 
     def reset(self, x: float, y: float):
         """Reset Akuma to a clean round-start state.
@@ -455,7 +466,9 @@ class Akuma(Character):
 
         sprite_rect = sprite.get_rect()
         sprite_rect.centerx = int(self.x)
-        sprite_rect.bottom = int(self.y) + self.feet_offset + pad_below_feet
+        # Feet line shared with the debug box overlay (screen_feet_y); pad seats
+        # the opaque pixels on the line regardless of transparent canvas.
+        sprite_rect.bottom = int(self.screen_feet_y()) + pad_below_feet
 
         if self.hitflash_frames > 0:
             flash_sprite = sprite.copy()
