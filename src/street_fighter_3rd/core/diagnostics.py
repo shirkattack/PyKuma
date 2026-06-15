@@ -25,7 +25,7 @@ log = get_logger(__name__)
 
 # how close to the floor a grounded character must be (logical y)
 FLOOR_TOL = 2
-RING_FRAMES = 300  # ~5s at 60fps
+RING_FRAMES = 600  # ~10s at 60fps (session clip window for F11)
 
 
 @dataclass
@@ -123,10 +123,20 @@ class FrameRecorder:
         cs = game.collision_system
         if hasattr(cs, "get_combo_info"):
             combo = [cs.get_combo_info(1), cs.get_combo_info(2)]
+        # Per-frame raw inputs too, so a session clip shows what was pressed
+        # (essential for diagnosing "I held back but it jumped forward").
+        inputs = None
+        isys = getattr(game, "input_system", None)
+        if isys is not None:
+            def _snap(pi):
+                return {"dir": pi.current_direction.name,
+                        "buttons": sorted(b.name for b in pi.buttons_held)}
+            inputs = [_snap(isys.player1), _snap(isys.player2)]
         self.ring.append({
             "frame": game.frame_count,
             "game_state": game.round_manager.game_state.name,
             "players": [game.player1.get_debug_state(), game.player2.get_debug_state()],
+            "inputs": inputs,
             "combo": combo,
         })
 

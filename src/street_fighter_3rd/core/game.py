@@ -8,7 +8,7 @@ import pygame
 from typing import Dict
 
 from street_fighter_3rd.util.logging_config import get_logger, is_strict, log_once
-from street_fighter_3rd.core.diagnostics import InvariantChecker, FrameRecorder
+from street_fighter_3rd.core.diagnostics import InvariantChecker, FrameRecorder, RING_FRAMES
 
 log = get_logger(__name__)
 from street_fighter_3rd.data.enums import GameState
@@ -242,11 +242,15 @@ class Game:
         elif self.shake_frames > 0:
             self.shake_frames -= 1
 
-        # Diagnostics — record this frame + check invariants. Gated so release
-        # builds (debug off, not strict) pay nothing. Runs after collision tick
-        # so box/combo state is populated.
-        if self.debug_display or DEBUG_MODE or is_strict():
+        # Diagnostics — record this frame + check invariants. Runs after the
+        # collision tick so box/combo state is populated.
+        #   - Frame RECORDING (cheap deque append) is on whenever replays are
+        #     enabled (TRAINING/DEV) or debug, so F11 always yields a real
+        #     ~10s session clip.
+        #   - Invariant CHECKS (heavier) stay gated to debug/strict builds.
+        if self.config.record_replay or self.debug_display or DEBUG_MODE or is_strict():
             self.recorder.record(self)
+        if self.debug_display or DEBUG_MODE or is_strict():
             self.diagnostics.check(self)
 
     def _update_health_dynamics(self):
@@ -877,11 +881,15 @@ class Game:
         log.info("Saved debug snapshot: %s.png + %s.json", base, base)
         return base
 
-    def save_clip(self, out_dir=None, frames=240):
-        """Dump the last N frames of recorded state as a timeline (F11).
+    def save_clip(self, out_dir=None, frames=RING_FRAMES):
+        """Dump the recorded per-frame session timeline (F11) — the last ~10s.
 
-        Captures a *dynamic* issue (a hitch, a bad pose during a move) instead
-        of a single instant. Returns the clip directory.
+        This is the 'session log over a few seconds' for diagnosing dynamic
+        issues (a hitch, a jump that flips, a move that comes out wrong) from
+        DATA rather than a single instant: frames.json has, per frame, each
+        player's state/anim/pos/vel/facing/jump_direction/grounded AND the raw
+        inputs that were held. Reproduce the issue, then press F11. Returns the
+        clip directory.
         """
         out_dir = out_dir or os.path.join("debug_snapshots", f"clip_{self.frame_count:06d}")
         os.makedirs(out_dir, exist_ok=True)

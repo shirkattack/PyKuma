@@ -349,6 +349,12 @@ class Character:
             self.facing_lock_frames -= 1
             return  # Don't change facing while locked
 
+        # Don't turn around mid-air: a character keeps its takeoff facing until it
+        # lands, so a directional jump animation doesn't flip/jerk when crossing
+        # over the opponent. Facing resolves on the ground (crossup lands first).
+        if not self.is_grounded:
+            return
+
         # Determine what facing should be
         new_facing = FacingDirection.RIGHT if self.x < opponent.x else FacingDirection.LEFT
 
@@ -857,6 +863,7 @@ class Character:
             "grounded": self.is_grounded,
             "can_act": self.can_act,
             "invincible": self.is_invincible,
+            "jump_direction": self.jump_direction.name,
             "rendering_fallback": self._rendered_fallback,
         }
 
