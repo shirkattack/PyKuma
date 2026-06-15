@@ -6,10 +6,19 @@ SCREEN_HEIGHT = 512  # Match stage background height
 FPS = 60  # Fighting games run at 60 FPS (non-negotiable)
 WINDOW_TITLE = "Street Fighter Third Strike - Python Edition"
 
-# Sprites are drawn at this scale from their native frame size. Single source of
-# truth: the sprite renderer AND the debug hitbox overlay both use it, so boxes
-# (stored in ROM-native ~107px units) line up with the on-screen sprite.
-SPRITE_SCALE = 2.0
+# Sprites + boxes are composed at NATIVE size into a world buffer; the dynamic
+# view camera (below) applies the on-screen zoom. Keeping this 1.0 means the
+# whole fight layer scales uniformly at the camera, so movement/spacing stays
+# proportional to the characters (fixes the "everything 2x size but 1x spacing"
+# mismatch). The debug overlay shares this scale so boxes line up with sprites.
+SPRITE_SCALE = 1.0
+
+# Dynamic view camera: zooms in when fighters are close and out when they
+# separate (à la SF3), scaling the native world buffer to the screen.
+CAMERA_MAX_ZOOM = 2.2     # most zoomed-in (fighters close)
+CAMERA_MIN_ZOOM = 1.0     # most zoomed-out (whole field; fighters far apart)
+CAMERA_H_MARGIN = 140     # world px of breathing room kept beyond each fighter
+CAMERA_GROUND_Y = 430     # world-buffer ground line, kept low in the frame
 
 # Stage boundaries
 STAGE_LEFT_BOUND = 80

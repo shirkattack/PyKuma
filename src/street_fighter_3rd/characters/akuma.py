@@ -106,9 +106,9 @@ class Akuma(Character):
         self.ground_offset = 190  # From YAML configuration (base-class fallback)
 
         # feet_offset positions the character's actual feet relative to self.y
-        # (STAGE_FLOOR). Tuned so standing height matches the previous look while
-        # every animation now plants its feet on the same line. This is the one
-        # knob to nudge if the whole character sits too high/low on the stage.
+        # (STAGE_FLOOR), in world-buffer px. The sprite bottom sits here so the
+        # feet land on the stage ground line; the view camera then zooms the whole
+        # buffer. Nudge this if the character sits too high/low on the stage.
         self.feet_offset = 86
 
         # Cache of opaque-pixel padding-below-feet per cached sprite surface,
