@@ -40,9 +40,14 @@ Thumbs.db
 *.log
 debug_output/
 
-# Copyrighted Capcom assets (all sprites, backgrounds, and extracted frames)
-assets/
-tools/sprite_extraction/akuma_animations/
+# Copyrighted Capcom assets (all sprites, backgrounds, and extracted frames).
+# The canonical asset tree lives under assets/ (see assets/README.md); character
+# animations were consolidated there from tools/sprite_extraction/.
+# Ignore every asset file but keep the README tracked so the layout + ownership
+# note live in the repo (a bare `assets/` would make the README un-trackable).
+assets/*
+!assets/README.md
+# Legacy extraction output dirs (kept ignored in case the tools regenerate them)
 tools/sprite_extraction/akuma_gifs/
 tools/sprite_extraction/character_portraits/
 public/*.gif
