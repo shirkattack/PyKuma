@@ -16,18 +16,20 @@
   (read_game_object / read_box). Box pointer at (base+offset) is DEREFERENCED
   (readdword) then boxes are 8 bytes each: left,width,bottom,height (s16 each).
 
-  USAGE (in the emulator's Lua console / script box):
-    1. Load sfiii3nr1, pick Gouki (Akuma), enter training/versus.
-    2. Run this script.
-    3. Press the RECORD key (default '4' on the numpad-less row, see REC_KEY)
-       to start/stop recording. Drive the moves/movement you want captured.
-    4. Stop recording (or close the emulator) to flush the file.
-  See tools/rom_extract/CAPTURE.md for exactly what to drive.
+  USAGE (FBNeo Lua Script window — e.g. Fightcade on Linux):
+    1. Load sfiii3nr1, pick Gouki (Akuma), enter training/versus (P1 = Akuma).
+    2. Misc > Lua Scripting (or the Lua Script window) > Browse to this file >
+       Run. Recording starts immediately (top-left shows "REC <n>").
+    3. Drive every move once, then walk/dash/jump (see CAPTURE.md).
+    4. Close the emulator (or Stop the script) — the file flushes automatically.
+  Output `pykuma_dump.jsonl` is written in THIS script's folder (FBNeo uses the
+  script's directory as the working dir). 'R' pauses/resumes if you want to skip
+  menus. See tools/rom_extract/CAPTURE.md.
 ============================================================================ ]]
 
 -- ---- config -----------------------------------------------------------------
-local OUT_PATH = "pykuma_dump.jsonl"   -- written next to the emulator CWD
-local REC_KEY  = "R"                    -- press to toggle recording on/off
+local OUT_PATH = "pykuma_dump.jsonl"   -- written in the script's own folder
+local REC_KEY  = "R"                    -- optional: press to PAUSE/resume recording
 local PLAYER_BASE = 0x02068C6C          -- P1 base (P2 is 0x02069104)
 
 -- Box arrays: a POINTER lives at (base+offset); each box is 8 bytes.
@@ -110,15 +112,33 @@ local function frame_record(frame_num, base)
 end
 
 -- ---- recording loop ---------------------------------------------------------
-local recording = false
+-- AUTO-RECORD: recording starts the moment the script runs and writes one line
+-- per frame to OUT_PATH (in the script's own folder, since FBNeo runs a script
+-- with its directory as the working dir). Optionally PAUSE_KEY toggles a pause so
+-- you can skip menus. The file is flushed periodically and on emulator exit, so
+-- you can simply Run -> play the moves -> close, with no key juggling.
+local paused = false
 local prev_key = false
 local frame_num = 0
-local fh = nil
+local fh = io.open(OUT_PATH, "w")
 
-local function open_file()
-  if not fh then
-    fh = io.open(OUT_PATH, "w")
-    if fh then fh:write("") end
+local function on_frame()
+  -- optional pause toggle on PAUSE_KEY edge
+  local keys = input.get()
+  local down = keys[REC_KEY] == true
+  if down and not prev_key then
+    paused = not paused
+  end
+  prev_key = down
+
+  if fh and not paused then
+    frame_num = frame_num + 1
+    fh:write(frame_record(frame_num, PLAYER_BASE), "\n")
+    if frame_num % 60 == 0 then fh:flush() end
+  end
+
+  if gui and gui.text then
+    gui.text(8, 8, (paused and "PAUSED " or "REC ") .. frame_num)
   end
 end
 
@@ -126,30 +146,9 @@ local function close_file()
   if fh then fh:flush(); fh:close(); fh = nil end
 end
 
-local function on_frame()
-  -- toggle recording on REC_KEY edge
-  local keys = input.get()
-  local down = keys[REC_KEY] == true
-  if down and not prev_key then
-    recording = not recording
-    if recording then open_file() end
-    if gui and gui.text then
-      gui.text(8, 8, recording and "REC" or "stopped")
-    end
-  end
-  prev_key = down
-
-  if recording and fh then
-    frame_num = frame_num + 1
-    fh:write(frame_record(frame_num, PLAYER_BASE), "\n")
-    if frame_num % 60 == 0 then fh:flush() end
-  end
-
-  if gui and gui.text and recording then gui.text(8, 8, "REC " .. frame_num) end
-end
-
--- fba-rr / FBNeo: run after each emulated frame; flush on exit.
+-- FBNeo: run after each emulated frame; flush on exit.
 emu.registerafter(on_frame)
 if emu.registerexit then emu.registerexit(close_file) end
 
-print("PyKuma dumper loaded. Press '" .. REC_KEY .. "' to start/stop. Output: " .. OUT_PATH)
+print("PyKuma dumper: RECORDING to " .. OUT_PATH ..
+      " (press '" .. REC_KEY .. "' to pause/resume). Play the moves, then close.")

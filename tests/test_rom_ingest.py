@@ -79,25 +79,29 @@ def test_derive_physics_detects_jump_and_baseline():
                      "posture": 0, "anim": "ffff", "anim_frame": i, "boxes": []})
     phys = ingest.derive_physics(recs)
     assert phys["ground_baseline_y"] == 0
-    assert phys["jumps"], "should detect one jump"
-    j = phys["jumps"][0]
-    assert j["apex_height"] == 20
-    assert j["gravity"] is not None
+    j = phys["jump"]
+    assert j and j["anim"] == "ffff"
+    assert j["apex"] == 20
+    assert j["airborne_frames"] >= 6
 
 
-def test_derive_physics_classifies_walk_vs_dash():
-    # a slow sustained walk (speed 3, 30 frames) then a fast short dash (speed 9, 8 frames)
+def test_derive_physics_segments_walk_and_dash_by_anim():
+    # walk anim "8910": recurring short forward bursts (speed 3); dash anim "8ab0":
+    # one long fast forward run (net >= 30). Attack-recoil anims are excluded.
     recs = []
-    x = 0
-    for i in range(30):       # walk
-        recs.append({"f": i, "pos_x": x, "pos_y": 0, "anim": "w", "anim_frame": i, "boxes": []})
-        x += 3
-    for i in range(5):        # neutral gap
-        recs.append({"f": 100 + i, "pos_x": x, "pos_y": 0, "anim": "n", "anim_frame": i, "boxes": []})
-    for i in range(8):        # dash
-        recs.append({"f": 200 + i, "pos_x": x, "pos_y": 0, "anim": "d", "anim_frame": i, "boxes": []})
-        x += 9
+    x, f = 0, 0
+    for _ in range(5):                 # walk recurs as several short instances
+        for i in range(4):
+            recs.append({"f": f, "pos_x": x, "pos_y": 0, "anim": "8910", "anim_frame": i, "boxes": []})
+            x += 3; f += 1
+        for i in range(3):             # neutral gap (distinct anim breaks contiguity)
+            recs.append({"f": f, "pos_x": x, "pos_y": 0, "anim": "0000", "anim_frame": i, "boxes": []})
+            f += 1
+    for i in range(9):                 # forward dash: one big run
+        recs.append({"f": f, "pos_x": x, "pos_y": 0, "anim": "8ab0", "anim_frame": i, "boxes": []})
+        x += 11; f += 1
     phys = ingest.derive_physics(recs)
-    assert phys["walk_speed_px_per_frame"] is not None
-    assert phys["dashes"], "should detect a dash run"
-    assert phys["dashes"][0]["peak_speed"] >= 5
+    assert phys["walk_forward"]["anim"] == "8910"
+    assert phys["walk_forward"]["speed_px_per_frame"] == 3
+    assert phys["dash_forward"]["anim"] == "8ab0"
+    assert phys["dash_forward"]["distance"] >= 30

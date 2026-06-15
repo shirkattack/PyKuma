@@ -570,14 +570,16 @@ class Character:
             if self.state_frame >= 3:
                 self.velocity_y = JUMP_VELOCITY
 
-                # Set horizontal velocity based on jump direction
+                # Set horizontal velocity based on jump direction. ROM forward
+                # jump travels ~90px over ~44 airborne frames -> ~2.0 px/frame
+                # (was 4.0, which sent the jump ~2x too far). See physics.yaml.
                 if self.jump_direction == InputDirection.UP_FORWARD:
                     # Forward jump
-                    jump_h_speed = 4.0
+                    jump_h_speed = 2.0
                     self.velocity_x = jump_h_speed if self.is_facing_right() else -jump_h_speed
                 elif self.jump_direction == InputDirection.UP_BACK:
                     # Backward jump
-                    jump_h_speed = 4.0
+                    jump_h_speed = 2.0
                     self.velocity_x = -jump_h_speed if self.is_facing_right() else jump_h_speed
                 else:
                     # Neutral jump - no horizontal movement
@@ -590,9 +592,9 @@ class Character:
             pass
 
         elif self.state == CharacterState.DASH_FORWARD:
-            # Forward dash - fast forward movement (14 frames total)
-            # Akuma's forward dash covers good distance
-            dash_speed = 9.0  # pixels per frame
+            # Forward dash - ROM-measured ~95px over the 14-frame clip
+            # (physics.yaml). 95 / 14 ~= 6.8 px/frame.
+            dash_speed = 6.8  # pixels per frame
             move_dir = 1 if self.is_facing_right() else -1
             self.velocity_x = dash_speed * move_dir
 
@@ -601,9 +603,9 @@ class Character:
                 self._transition_to_state(CharacterState.STANDING)
 
         elif self.state == CharacterState.DASH_BACKWARD:
-            # Backward dash - fast backward movement (9 frames total)
-            # Backdash is slightly slower than forward dash
-            dash_speed = 7.0  # pixels per frame
+            # Backward dash - ROM-measured ~45px over the 9-frame clip
+            # (physics.yaml). 45 / 9 = 5.0 px/frame.
+            dash_speed = 5.0  # pixels per frame
             move_dir = -1 if self.is_facing_right() else 1
             self.velocity_x = dash_speed * move_dir
 
