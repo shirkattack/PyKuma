@@ -202,36 +202,32 @@ class PlayerInput:
             facing_right: Whether player is facing right (for input mirroring)
         """
         self.frame_count += 1
-        self.buttons_pressed_this_frame.clear()
-        self.buttons_released_this_frame.clear()
 
         # Read keyboard input
         keys = pygame.key.get_pressed()
         direction_input = self._read_keyboard_direction(keys, facing_right)
 
-        # Read joystick input if connected
+        # Read joystick direction if connected (overrides keyboard when active)
         if self.joystick:
             joy_direction = self._read_joystick_direction(facing_right)
             if joy_direction != InputDirection.NEUTRAL:
                 direction_input = joy_direction
 
-            joy_buttons = self._read_joystick_buttons()
-            for button in joy_buttons:
-                if button not in self.buttons_held:
-                    self.buttons_pressed_this_frame.add(button)
-                self.buttons_held.add(button)
+        # Buttons physically down this frame, unioned across keyboard + joystick,
+        # then held / just-pressed / just-released are derived from this single
+        # combined set. This MUST be one combined set, not two independent loops:
+        # the old keyboard loop cleared any button whose key was up, which
+        # clobbered a joystick-held button every frame -- so holding a pad button
+        # registered as "just pressed" each frame and retriggered the attack
+        # continuously (and a released pad button was never cleared).
+        down_now = {action for key, action in self.key_map.items()
+                    if isinstance(action, Button) and keys[key]}
+        if self.joystick:
+            down_now |= self._read_joystick_buttons()
 
-        # Update button states from keyboard
-        for key, action in self.key_map.items():
-            if isinstance(action, Button):
-                if keys[key]:
-                    if action not in self.buttons_held:
-                        self.buttons_pressed_this_frame.add(action)
-                    self.buttons_held.add(action)
-                else:
-                    if action in self.buttons_held:
-                        self.buttons_released_this_frame.add(action)
-                        self.buttons_held.discard(action)
+        self.buttons_pressed_this_frame = down_now - self.buttons_held
+        self.buttons_released_this_frame = self.buttons_held - down_now
+        self.buttons_held = down_now
 
         self.current_direction = direction_input
 
