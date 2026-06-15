@@ -59,6 +59,7 @@ GAME_MODE_CONFIGS = {
         show_hitboxes=True,
         show_hurtboxes=True,
         show_frame_data=True,
+        show_input_display=True,
         show_damage_numbers=True,
         show_frame_advantage=True,
         show_combo_counter=True,

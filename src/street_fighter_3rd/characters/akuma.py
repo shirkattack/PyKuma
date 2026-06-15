@@ -167,8 +167,8 @@ class Akuma(Character):
             # jump normals
             ("jump_light_punch",   "akuma-jump-wp",      6,  2, False),
             ("jump_medium_punch",  "akuma-jump-mp",      8,  2, False),
-            ("jump_heavy_punch",   "akuma-jump-hp",      6,  2, False),
-            ("jump_light_kick",    "akuma-jump-wk",     12,  1, False),
+            ("jump_heavy_punch",   "akuma-jump-hp",      8,  2, False),
+            ("jump_light_kick",    "akuma-jump-wk",     10,  1, False),
             ("jump_medium_kick",   "akuma-jump-mk",      6,  2, False),
             ("jump_heavy_kick",    "akuma-jump-hk",      6,  2, False),
             # specials

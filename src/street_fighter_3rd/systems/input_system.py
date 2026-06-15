@@ -23,6 +23,15 @@ class InputState:
 
 
 @dataclass
+class InputHistoryEntry:
+    """One collapsed row of the input display (a held direction + buttons)."""
+    direction: InputDirection
+    buttons: frozenset  # Button members held during this row
+    repeat: int         # consecutive frames this (direction, buttons) was held
+    last_frame: int     # most recent frame_number in this row
+
+
+@dataclass
 class MotionInput:
     """Defines a motion input pattern (like quarter-circle forward)."""
     name: str
@@ -510,6 +519,30 @@ class PlayerInput:
             frames_searched += 1
 
         return None
+
+    def get_input_history(self, n: int = 10) -> List["InputHistoryEntry"]:
+        """Return the last ``n`` distinct input rows, newest last.
+
+        Consecutive frames with the same (direction, held-buttons) are collapsed
+        into a single row carrying a ``repeat`` count -- this is how a fighting
+        game's input display reads: holding forward for 30 frames is one row that
+        says "forward x30", and pressing a button starts a new row. Used by the
+        training input display and captured into the F10 debug report.
+        """
+        rows: List[InputHistoryEntry] = []
+        for st in self.input_buffer:
+            buttons = frozenset(st.buttons_pressed)
+            if rows and rows[-1].direction == st.direction and rows[-1].buttons == buttons:
+                rows[-1].repeat += 1
+                rows[-1].last_frame = st.frame_number
+            else:
+                rows.append(InputHistoryEntry(
+                    direction=st.direction,
+                    buttons=buttons,
+                    repeat=1,
+                    last_frame=st.frame_number,
+                ))
+        return rows[-n:]
 
     def reset(self):
         """Clear all buffered input.
