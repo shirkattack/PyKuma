@@ -33,16 +33,24 @@ Each box is four signed words (X, WIDTH, HEIGHT, Y) — same `{left,width,height
 bottom}` meaning as the JSON (see `docs/HITBOX_PIPELINE_NOTES.md` §3-§5 for the
 exact convention and the PyKuma conversion).
 
-## Easiest path: reuse `3rd_training_lua`
+## Ready-to-run tooling in this folder
 
-It already follows `hb_vulnerability_pointer` and *draws* v_hb live — it just
-doesn't persist them per move. Run it in FBNeo/MAME on `sfiii3nr1` and either:
-1. extend its frame-data dump to also write the `vulnerability` boxes per frame, or
-2. add a tiny dump hook (Lua) that, each frame, records `{state/anim pointer,
-   anim_frame, [boxes by type]}` to a file.
+You don't have to write the hook — it's here:
+
+- **`dump_framedata.lua`** — a standalone FBNeo/fba-rr Lua dumper. Its memory
+  layout is verbatim from `3rd_training_lua` @73ec4c06 `src/gamestate.lua`
+  (`read_game_object` / `read_box`): the box pointer at `(base+offset)` is
+  dereferenced, boxes are 8 bytes `left,width,bottom,height` (s16). Each frame it
+  writes one JSON object (pos, facing, posture, anim id, anim frame, all box
+  types) to `pykuma_dump.jsonl`. Press **R** to start/stop recording.
+- **`ingest.py`** — reshapes the dump (no emulator needed; unit-tested in
+  `tests/test_rom_ingest.py`): `validate` (cross-check vs Baston), `merge`
+  (enrich `gouki_framedata.json` with per-move v_hb), `physics` (derive
+  walk/jump/dash → `physics.yaml`).
+- **`CAPTURE.md`** — the exact moves/movement to drive, step by step.
 
 Drive every move once (training-mode record, or scripted inputs) so each move's
-animation plays through its active frames.
+animation plays through its active frames; see `CAPTURE.md`.
 
 ## Output format (so the Python pipeline just works)
 
