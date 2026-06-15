@@ -16,10 +16,12 @@ STAGE_LEFT_BOUND = 80
 STAGE_RIGHT_BOUND = SCREEN_WIDTH - 80
 STAGE_FLOOR = 344  # Character Y position (sprite.bottom = 344 + 136 = 480, leaving 32px from screen bottom)
 
-# Physics
-GRAVITY = 0.8
-JUMP_VELOCITY = -16.0
-WALK_SPEED = 3.0
+# Physics — ROM-derived (see data/characters/akuma/physics.yaml; captured from
+# sfiii3nr1 live memory). Symmetric 60 FPS jump tuned to the measured apex (~83px)
+# and air time (~44f): vy0 = 4*apex/airborne, gravity = 2*vy0/airborne.
+GRAVITY = 0.34          # was 0.8 (jump used to be ~2x too tall)
+JUMP_VELOCITY = -7.5    # was -16.0 -> apex ~83, airborne ~44 frames
+WALK_SPEED = 3.0        # matches the ROM walk speed
 DASH_SPEED = 6.0
 
 # Input system

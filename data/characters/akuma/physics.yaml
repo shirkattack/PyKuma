@@ -1,0 +1,48 @@
+# Akuma physics — ROM-derived (NO INVENTED DATA).
+#
+# Captured from live ROM memory (sfiii3nr1) via tools/rom_extract/dump_framedata.lua
+# and derived by tools/rom_extract/ingest.py from a movement capture. Position is
+# in ROM world units, which PyKuma uses ~1:1 (see pykuma-coordinate-model). The
+# engine runs the same fixed 60 FPS as the ROM, so these apply directly.
+meta:
+  source:
+    repo: https://github.com/Grouflon/3rd_training_lua
+    commit: 73ec4c062108fd3494c4fae6b81a61f9cf518b81
+    rom_id: akuma
+    status: verified
+  note: >
+    Observables (apex, airborne frames, dash distance, walk speed) are read
+    directly from the capture. Engine constants (gravity, jump velocity, dash
+    speed) are computed from those observables for a 60 FPS symmetric arc.
+
+# What the capture measured (the ground truth):
+observed:
+  ground_baseline_y: 0
+  jump:               # dominant of 9 standard-jump instances
+    apex: 83          # px above the ground
+    airborne_frames: 44
+    initial_vy_raw: 9 # first-frame delta (integer-quantized; arc uses apex+airborne)
+  walk_forward:
+    anim: "8910"
+    speed_px_per_frame: 3.0
+  walk_back:
+    anim: "8b60/89e0"
+    speed_px_per_frame: 2.0
+  dash_forward:
+    anim: "8ab0"
+    distance: 95
+    active_frames: 9   # front-loaded curve: [24,7,8,8,8,8,8,8,16]
+  dash_back:
+    anim: "89e0"
+    distance: 47
+
+# Engine constants computed from the observables (apply these):
+#   symmetric jump: vy0 = 4*apex/airborne, gravity = 2*vy0/airborne
+engine:
+  gravity: 0.34          # was 0.8 (jump was ~2x too tall)
+  jump_velocity: -7.5    # was -16.0  -> apex ~83, airborne ~44
+  walk_speed: 3.0        # already matched the ROM
+  dash_forward_speed: 6.8   # 95px over the 14-frame dash_forward clip
+  dash_forward_frames: 14
+  dash_back_speed: 5.0      # 45px over the 9-frame dash_backward clip
+  dash_back_frames: 9

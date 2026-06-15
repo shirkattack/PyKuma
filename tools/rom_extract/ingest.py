@@ -168,76 +168,124 @@ def _runs(flags: List[bool]) -> List[tuple]:
     return runs
 
 
-def derive_physics(records: List[dict]) -> dict:
-    """Derive walk/jump/dash constants from the per-frame position series.
+def _instances(records: List[dict]) -> List[dict]:
+    """Group records into contiguous instances of the same animation id
+    (consecutive global frame numbers). Each instance is one performance of a
+    move/state."""
+    insts: List[dict] = []
+    cur = None
+    for r in records:
+        if cur and r.get("anim") == cur["anim"] and r.get("f", 0) == cur["f_end"] + 1:
+            cur["rows"].append(r); cur["f_end"] = r["f"]
+        else:
+            cur = {"anim": r.get("anim"), "f_end": r.get("f", 0), "rows": [r]}
+            insts.append(cur)
+    return insts
 
-    Auto-detects: ground baseline (most common pos_y); jumps (pos_y excursions
-    from baseline) -> gravity (2nd difference), initial vertical velocity, apex,
-    airborne frames, mean horizontal speed; ground-movement runs -> classified
-    into walk (sustained, slow) vs dash (short, fast). Values are flagged for
-    human review since segmentation is heuristic.
+
+def _has_attack(rows: List[dict]) -> bool:
+    return any(b["type"] == "attack" for r in rows for b in r.get("boxes", []))
+
+
+def derive_physics(records: List[dict]) -> dict:
+    """Derive walk/jump/dash constants by ANIMATION-ID segmentation.
+
+    Far more reliable than guessing from raw position deltas: each movement state
+    (walk/dash/jump) is its own animation, so we group contiguous instances of
+    each non-attack anim id and read constants off them. Jumps = anims with a
+    pos_y excursion; dashes = ground anims with a large net x displacement; walks
+    = ground anims that recur as short low-speed bursts. Values flagged _review.
     """
     if not records:
         return {"error": "no records"}
     ys = [r.get("pos_y", 0) for r in records]
-    xs = [r.get("pos_x", 0) for r in records]
     baseline = Counter(ys).most_common(1)[0][0]
-    tol = 1  # pos_y units of slack for "on the ground"
 
-    # --- jumps: contiguous runs where pos_y deviates from baseline ---
-    airborne = [abs(y - baseline) > tol for y in ys]
-    jumps = []
-    for s, e in _runs(airborne):
-        if e - s < 4:
-            continue  # too short to be a jump
-        seg_y = ys[s:e]
-        seg_x = xs[s:e]
-        vy = [seg_y[i + 1] - seg_y[i] for i in range(len(seg_y) - 1)]
-        accel = [vy[i + 1] - vy[i] for i in range(len(vy) - 1)]
-        dx = [seg_x[i + 1] - seg_x[i] for i in range(len(seg_x) - 1)]
-        jumps.append({
-            "frames": e - s,
-            "gravity": round(statistics.median(accel), 4) if accel else None,
-            "initial_vy": vy[0] if vy else None,
-            "apex_height": max(abs(y - baseline) for y in seg_y),
-            "mean_dx": round(statistics.mean(dx), 4) if dx else 0.0,
-        })
+    moves: Dict[str, List[dict]] = defaultdict(list)
+    for ins in _instances(records):
+        if not _has_attack(ins["rows"]):       # exclude attack moves (their dx is recoil)
+            moves[ins["anim"]].append(ins)
 
-    # --- ground movement: runs on the baseline with horizontal motion ---
-    grounded_moving = [(not airborne[i]) and (i + 1 < len(xs)) and (xs[i + 1] != xs[i])
-                       for i in range(len(xs))]
-    walks, dashes = [], []
-    for s, e in _runs(grounded_moving):
-        seg_x = xs[s:e + 1]
-        dx = [seg_x[i + 1] - seg_x[i] for i in range(len(seg_x) - 1)]
-        if not dx:
-            continue
-        speeds = [abs(d) for d in dx]
-        rec = {
-            "frames": e - s,
-            "distance": seg_x[-1] - seg_x[0],
-            "mean_speed": round(statistics.mean(speeds), 4),
-            "peak_speed": max(speeds),
-            "curve": dx,
-        }
-        # dash = short + fast; walk = sustained + slower. (Heuristic; review.)
-        if rec["frames"] <= 16 and rec["peak_speed"] >= 5:
-            dashes.append(rec)
-        else:
-            walks.append(rec)
+    jump_anims: Dict[str, dict] = {}
+    ground: Dict[str, dict] = {}
+    for anim, ins in moves.items():
+        apex = max(abs(r.get("pos_y", 0) - baseline) for i in ins for r in i["rows"])
+        netdxs = [i["rows"][-1].get("pos_x", 0) - i["rows"][0].get("pos_x", 0) for i in ins]
+        med = statistics.median(netdxs)
+        if apex > 4:  # any vertical excursion = a jump (ground moves have apex 0)
+            jump_anims[anim] = {"n": len(ins), "apex": apex, "ins": ins, "netdx": med}
+        elif abs(med) > 6:
+            ground[anim] = {"n": len(ins), "netdx": med, "ins": ins}
 
-    walk_speed = None
-    if walks:
-        walk_speed = round(statistics.median([w["mean_speed"] for w in walks]), 4)
+    # --- jump: the most-performed airborne anim; read arc off its instances ---
+    jump = None
+    if jump_anims:
+        janim = max(jump_anims, key=lambda a: jump_anims[a]["n"])
+        arcs = []
+        for i in jump_anims[janim]["ins"]:
+            yy = [r.get("pos_y", 0) - baseline for r in i["rows"]]
+            if sum(1 for v in yy if v > 0) < 6:
+                continue
+            vy = [yy[k + 1] - yy[k] for k in range(len(yy) - 1)]
+            top = max(yy)
+            asc = [vy[k + 1] - vy[k] for k in range(len(vy) - 1) if yy[k] < top]
+            arcs.append({
+                "airborne": sum(1 for v in yy if v > 0),
+                "apex": top,
+                "initial_vy": next((v for v in vy if v > 0), vy[0] if vy else 0),
+                "gravity": statistics.median(asc) if asc else None,
+            })
+        if arcs:
+            grav = [a["gravity"] for a in arcs if a["gravity"] is not None]
+            jump = {
+                "anim": janim,
+                "airborne_frames": int(statistics.median(a["airborne"] for a in arcs)),
+                "apex": int(statistics.median(a["apex"] for a in arcs)),
+                "initial_vy": int(statistics.median(a["initial_vy"] for a in arcs)),
+                "gravity_est": round(abs(statistics.median(grav)), 3) if grav else None,
+            }
+
+    # --- dashes (big net displacement) and walks (recurring small bursts) ---
+    fwd = [a for a in ground if ground[a]["netdx"] > 0]
+    back = [a for a in ground if ground[a]["netdx"] < 0]
+
+    def _biggest(cands):
+        return max(cands, key=lambda a: abs(ground[a]["netdx"])) if cands else None
+
+    dash_f = _biggest([a for a in fwd if abs(ground[a]["netdx"]) >= 30])
+    dash_b = _biggest([a for a in back if abs(ground[a]["netdx"]) >= 30])
+
+    def _summarize_dash(anim):
+        if not anim:
+            return None
+        best = max(ground[anim]["ins"],
+                   key=lambda i: abs(i["rows"][-1].get("pos_x", 0) - i["rows"][0].get("pos_x", 0)))
+        xs = [r.get("pos_x", 0) for r in best["rows"]]
+        curve = [xs[k + 1] - xs[k] for k in range(len(xs) - 1)]
+        while curve and curve[-1] == 0:        # trim recovery
+            curve.pop()
+        return {"anim": anim, "frames": len(curve), "distance": sum(curve), "curve": curve}
+
+    def _walk(cands):
+        cands = [a for a in cands if a not in (dash_f, dash_b)]
+        if not cands:
+            return {"anim": None, "speed_px_per_frame": None}
+        anim = max(cands, key=lambda a: ground[a]["n"])  # walk recurs most
+        sp = []
+        for i in ground[anim]["ins"]:
+            xs = [r.get("pos_x", 0) for r in i["rows"]]
+            sp += [abs(xs[k + 1] - xs[k]) for k in range(len(xs) - 1) if xs[k + 1] != xs[k]]
+        return {"anim": anim, "speed_px_per_frame": round(statistics.median(sp), 3) if sp else None}
 
     return {
         "_review": True,
-        "_note": "Heuristic segmentation of a movement capture; confirm ranges "
-                 "before applying in Phase 5.",
+        "_note": "Segmented by animation id (movement anims; attack frames excluded).",
         "ground_baseline_y": baseline,
-        "walk_speed_px_per_frame": walk_speed,
-        "jumps": jumps,
-        "dashes": dashes,
+        "jump": jump,
+        "walk_forward": _walk(fwd),
+        "walk_back": _walk(back),
+        "dash_forward": _summarize_dash(dash_f),
+        "dash_back": _summarize_dash(dash_b),
     }
 
 
@@ -315,8 +363,8 @@ def _selftest() -> None:
     assert any(b["type"] == "ext_vulnerability" for b in mv["1e88"]["frames"][0]["boxes"])
     phys = derive_physics(recs)
     assert phys["ground_baseline_y"] == 0
-    assert phys["jumps"] and phys["jumps"][0]["frames"] >= 4
-    print("selftest OK:", json.dumps(phys["jumps"][0]))
+    assert phys["jump"] and phys["jump"]["airborne_frames"] >= 4
+    print("selftest OK:", json.dumps(phys["jump"]))
 
 
 def main(argv=None):
