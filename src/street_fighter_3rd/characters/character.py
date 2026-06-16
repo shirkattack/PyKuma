@@ -619,22 +619,27 @@ class Character:
             # (physics.yaml). 95 / 14 ~= 6.8 px/frame.
             dash_speed = 6.8  # pixels per frame
             move_dir = 1 if self.is_facing_right() else -1
-            self.velocity_x = dash_speed * move_dir
-
-            # Return to standing after dash animation completes (14 frames)
+            # Return to standing after dash animation completes (14 frames).
+            # Settle to 0 on the final frame so no leftover dash velocity lunges
+            # into (and shoves) the opponent the frame after the dash ends.
             if self.state_frame >= 14:
+                self.velocity_x = 0
                 self._transition_to_state(CharacterState.STANDING)
+            else:
+                self.velocity_x = dash_speed * move_dir
 
         elif self.state == CharacterState.DASH_BACKWARD:
             # Backward dash - ROM-measured ~45px over the 9-frame clip
             # (physics.yaml). 45 / 9 = 5.0 px/frame.
             dash_speed = 5.0  # pixels per frame
             move_dir = -1 if self.is_facing_right() else 1
-            self.velocity_x = dash_speed * move_dir
-
-            # Return to standing after dash animation completes (9 frames)
+            # Return to standing after dash animation completes (9 frames);
+            # settle to 0 on the final frame (see forward-dash note above).
             if self.state_frame >= 9:
+                self.velocity_x = 0
                 self._transition_to_state(CharacterState.STANDING)
+            else:
+                self.velocity_x = dash_speed * move_dir
 
         # Attack states - handle recovery.
         # Placeholder timing until per-move frame data drives this (see the
@@ -731,12 +736,25 @@ class Character:
         left_moving = abs(left.velocity_x) > 0.1 and left.velocity_x > 0   # moving right, toward right
         right_moving = abs(right.velocity_x) > 0.1 and right.velocity_x < 0  # moving left, toward left
 
+        _DASH = (CharacterState.DASH_FORWARD, CharacterState.DASH_BACKWARD)
+
         if left_moving and not right_moving:
-            # left walks/dashes into right: left advances to contact, right is pushed.
-            right.x = left.x + min_distance
+            if left.state in _DASH:
+                # A dash stops AT the pushbox contact line -- it does not shove the
+                # opponent across the screen (that read as the dasher "going
+                # through" them). Clamp the dasher back to contact; leave the
+                # opponent put. (Re-clamped every dash frame since _update_state
+                # re-applies dash velocity.)
+                left.x = right.x - min_distance
+            else:
+                # walk into the opponent: advance to contact, nudge them along.
+                right.x = left.x + min_distance
             left.velocity_x = 0
         elif right_moving and not left_moving:
-            left.x = right.x - min_distance
+            if right.state in _DASH:
+                right.x = left.x + min_distance
+            else:
+                left.x = right.x - min_distance
             right.velocity_x = 0
         else:
             # both (or neither) pressing in: split the correction 50/50.
