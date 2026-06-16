@@ -3,8 +3,10 @@
 import logging
 import pygame
 from street_fighter_3rd.util.logging_config import get_logger, log_once
-from street_fighter_3rd.characters.character import Character, get_debug_font
-from street_fighter_3rd.data.enums import CharacterState, Button, FacingDirection, InputDirection
+from street_fighter_3rd.characters.character import (
+    Character, get_debug_font, apply_reaction, SUPER_FREEZE_FRAMES)
+from street_fighter_3rd.data.enums import (
+    CharacterState, Button, FacingDirection, InputDirection, HitEffect)
 from street_fighter_3rd.systems.animation import (
     SpriteManager,
     AnimationController,
@@ -52,6 +54,12 @@ TELEPORT_TOTAL_FRAMES = 40     # state duration incl. recovery
 DEMON_FLIP_RISE = -8.0         # initial vertical velocity (up)
 DEMON_FLIP_FORWARD = 6.5       # forward velocity toward the opponent
 
+# Super Arts (provisional damage/reach, flagged for ROM/community backfill).
+SA2_DAMAGE = 180               # Messatsu Gou Shoryu (rising launcher)
+SA2_REACH = 130
+SA3_DAMAGE = 220               # Kongou Kokuretsu Zan (heavy ground hit)
+SA3_REACH = 150
+
 
 class Akuma(Character):
     """Akuma (Gouki) - The Master of the Fist."""
@@ -83,6 +91,9 @@ class Akuma(Character):
         CharacterState.TATSUMAKI: "tatsumaki",
         CharacterState.ASHURA_SENKU: "teleport",
         CharacterState.DEMON_FLIP: "hyakkishuu",
+        CharacterState.SUPER_ART_1: "sa1",
+        CharacterState.SUPER_ART_2: "sa2",
+        CharacterState.SUPER_ART_3: "sa3",
         # command actions
         CharacterState.OVERHEAD: "overhead",
         CharacterState.TAUNT: "taunt",
@@ -163,6 +174,8 @@ class Akuma(Character):
         self.projectiles = []  # List of active projectiles
         self._teleport_dir = 0          # +1/-1 travel direction during Ashura Senku
         self._teleport_frames_left = 0  # remaining travel frames
+        self._super_freeze_pending = False  # apply super-freeze to opponent next update
+        self._super_hit_done = False        # SA2/SA3 single-hit guard
         self.pending_projectile_strength = None  # Store strength for spawning
         self.pending_projectile_air = False       # was the fireball started airborne?
     
@@ -221,6 +234,10 @@ class Akuma(Character):
             # round-flow poses (driven by the round manager, not the state machine)
             ("teleport",           "akuma-teleport",      63, 1, False),  # Ashura Senku
             ("hyakkishuu",         "akuma-hyakkishuu",    54, 1, False),  # Demon Flip
+            # super arts
+            ("sa1",                "akuma-sa1-air",       66, 1, False),  # Messatsu Gou Hadou
+            ("sa2",                "akuma-sa2",           40, 1, False),  # Messatsu Gou Shoryu
+            ("sa3",                "akuma-sa3",           92, 1, False),  # Kongou Kokuretsu Zan
             ("intro1",             "akuma-intro1",        23, 3, False),  # round start
             ("win1",               "akuma-win1",          28, 3, False),  # round won
             ("win2",               "akuma-win2",          38, 3, False),
@@ -279,6 +296,23 @@ class Akuma(Character):
         """
         if not self.input:
             return False
+
+        # Super Arts -- need a full meter, and are checked BEFORE the normal
+        # specials because the doubled motions (236236/214214) contain the single
+        # ones. Without meter they fall through (236236P just yields a Gohadoken).
+        # SA1 = 236236P, SA2 = 236236K, SA3 = 214214P.
+        if self.has_full_super():
+            P = (Button.LIGHT_PUNCH, Button.MEDIUM_PUNCH, Button.HEAVY_PUNCH)
+            K = (Button.LIGHT_KICK, Button.MEDIUM_KICK, Button.HEAVY_KICK)
+            if any(self.input.check_motion_input("QCF2", b) for b in P):
+                self._execute_super(1)
+                return True
+            if any(self.input.check_motion_input("QCF2", b) for b in K):
+                self._execute_super(2)
+                return True
+            if any(self.input.check_motion_input("QCB2", b) for b in P):
+                self._execute_super(3)
+                return True
 
         # Gohadoken (236P - Quarter Circle Forward + Punch)
         if self.input.check_motion_input("QCF", Button.LIGHT_PUNCH):
@@ -443,6 +477,59 @@ class Akuma(Character):
         self.is_grounded = False
         self._transition_to_state(CharacterState.DEMON_FLIP)
 
+    def _spawn_gohadoken(self, strength: str, air: bool):
+        """Create a Gou Hadouken projectile at hand height (shared by the normal
+        fireball and the SA1 super-fireball burst)."""
+        speed_map = {"light": 7.0, "medium": 9.0, "heavy": 11.0}
+        speed = speed_map.get(strength, 7.0)
+        fwd = 1 if self.facing == FacingDirection.RIGHT else -1
+        feet_y = self.y + self.feet_offset
+        spawn_y = feet_y - 70
+        if air:
+            velocity_y = speed * 0.6
+            spawn_x = self.x + 30 * fwd
+        else:
+            velocity_y = 0.0
+            spawn_x = self.x + 40 * fwd
+        self.projectiles.append(
+            Gohadoken(spawn_x, spawn_y, speed * fwd, self.facing, strength,
+                      velocity_y=velocity_y, ground_y=feet_y))
+
+    def _execute_super(self, sa: int):
+        """Activate a Super Art: consume the full meter, super-freeze the
+        opponent, and play the SA. SA1 spawns a super-fireball burst (in
+        _update_state); SA2/SA3 land a big direct hit (in _resolve_super)."""
+        log.debug("SUPER ART %s!", sa)
+        self.super_meter = 0
+        self.last_special_frame = self.total_frames
+        self._super_freeze_pending = True
+        self._super_hit_done = False
+        self.velocity_x = 0
+        self._transition_to_state(
+            {1: CharacterState.SUPER_ART_1, 2: CharacterState.SUPER_ART_2,
+             3: CharacterState.SUPER_ART_3}[sa])
+
+    def _resolve_super(self, opponent: 'Character'):
+        """Per-frame super effects that need the opponent: the one-time
+        super-freeze and the SA2/SA3 direct hits on their active frame."""
+        if self._super_freeze_pending:
+            opponent.hitfreeze_frames = max(opponent.hitfreeze_frames, SUPER_FREEZE_FRAMES)
+            self._super_freeze_pending = False
+        if self._super_hit_done:
+            return
+        if self.state == CharacterState.SUPER_ART_2 and self.state_frame >= 6:
+            self._super_hit_done = True
+            self._apply_super_hit(opponent, SA2_DAMAGE, HitEffect.JUGGLE, SA2_REACH)
+        elif self.state == CharacterState.SUPER_ART_3 and self.state_frame >= 12:
+            self._super_hit_done = True
+            self._apply_super_hit(opponent, SA3_DAMAGE, HitEffect.KNOCKDOWN, SA3_REACH)
+
+    def _apply_super_hit(self, opponent, damage, effect, reach):
+        if abs(self.x - opponent.x) <= reach and not getattr(opponent, "is_invincible", False):
+            opponent.health = max(0, opponent.health - damage)
+            face = 1 if self.is_facing_right() else -1
+            apply_reaction(opponent, effect, 30, knockback_vx=4.0 * face)
+
     def update(self, opponent: 'Character'):
         """Update Akuma with animation system.
 
@@ -451,6 +538,11 @@ class Akuma(Character):
         """
         # Call parent update FIRST (this updates facing direction)
         super().update(opponent)
+
+        # Super Art per-frame effects (freeze + SA2/SA3 hit) need the opponent.
+        if self.state in (CharacterState.SUPER_ART_1, CharacterState.SUPER_ART_2,
+                          CharacterState.SUPER_ART_3):
+            self._resolve_super(opponent)
 
         # Advance the animation, then recover one-shot moves on completion.
         self.animation_controller.update()
@@ -646,39 +738,16 @@ class Akuma(Character):
 
         # Akuma-specific state handling
         if self.state == CharacterState.GOHADOKEN:
-            # Fireball animation - 24 frames total
-            # Spawn projectile on frame 14 (when animation reaches active frames)
+            # Spawn the fireball on the active frame.
             if self.state_frame == 14 and self.pending_projectile_strength:
-                # Spawn the fireball projectile
-                # Speed based on strength: light=7, medium=9, heavy=11 pixels/frame
-                speed_map = {"light": 7.0, "medium": 9.0, "heavy": 11.0}
-                speed = speed_map.get(self.pending_projectile_strength, 7.0)
-                fwd = 1 if self.facing == FacingDirection.RIGHT else -1
-                velocity_x = speed * fwd
-
-                # Spawn at HAND height on the rendered body: the body is anchored
-                # at the feet line (self.y + feet_offset), so measure up from there
-                # -- NOT from self.y (the STAGE_FLOOR reference), which put the
-                # fireball ~75px above Akuma's hands. ground_y = the feet line so an
-                # air fireball dissipates at the visible ground, not at self.y.
-                feet_y = self.y + self.feet_offset
-                spawn_y = feet_y - 70
-                ground_y = feet_y
-                if self.pending_projectile_air:
-                    # Air fireball (Zanku Hadou): down-forward (~30deg). Provisional
-                    # angle pending decomp calibration.
-                    velocity_y = speed * 0.6
-                    spawn_x = self.x + 30 * fwd
-                else:
-                    velocity_y = 0.0
-                    spawn_x = self.x + 40 * fwd
-
-                projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing,
-                                       self.pending_projectile_strength,
-                                       velocity_y=velocity_y, ground_y=ground_y)
-                self.projectiles.append(projectile)
-                self.pending_projectile_strength = None  # Clear after spawning
+                self._spawn_gohadoken(self.pending_projectile_strength, self.pending_projectile_air)
+                self.pending_projectile_strength = None
                 self.pending_projectile_air = False
+
+        elif self.state == CharacterState.SUPER_ART_1:
+            # Messatsu Gou Hadou: a burst of three super fireballs (multi-hit).
+            if self.state_frame in (10, 16, 22):
+                self._spawn_gohadoken("heavy", air=False)
 
         # GOHADOKEN/GOSHORYUKEN/TATSUMAKI now recover when their animation
         # completes (see update()); the per-state safety timeout still guards

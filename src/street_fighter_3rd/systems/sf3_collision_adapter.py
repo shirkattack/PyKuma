@@ -32,7 +32,9 @@ from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
 from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
 from ..data.hitbox_repository import HitboxRepository
-from ..characters.character import apply_reaction, JUGGLE_LIMIT
+from ..characters.character import (
+    apply_reaction, JUGGLE_LIMIT,
+    METER_GAIN_ON_HIT, METER_GAIN_ON_TAKE, METER_GAIN_ON_BLOCK)
 from .vfx import HitSparkType
 
 # Hit spark strength by the attacking state.
@@ -494,6 +496,36 @@ class SF3CollisionAdapter:
 
         return hit_occurred
     
+    def check_projectile_hits(self, owner, target, vfx_manager=None):
+        """Resolve the owner's active projectiles against the target's body.
+
+        Projectiles (Gohadoken, super fireballs) had no collision at all, so they
+        only ever traveled and rendered. A projectile that overlaps the target
+        deals its damage (chip if blocking, nothing if invulnerable) and dissipates.
+        """
+        projectiles = getattr(owner, "projectiles", None)
+        if not projectiles:
+            return
+        feet = target.y + getattr(target, "feet_offset", getattr(target, "ground_offset", 0))
+        body = pygame.Rect(int(target.x - target.pushbox_width / 2), int(feet - 150),
+                           int(target.pushbox_width), 150)
+        for p in projectiles:
+            if not p.active or not p.get_hitbox().colliderect(body):
+                continue
+            if getattr(target, "is_invincible", False):
+                continue
+            if getattr(target, "is_blocking", False):
+                target.health = max(0, target.health - max(1, p.damage // 8))
+            else:
+                target.health = max(0, target.health - p.damage)
+                face = 1.0 if p.velocity_x >= 0 else -1.0
+                apply_reaction(target, HitEffect.NORMAL, 14, knockback_vx=3.0 * face)
+                if hasattr(owner, "gain_super_meter"):
+                    owner.gain_super_meter(METER_GAIN_ON_HIT // 2)
+                if vfx_manager:
+                    vfx_manager.spawn_hit_spark(p.x, p.y, _spark_for_state(None))
+            p.on_hit()  # dissipate
+
     def _apply_hit_to_character(self, attacker, defender, hit_status, vfx_manager):
         """Apply hit effects to defender character with parry checking"""
         from ..data.enums import CharacterState
@@ -574,6 +606,12 @@ class SF3CollisionAdapter:
         apply_reaction(defender, hit_effect, hit_status.hitstun, knockback_vx=kb * kb_dir)
         attacker.attack_connected = True  # this attack has now connected
 
+        # Super-meter gain: the attacker builds more than the defender on a clean hit.
+        if hasattr(attacker, "gain_super_meter"):
+            attacker.gain_super_meter(METER_GAIN_ON_HIT)
+        if hasattr(defender, "gain_super_meter"):
+            defender.gain_super_meter(METER_GAIN_ON_TAKE)
+
         # Count this hit against the juggle cap if it left the defender airborne
         # (a launch or an air-to-air follow-up). Reset to 0 on landing (Character
         # _apply_physics). apply_reaction read the pre-increment count to scale the
@@ -646,7 +684,13 @@ class SF3CollisionAdapter:
         # Both characters get hitfreeze
         attacker.hitfreeze_frames = 6
         defender.hitfreeze_frames = 6
-        
+
+        # Small meter gain for both on a block.
+        if hasattr(attacker, "gain_super_meter"):
+            attacker.gain_super_meter(METER_GAIN_ON_BLOCK)
+        if hasattr(defender, "gain_super_meter"):
+            defender.gain_super_meter(METER_GAIN_ON_BLOCK)
+
         # Spawn block VFX
         if vfx_manager:
             block_x = defender.x

@@ -421,6 +421,9 @@ class Game:
         # mis-attribute) the same hit back onto the attacker.
         self.collision_system.tick(self.player1, self.player2)
         self.collision_system.check_attack_collision(self.player1, self.player2, self.vfx_manager)
+        # Projectiles (fireballs / super fireballs) vs the opposing character.
+        self.collision_system.check_projectile_hits(self.player1, self.player2, self.vfx_manager)
+        self.collision_system.check_projectile_hits(self.player2, self.player1, self.vfx_manager)
 
         # Latch the most recent move's frame data so the panel can linger ~2s
         # after the move (set here, after combat, so combo stats reflect the hit).
@@ -638,6 +641,18 @@ class Game:
         pygame.draw.rect(self.screen, COLOR_WHITE, (p2_x, 20, health_bar_width, health_bar_height), 2)
         p2_name = self.p2_name_label
         self.screen.blit(p2_name, (p2_x + health_bar_width - p2_name.get_width(), 3))
+
+        # --- Super Art meter bars (bottom corners; gold when a super is ready) ---
+        from street_fighter_3rd.characters.character import MAX_SUPER_METER
+        sm_w, sm_h, sm_y = 200, 12, SCREEN_HEIGHT - 26
+        for player, sx in ((self.player1, 20), (self.player2, SCREEN_WIDTH - 20 - sm_w)):
+            meter = getattr(player, "super_meter", 0)
+            pct = max(0.0, min(1.0, meter / MAX_SUPER_METER))
+            full = meter >= MAX_SUPER_METER
+            pygame.draw.rect(self.screen, (40, 40, 40), (sx, sm_y, sm_w, sm_h))
+            pygame.draw.rect(self.screen, (255, 215, 0) if full else (80, 170, 255),
+                             (sx, sm_y, int(sm_w * pct), sm_h))
+            pygame.draw.rect(self.screen, COLOR_WHITE, (sx, sm_y, sm_w, sm_h), 1)
 
         center_x = SCREEN_WIDTH // 2
 

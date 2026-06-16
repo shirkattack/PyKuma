@@ -92,6 +92,15 @@ THROW_DAMAGE = 180
 THROW_HITSTUN = 40
 THROW_TOTAL_FRAMES = 30
 
+# Super Art meter (simple single-bar model the user chose). A Super Art costs a
+# full bar. Gains/freeze are provisional game-feel, tagged pending ROM/community
+# calibration (3S gauge lengths + per-action meter gain).
+MAX_SUPER_METER = 100
+METER_GAIN_ON_HIT = 14
+METER_GAIN_ON_TAKE = 6
+METER_GAIN_ON_BLOCK = 4
+SUPER_FREEZE_FRAMES = 35
+
 
 def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx: float = 0.0):
     """Put `character` into the reaction state for a given hit effect.
@@ -290,6 +299,12 @@ class Character:
             CharacterState.GOHADOKEN: 45,
             CharacterState.GOSHORYUKEN: 60,
             CharacterState.TATSUMAKI: 60,
+            CharacterState.ASHURA_SENKU: 60,
+            CharacterState.DEMON_FLIP: 90,
+            # Super Arts (long cinematic clips; recover on animation completion).
+            CharacterState.SUPER_ART_1: 100,
+            CharacterState.SUPER_ART_2: 80,
+            CharacterState.SUPER_ART_3: 120,
 
             # Hit reactions
             CharacterState.HITSTUN_STANDING: 60,
@@ -328,6 +343,9 @@ class Character:
             CharacterState.TATSUMAKI,
             CharacterState.ASHURA_SENKU,
             CharacterState.DEMON_FLIP,
+            CharacterState.SUPER_ART_1,
+            CharacterState.SUPER_ART_2,
+            CharacterState.SUPER_ART_3,
 
             # Can't cancel a throw (startup or the grab/whiff itself)
             CharacterState.THROW_STARTUP,
@@ -541,6 +559,13 @@ class Character:
     def _on_throw_whiff(self):
         """Hook: a throw missed. Subclasses swap to the whiff animation."""
         pass
+
+    def gain_super_meter(self, amount: int):
+        """Add to the Super Art meter, clamped to a full bar."""
+        self.super_meter = min(MAX_SUPER_METER, self.super_meter + amount)
+
+    def has_full_super(self) -> bool:
+        return self.super_meter >= MAX_SUPER_METER
 
     def _check_command_buttons(self) -> bool:
         """Two-button command actions: Universal Overhead (MP+MK) and Taunt

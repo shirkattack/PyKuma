@@ -181,6 +181,17 @@ class PlayerInput:
                 directions=[InputDirection.BACK, InputDirection.DOWN, InputDirection.DOWN_BACK],
                 button=Button.LIGHT_PUNCH
             ),
+            # Double quarter-circles for Super Arts (longer window).
+            MotionInput(
+                name="QCF2",  # 236236
+                directions=[InputDirection.DOWN, InputDirection.DOWN_FORWARD, InputDirection.FORWARD,
+                            InputDirection.DOWN, InputDirection.DOWN_FORWARD, InputDirection.FORWARD],
+                button=Button.LIGHT_PUNCH, max_frames=28),
+            MotionInput(
+                name="QCB2",  # 214214
+                directions=[InputDirection.DOWN, InputDirection.DOWN_BACK, InputDirection.BACK,
+                            InputDirection.DOWN, InputDirection.DOWN_BACK, InputDirection.BACK],
+                button=Button.LIGHT_PUNCH, max_frames=28),
         ]
 
     def connect_joystick(self, joystick_index: int) -> bool:
