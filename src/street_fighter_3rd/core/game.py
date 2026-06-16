@@ -357,11 +357,12 @@ class Game:
         self.player1.update(self.player2)
         self.player2.update(self.player1)
 
-        # Advance the SF3 core exactly once per game frame, then check both
-        # attack directions within that same frame.
+        # Advance the SF3 core exactly once per game frame, then resolve combat.
+        # ONE call: the core checks BOTH attack directions internally and tags each
+        # hit with its attacker/defender, so calling it twice would re-detect (and
+        # mis-attribute) the same hit back onto the attacker.
         self.collision_system.tick()
         self.collision_system.check_attack_collision(self.player1, self.player2, self.vfx_manager)
-        self.collision_system.check_attack_collision(self.player2, self.player1, self.vfx_manager)
 
         # Update VFX
         self.vfx_manager.update()

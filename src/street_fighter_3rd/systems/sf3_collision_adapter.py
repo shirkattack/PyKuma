@@ -52,6 +52,20 @@ HITSTOP_BASE, HITSTOP_PER, HITSTOP_MAX = 6, 4, 16
 SHAKE_INTENSITY = 4
 
 
+def _knockback_for(hit_effect: HitEffect, damage: int) -> float:
+    """Provisional knockback magnitude (px/frame, decays via hitstun friction).
+
+    Used only when the move carries no explicit pushback. Magnitudes are a sane
+    starting model scaled lightly by damage; calibrate against a ROM/decomp golden
+    (see docs/DIAGNOSTIC_FRAMEWORK.md). Knockdown-class hits push harder.
+    """
+    base = 3.0
+    if hit_effect in (HitEffect.KNOCKDOWN, HitEffect.CRUMPLE,
+                      HitEffect.GROUND_BOUNCE, HitEffect.WALL_BOUNCE):
+        base = 5.0
+    return base + min(2.0, damage / 80.0)
+
+
 def _spark_for_state(state) -> str:
     """Hit-spark type for the attacking state (heavier = bigger spark)."""
     if state in _SPECIAL_STATES:
@@ -423,25 +437,28 @@ class SF3CollisionAdapter:
         return False
     
     def _apply_collision_results(self, attacker, defender, vfx_manager) -> bool:
-        """Apply SF3 collision results back to our Character objects"""
-        hit_occurred = False
+        """Apply SF3 collision results back to our Character objects.
 
-        # Check if SF3 system detected any hits
+        Each queued hit carries its own attacker/defender ids, so we apply it to
+        the REAL attacker/defender (resolved by player_number), not whichever pair
+        this call happened to be invoked with. This is what stops an attacker from
+        eating its own hit and makes trades attribute correctly.
+        """
+        hit_occurred = False
+        by_id = {getattr(attacker, "player_number", 1): attacker,
+                 getattr(defender, "player_number", 2): defender}
+
         for i in range(self.sf3_system.hit_queue_input):
             hit_status = self.sf3_system.hit_status[i]
+            real_att = by_id.get(hit_status.attacker_id, attacker)
+            real_def = by_id.get(hit_status.defender_id, defender)
 
             if hit_status.result_flags & SF3CollisionResult.HIT_CONFIRMED:
-                # Apply hit effects
-                self._apply_hit_to_character(
-                    attacker, defender, hit_status, vfx_manager
-                )
+                self._apply_hit_to_character(real_att, real_def, hit_status, vfx_manager)
                 hit_occurred = True
-                
+
             elif hit_status.result_flags & SF3CollisionResult.CATCH_CONFIRMED:
-                # Apply throw effects
-                self._apply_throw_to_character(
-                    attacker, defender, hit_status, vfx_manager
-                )
+                self._apply_throw_to_character(real_att, real_def, hit_status, vfx_manager)
                 hit_occurred = True
         
         # Handle mutual hits
@@ -455,6 +472,10 @@ class SF3CollisionAdapter:
     def _apply_hit_to_character(self, attacker, defender, hit_status, vfx_manager):
         """Apply hit effects to defender character with parry checking"""
         from ..data.enums import CharacterState
+
+        # One connect per attack: an active hitbox must not re-hit every frame.
+        if getattr(attacker, "attack_connected", False):
+            return
 
         attacker_id = getattr(attacker, 'player_number', 1)
         defender_id = getattr(defender, 'player_number', 2)
@@ -498,7 +519,13 @@ class SF3CollisionAdapter:
         defender.health = max(0, defender.health - scaled_damage)
         move = get_move_frame_data(getattr(attacker, 'state', None))
         hit_effect = move.hit_effect if move else HitEffect.NORMAL
-        apply_reaction(defender, hit_effect, hit_status.hitstun)
+        # Knockback: shove the defender away from the attacker. Magnitude is
+        # provisional (calibrate vs ROM/decomp golden); direction is away from the
+        # attacker; _update_state friction decays it and _clamp_to_stage bounds it.
+        kb = getattr(hit_status, "pushback", 0.0) or _knockback_for(hit_effect, scaled_damage)
+        kb_dir = 1.0 if attacker.x <= defender.x else -1.0
+        apply_reaction(defender, hit_effect, hit_status.hitstun, knockback_vx=kb * kb_dir)
+        attacker.attack_connected = True  # this attack has now connected
 
         # Hitstop scales with damage so heavy hits land harder (deterministic).
         hitstop = min(HITSTOP_MAX, HITSTOP_BASE + scaled_damage // HITSTOP_PER)
