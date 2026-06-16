@@ -69,6 +69,9 @@ class Akuma(Character):
         CharacterState.GOHADOKEN: "gohadoken",
         CharacterState.GOSHORYUKEN: "goshoryuken",
         CharacterState.TATSUMAKI: "tatsumaki",
+        # command actions
+        CharacterState.OVERHEAD: "overhead",
+        CharacterState.TAUNT: "taunt",
         # hit / block reactions
         CharacterState.HITSTUN_STANDING: "hit_medium",
         CharacterState.HITSTUN_CROUCHING: "crouch_hit",
@@ -196,6 +199,9 @@ class Akuma(Character):
             ("throw_forward",      "akuma-throw-forward", 17, 2, False),
             ("throw_back",         "akuma-throw-back",    14, 2, False),
             ("throw_miss",         "akuma-throw-miss",     6, 2, False),
+            # command actions
+            ("overhead",           "akuma-overhead",      23, 2, False),  # UOH (MP+MK)
+            ("taunt",              "akuma-taunt",         39, 2, False),  # personal action (HP+HK)
         ]
         for name, folder, frames, dur, loop in specs:
             self.animation_controller.add_animation(

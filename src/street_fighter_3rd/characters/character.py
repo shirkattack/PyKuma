@@ -29,6 +29,7 @@ _ATTACK_STATES = frozenset({
     CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
     CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
     CharacterState.GOHADOKEN, CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
+    CharacterState.OVERHEAD,
 })
 
 _CROUCH_STATES = frozenset({
@@ -330,6 +331,10 @@ class Character:
             CharacterState.THROW_STARTUP,
             CharacterState.THROWING,
 
+            # Command actions
+            CharacterState.OVERHEAD,
+            CharacterState.TAUNT,
+
             # Can't cancel hit reactions
             CharacterState.HITSTUN_STANDING,
             CharacterState.HITSTUN_CROUCHING,
@@ -466,6 +471,10 @@ class Character:
         if self._check_throw():
             return
 
+        # Two-button command actions (overhead MP+MK, taunt HP+HK) before normals.
+        if self._check_command_buttons():
+            return
+
         # Check for special moves first (highest priority)
         if self._check_special_moves():
             return
@@ -530,6 +539,28 @@ class Character:
     def _on_throw_whiff(self):
         """Hook: a throw missed. Subclasses swap to the whiff animation."""
         pass
+
+    def _check_command_buttons(self) -> bool:
+        """Two-button command actions: Universal Overhead (MP+MK) and Taunt
+        (HP+HK). Same press rule as throws (both held, one fresh this frame), from
+        a neutral/walking/light-normal state. Returns True if one triggered."""
+        if not self.input or not self.is_grounded:
+            return False
+        if self.state not in _THROWABLE_FROM_STATES:
+            return False
+        held = self.input.buttons_held
+
+        def both(a, b):
+            return a in held and b in held and (
+                self.input.is_button_just_pressed(a) or self.input.is_button_just_pressed(b))
+
+        if both(Button.MEDIUM_PUNCH, Button.MEDIUM_KICK):
+            self._transition_to_state(CharacterState.OVERHEAD)   # UOH
+            return True
+        if both(Button.HEAVY_PUNCH, Button.HEAVY_KICK):
+            self._transition_to_state(CharacterState.TAUNT)      # personal action
+            return True
+        return False
 
     def _check_special_moves(self) -> bool:
         """Check for special move inputs.
@@ -790,6 +821,18 @@ class Character:
             # Throw (grab or whiff) is stationary; recover to STANDING.
             self.velocity_x = 0
             if self.state_frame >= THROW_TOTAL_FRAMES:
+                self._transition_to_state(CharacterState.STANDING)
+
+        elif self.state == CharacterState.OVERHEAD:
+            # Universal Overhead: slow command attack; stationary, then recover.
+            self.velocity_x = 0
+            if self.state_frame >= 33:
+                self._transition_to_state(CharacterState.STANDING)
+
+        elif self.state == CharacterState.TAUNT:
+            # Personal action: stationary, no hit; recover after the clip.
+            self.velocity_x = 0
+            if self.state_frame >= 40:
                 self._transition_to_state(CharacterState.STANDING)
 
         elif self.state in (CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
