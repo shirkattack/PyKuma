@@ -305,6 +305,7 @@ class Character:
             CharacterState.SUPER_ART_1: 100,
             CharacterState.SUPER_ART_2: 80,
             CharacterState.SUPER_ART_3: 120,
+            CharacterState.RAGING_DEMON: 90,
 
             # Hit reactions
             CharacterState.HITSTUN_STANDING: 60,
@@ -346,6 +347,7 @@ class Character:
             CharacterState.SUPER_ART_1,
             CharacterState.SUPER_ART_2,
             CharacterState.SUPER_ART_3,
+            CharacterState.RAGING_DEMON,
 
             # Can't cancel a throw (startup or the grab/whiff itself)
             CharacterState.THROW_STARTUP,

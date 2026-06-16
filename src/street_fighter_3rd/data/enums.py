@@ -82,6 +82,7 @@ class CharacterState(Enum):
     SUPER_ART_1 = auto()
     SUPER_ART_2 = auto()
     SUPER_ART_3 = auto()
+    RAGING_DEMON = auto()  # Shun Goku Satsu (LP,LP,F,LK,HP command grab)
 
     # Defensive states
     BLOCKING_HIGH = auto()

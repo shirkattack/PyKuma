@@ -59,6 +59,8 @@ SA2_DAMAGE = 180               # Messatsu Gou Shoryu (rising launcher)
 SA2_REACH = 130
 SA3_DAMAGE = 220               # Kongou Kokuretsu Zan (heavy ground hit)
 SA3_REACH = 150
+RAGING_DEMON_DAMAGE = 500      # Shun Goku Satsu (near-fatal command grab)
+RAGING_DEMON_REACH = 84        # close unblockable grab range
 
 
 class Akuma(Character):
@@ -94,6 +96,7 @@ class Akuma(Character):
         CharacterState.SUPER_ART_1: "sa1",
         CharacterState.SUPER_ART_2: "sa2",
         CharacterState.SUPER_ART_3: "sa3",
+        CharacterState.RAGING_DEMON: "raging_demon",
         # command actions
         CharacterState.OVERHEAD: "overhead",
         CharacterState.TAUNT: "taunt",
@@ -238,6 +241,7 @@ class Akuma(Character):
             ("sa1",                "akuma-sa1-air",       66, 1, False),  # Messatsu Gou Hadou
             ("sa2",                "akuma-sa2",           40, 1, False),  # Messatsu Gou Shoryu
             ("sa3",                "akuma-sa3",           92, 1, False),  # Kongou Kokuretsu Zan
+            ("raging_demon",       "akuma-flame",         30, 2, False),  # Shun Goku Satsu
             ("intro1",             "akuma-intro1",        23, 3, False),  # round start
             ("win1",               "akuma-win1",          28, 3, False),  # round won
             ("win2",               "akuma-win2",          38, 3, False),
@@ -302,6 +306,11 @@ class Akuma(Character):
         # ones. Without meter they fall through (236236P just yields a Gohadoken).
         # SA1 = 236236P, SA2 = 236236K, SA3 = 214214P.
         if self.has_full_super():
+            # Raging Demon (Shun Goku Satsu): LP, LP, F, LK, HP. Discrete button
+            # sequence, checked first.
+            if self._check_raging_demon():
+                self._execute_raging_demon()
+                return True
             P = (Button.LIGHT_PUNCH, Button.MEDIUM_PUNCH, Button.HEAVY_PUNCH)
             K = (Button.LIGHT_KICK, Button.MEDIUM_KICK, Button.HEAVY_KICK)
             if any(self.input.check_motion_input("QCF2", b) for b in P):
@@ -495,6 +504,36 @@ class Akuma(Character):
             Gohadoken(spawn_x, spawn_y, speed * fwd, self.facing, strength,
                       velocity_y=velocity_y, ground_y=feet_y))
 
+    def _check_raging_demon(self) -> bool:
+        """Detect the LP, LP, F, LK, HP sequence ending with HP this frame.
+
+        Scans the recent input buffer for the four lead-in steps in order; the HP
+        press is the trigger. Lenient on spacing (within a ~40-frame window)."""
+        if Button.HEAVY_PUNCH not in self.input.buttons_pressed_this_frame:
+            return False
+        steps = (
+            lambda s: Button.LIGHT_PUNCH in s.buttons_just_pressed,
+            lambda s: Button.LIGHT_PUNCH in s.buttons_just_pressed,
+            lambda s: s.direction == InputDirection.FORWARD,
+            lambda s: Button.LIGHT_KICK in s.buttons_just_pressed,
+        )
+        idx = 0
+        for s in list(self.input.input_buffer)[-40:]:
+            if idx < len(steps) and steps[idx](s):
+                idx += 1
+        return idx == len(steps)
+
+    def _execute_raging_demon(self):
+        """Shun Goku Satsu: consume the bar, super-freeze, and (in _resolve_super)
+        land an unblockable close grab for near-fatal damage."""
+        log.debug("SHUN GOKU SATSU!")
+        self.super_meter = 0
+        self.last_special_frame = self.total_frames
+        self._super_freeze_pending = True
+        self._super_hit_done = False
+        self.velocity_x = 0
+        self._transition_to_state(CharacterState.RAGING_DEMON)
+
     def _execute_super(self, sa: int):
         """Activate a Super Art: consume the full meter, super-freeze the
         opponent, and play the SA. SA1 spawns a super-fireball burst (in
@@ -523,6 +562,10 @@ class Akuma(Character):
         elif self.state == CharacterState.SUPER_ART_3 and self.state_frame >= 12:
             self._super_hit_done = True
             self._apply_super_hit(opponent, SA3_DAMAGE, HitEffect.KNOCKDOWN, SA3_REACH)
+        elif self.state == CharacterState.RAGING_DEMON and self.state_frame >= 4:
+            self._super_hit_done = True
+            self._apply_super_hit(opponent, RAGING_DEMON_DAMAGE, HitEffect.KNOCKDOWN,
+                                  RAGING_DEMON_REACH)
 
     def _apply_super_hit(self, opponent, damage, effect, reach):
         if abs(self.x - opponent.x) <= reach and not getattr(opponent, "is_invincible", False):
@@ -536,12 +579,23 @@ class Akuma(Character):
         Args:
             opponent: The opposing character
         """
+        # Raging Demon completes from its lead-in jabs (LP,LP,...). If one of those
+        # jabs connected, its hitstop would make the base update() early-return and
+        # eat the HP that finishes the sequence -- so detect+fire it here, clearing
+        # that hitstop, before deferring to the base update. (Non-hitstop activation
+        # still goes through _check_special_moves normally.)
+        if (self.hitfreeze_frames > 0 and self.is_grounded
+                and self.has_full_super() and self._check_raging_demon()):
+            self.hitfreeze_frames = 0
+            self._execute_raging_demon()
+
         # Call parent update FIRST (this updates facing direction)
         super().update(opponent)
 
-        # Super Art per-frame effects (freeze + SA2/SA3 hit) need the opponent.
+        # Super Art per-frame effects (freeze + SA2/SA3/Raging-Demon hit) need
+        # the opponent.
         if self.state in (CharacterState.SUPER_ART_1, CharacterState.SUPER_ART_2,
-                          CharacterState.SUPER_ART_3):
+                          CharacterState.SUPER_ART_3, CharacterState.RAGING_DEMON):
             self._resolve_super(opponent)
 
         # Advance the animation, then recover one-shot moves on completion.
