@@ -167,6 +167,16 @@ def qcf(button: Button) -> List[FrameInput]:
             + [(InputDirection.FORWARD, [button])])
 
 
+def crouch_hp() -> Scenario:
+    """P1 crouching HP point-blank into P2 (regression: cr.HP used to do 0 damage
+    because CROUCH_HEAVY_PUNCH had no ROM move mapped)."""
+    return Scenario(
+        name="crouch_hp", frames=40,
+        p1={"x": 320, "facing": "R"}, p2={"x": 380, "facing": "L"},
+        p1_inputs=hold(InputDirection.DOWN, 4) + [(InputDirection.DOWN, [Button.HEAVY_PUNCH])]
+                  + hold(InputDirection.DOWN, 35))
+
+
 def fireball() -> Scenario:
     """P1 throws a Gohadoken (QCF+LP); the projectile should travel forward."""
     return Scenario(
@@ -176,4 +186,4 @@ def fireball() -> Scenario:
 
 
 SEED_SCENARIOS = {s.name: s for s in
-                  (jump_arc(), jab_knockback(), launch_recovery(), fireball())}
+                  (jump_arc(), jab_knockback(), launch_recovery(), fireball(), crouch_hp())}
