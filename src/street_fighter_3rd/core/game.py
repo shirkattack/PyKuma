@@ -139,6 +139,11 @@ class Game:
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 18)
 
+        # Input-display icons (direction arrows + button icons), vendored from
+        # 3rd_training_lua (see assets/ui/inputs/PROVENANCE.md). Loaded + scaled
+        # once; falls back to text glyphs if any are missing.
+        self._input_icons = self._load_input_icons()
+
         # Text rendering cache: Font.render is expensive, so static labels are
         # rendered once and dynamic text (timer digits, round text) is cached
         # per unique string.
@@ -735,11 +740,48 @@ class Game:
     _INPUT_COL_W = 88
     _INPUT_BASELINE_Y = 380  # bottom of the column; newest row sits just above it
 
+    _INPUT_ICON_H = 13  # rendered height of the vendored input icons
+
+    @classmethod
+    def _load_input_icons(cls):
+        """Load + scale the direction/button icons. Returns
+        {'dir': {numpad:int -> Surface}, 'btn': {'LP'.. -> Surface}}; empty dicts
+        if the assets are missing (the renderer then falls back to text)."""
+        import os
+        base = os.path.join("assets", "ui", "inputs")
+        icons = {"dir": {}, "btn": {}}
+
+        def load(fn):
+            path = os.path.join(base, fn)
+            if not os.path.exists(path):
+                return None
+            img = pygame.image.load(path).convert_alpha()
+            scale = cls._INPUT_ICON_H / img.get_height()
+            return pygame.transform.scale(
+                img, (round(img.get_width() * scale), cls._INPUT_ICON_H))
+
+        for n in range(1, 10):
+            s = load(f"{n}_dir.png")
+            if s is not None:
+                icons["dir"][n] = s
+        for code in ("LP", "MP", "HP", "LK", "MK", "HK"):
+            s = load(f"{code}_button.png")
+            if s is not None:
+                icons["btn"][code] = s
+        return icons
+
+    @staticmethod
+    def _button_codes(buttons):
+        """Held buttons as LP..HK codes in canonical order."""
+        names = {getattr(b, "name", str(b)) for b in buttons}
+        return [lbl for key, lbl in _BUTTON_LABELS if key in names]
+
     def _render_input_display(self, player_input, side: str):
         """Fixed, persistent input column like Fightcade/FBNeo: newest input is
         always anchored at the bottom and older inputs scroll upward, so the list
         stays in chronological order in stable on-screen positions (it doesn't
-        jump around). Each row: direction arrow + held buttons + held-frame count.
+        jump around). Each row: direction arrow icon + held button icons +
+        held-frame count (falls back to text glyphs if icons are missing).
         """
         history = player_input.get_input_history(self._INPUT_ROWS)
         x = 12 if side == "left" else SCREEN_WIDTH - self._INPUT_COL_W - 8
@@ -751,14 +793,30 @@ class Game:
         bg.set_alpha(130)
         bg.fill((0, 0, 0))
         self.screen.blit(bg, (x - 4, baseline - col_h))
+        dir_icons = self._input_icons["dir"]
+        btn_icons = self._input_icons["btn"]
         # Newest at the bottom: walk history newest-first, place rows upward.
         for k, e in enumerate(reversed(history)):
             ry = baseline - row_h - k * row_h
-            glyph = _DIR_GLYPHS.get(e.direction.value, "·")
-            self.screen.blit(self.small_font.render(glyph, True, (235, 235, 235)), (x, ry))
-            btns = self._buttons_label(e.buttons)
-            if btns:
-                self.screen.blit(self.small_font.render(btns, True, (245, 235, 90)), (x + 18, ry))
+            di = dir_icons.get(e.direction.value)
+            if di is not None:
+                self.screen.blit(di, (x, ry + (row_h - di.get_height()) // 2))
+                bx = x + di.get_width() + 3
+            else:
+                glyph = _DIR_GLYPHS.get(e.direction.value, "·")
+                self.screen.blit(self.small_font.render(glyph, True, (235, 235, 235)), (x, ry))
+                bx = x + 18
+
+            codes = self._button_codes(e.buttons)
+            if btn_icons and codes:
+                for code in codes:
+                    bi = btn_icons.get(code)
+                    if bi is not None:
+                        self.screen.blit(bi, (bx, ry + (row_h - bi.get_height()) // 2))
+                        bx += bi.get_width() + 1
+            elif codes:
+                self.screen.blit(self.small_font.render(self._buttons_label(e.buttons),
+                                                        True, (245, 235, 90)), (bx, ry))
             if e.repeat > 1:
                 cnt = self.small_font.render(str(e.repeat), True, (120, 120, 120))
                 self.screen.blit(cnt, (x + self._INPUT_COL_W - 8 - cnt.get_width(), ry))
