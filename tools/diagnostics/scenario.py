@@ -152,4 +152,13 @@ def jab_knockback() -> Scenario:
         p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.LIGHT_PUNCH) + hold(None, 37))
 
 
-SEED_SCENARIOS = {s.name: s for s in (jump_arc(), jab_knockback())}
+def launch_recovery() -> Scenario:
+    """P1 heavy punch (JUGGLE) point-blank into P2: P2 should pop up, fall, land,
+    and recover -- without getting stuck airborne / hitting the safety timeout."""
+    return Scenario(
+        name="launch_recovery", frames=110,
+        p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},
+        p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.HEAVY_PUNCH) + hold(None, 107))
+
+
+SEED_SCENARIOS = {s.name: s for s in (jump_arc(), jab_knockback(), launch_recovery())}

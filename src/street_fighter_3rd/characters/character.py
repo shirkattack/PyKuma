@@ -42,6 +42,12 @@ _CROUCH_STATES = frozenset({
 LAUNCH_HITSTUN = 60     # generous; physics lands the character before it expires
 KNOCKDOWN_HITSTUN = 40
 HITSTUN_FRICTION = 0.80  # per-frame decay of grounded knockback velocity
+# Juggle launch velocity. Must be consistent with GRAVITY (0.34): apex = vy^2/2g,
+# airtime = 2*vy/g. -9 -> apex ~119px (a pop just above the jump apex of 83),
+# airtime ~53f. The old -14 was tuned for the old gravity (0.8); with 0.34 it flew
+# ~288px off-screen for 82f and blew past the airborne timeout. Provisional pending
+# ROM/decomp juggle calibration.
+LAUNCH_VELOCITY = -9.0
 
 
 def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx: float = 0.0):
@@ -57,7 +63,7 @@ def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx:
     character.in_hitstun = True
     character.velocity_x = knockback_vx
     if hit_effect == HitEffect.JUGGLE:
-        character.velocity_y = -14.0
+        character.velocity_y = LAUNCH_VELOCITY
         character.is_grounded = False
         character.hitstun_frames = LAUNCH_HITSTUN
         character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
@@ -229,7 +235,9 @@ class Character:
             # Hit reactions
             CharacterState.HITSTUN_STANDING: 60,
             CharacterState.HITSTUN_CROUCHING: 60,
-            CharacterState.HITSTUN_AIRBORNE: 60,
+            # Airborne reaction recovers on LANDING (physics-driven); this is only
+            # a genuine-stuck safety net, so it must exceed any sane juggle airtime.
+            CharacterState.HITSTUN_AIRBORNE: 120,
             CharacterState.BLOCKSTUN_HIGH: 60,
             CharacterState.BLOCKSTUN_LOW: 60,
             CharacterState.KNOCKDOWN: 120,
