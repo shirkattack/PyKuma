@@ -139,6 +139,11 @@ class Game:
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 18)
 
+        # Input-display icons (direction arrows + button icons), vendored from
+        # 3rd_training_lua (see assets/ui/inputs/PROVENANCE.md). Loaded + scaled
+        # once; falls back to text glyphs if any are missing.
+        self._input_icons = self._load_input_icons()
+
         # Text rendering cache: Font.render is expensive, so static labels are
         # rendered once and dynamic text (timer digits, round text) is cached
         # per unique string.
@@ -155,6 +160,11 @@ class Game:
         self._damage_popups: list = []
         # Rolling log of recent damage events for the F10 issue report.
         self._recent_damage: deque = deque(maxlen=8)
+        # Frame-data panel latch: the last move's data, kept on screen for a
+        # short linger after the move ends so it's readable. None when expired.
+        self._fd_latch: dict = None
+        self._FD_LINGER = 120  # frames (~2s at 60fps) to keep showing after a move
+        self._fd_big_font = pygame.font.Font(None, 46)  # big frame-advantage number
 
     def _render_text(self, font: pygame.font.Font, text: str, color) -> pygame.Surface:
         """Render text through a cache so repeated frames don't re-render."""
@@ -361,8 +371,12 @@ class Game:
         # ONE call: the core checks BOTH attack directions internally and tags each
         # hit with its attacker/defender, so calling it twice would re-detect (and
         # mis-attribute) the same hit back onto the attacker.
-        self.collision_system.tick()
+        self.collision_system.tick(self.player1, self.player2)
         self.collision_system.check_attack_collision(self.player1, self.player2, self.vfx_manager)
+
+        # Latch the most recent move's frame data so the panel can linger ~2s
+        # after the move (set here, after combat, so combo stats reflect the hit).
+        self._update_frame_data_latch()
 
         # Update VFX
         self.vfx_manager.update()
@@ -703,9 +717,7 @@ class Game:
         if cfg.show_combo_counter:
             sections.append(("combo", self._render_combo_counters))
         if cfg.show_frame_data:
-            sections.append(("frame_data", lambda: (
-                self._render_frame_data(self.player1, side="left"),
-                self._render_frame_data(self.player2, side="right"))))
+            sections.append(("frame_data", self._render_frame_data))
         for name, fn in sections:
             try:
                 fn()
@@ -735,11 +747,48 @@ class Game:
     _INPUT_COL_W = 88
     _INPUT_BASELINE_Y = 380  # bottom of the column; newest row sits just above it
 
+    _INPUT_ICON_H = 13  # rendered height of the vendored input icons
+
+    @classmethod
+    def _load_input_icons(cls):
+        """Load + scale the direction/button icons. Returns
+        {'dir': {numpad:int -> Surface}, 'btn': {'LP'.. -> Surface}}; empty dicts
+        if the assets are missing (the renderer then falls back to text)."""
+        import os
+        base = os.path.join("assets", "ui", "inputs")
+        icons = {"dir": {}, "btn": {}}
+
+        def load(fn):
+            path = os.path.join(base, fn)
+            if not os.path.exists(path):
+                return None
+            img = pygame.image.load(path).convert_alpha()
+            scale = cls._INPUT_ICON_H / img.get_height()
+            return pygame.transform.scale(
+                img, (round(img.get_width() * scale), cls._INPUT_ICON_H))
+
+        for n in range(1, 10):
+            s = load(f"{n}_dir.png")
+            if s is not None:
+                icons["dir"][n] = s
+        for code in ("LP", "MP", "HP", "LK", "MK", "HK"):
+            s = load(f"{code}_button.png")
+            if s is not None:
+                icons["btn"][code] = s
+        return icons
+
+    @staticmethod
+    def _button_codes(buttons):
+        """Held buttons as LP..HK codes in canonical order."""
+        names = {getattr(b, "name", str(b)) for b in buttons}
+        return [lbl for key, lbl in _BUTTON_LABELS if key in names]
+
     def _render_input_display(self, player_input, side: str):
         """Fixed, persistent input column like Fightcade/FBNeo: newest input is
         always anchored at the bottom and older inputs scroll upward, so the list
         stays in chronological order in stable on-screen positions (it doesn't
-        jump around). Each row: direction arrow + held buttons + held-frame count.
+        jump around). Each row: direction arrow icon + held button icons +
+        held-frame count (falls back to text glyphs if icons are missing).
         """
         history = player_input.get_input_history(self._INPUT_ROWS)
         x = 12 if side == "left" else SCREEN_WIDTH - self._INPUT_COL_W - 8
@@ -751,14 +800,30 @@ class Game:
         bg.set_alpha(130)
         bg.fill((0, 0, 0))
         self.screen.blit(bg, (x - 4, baseline - col_h))
+        dir_icons = self._input_icons["dir"]
+        btn_icons = self._input_icons["btn"]
         # Newest at the bottom: walk history newest-first, place rows upward.
         for k, e in enumerate(reversed(history)):
             ry = baseline - row_h - k * row_h
-            glyph = _DIR_GLYPHS.get(e.direction.value, "·")
-            self.screen.blit(self.small_font.render(glyph, True, (235, 235, 235)), (x, ry))
-            btns = self._buttons_label(e.buttons)
-            if btns:
-                self.screen.blit(self.small_font.render(btns, True, (245, 235, 90)), (x + 18, ry))
+            di = dir_icons.get(e.direction.value)
+            if di is not None:
+                self.screen.blit(di, (x, ry + (row_h - di.get_height()) // 2))
+                bx = x + di.get_width() + 3
+            else:
+                glyph = _DIR_GLYPHS.get(e.direction.value, "·")
+                self.screen.blit(self.small_font.render(glyph, True, (235, 235, 235)), (x, ry))
+                bx = x + 18
+
+            codes = self._button_codes(e.buttons)
+            if btn_icons and codes:
+                for code in codes:
+                    bi = btn_icons.get(code)
+                    if bi is not None:
+                        self.screen.blit(bi, (bx, ry + (row_h - bi.get_height()) // 2))
+                        bx += bi.get_width() + 1
+            elif codes:
+                self.screen.blit(self.small_font.render(self._buttons_label(e.buttons),
+                                                        True, (245, 235, 90)), (bx, ry))
             if e.repeat > 1:
                 cnt = self.small_font.render(str(e.repeat), True, (120, 120, 120))
                 self.screen.blit(cnt, (x + self._INPUT_COL_W - 8 - cnt.get_width(), ry))
@@ -789,47 +854,93 @@ class Game:
                 surf = self.small_font.render(txt, True, (255, 220, 80))
                 self.screen.blit(surf, (anchor - surf.get_width() // 2, 70))
 
-    def _render_frame_data(self, player, side: str):
-        """Per-move frame-data panel: name, startup/active/recovery + advantage,
-        and a phase-colored timeline strip with the current frame marked."""
-        if not player.is_attacking():
-            return
+    def _update_frame_data_latch(self):
+        """Capture the most-recent attacker's move frame data so the panel can
+        linger after the move ends. While someone is attacking, (re)latch their
+        move + the defender id (for combo stats); otherwise count the latch down
+        and clear it when it expires."""
         from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
-        fd = get_move_frame_data(player.state)
-        if not fd:
-            return
+        for atk in (self.player1, self.player2):
+            if atk.is_attacking():
+                fd = get_move_frame_data(atk.state)
+                if fd:
+                    self._fd_latch = {
+                        "fd": fd, "attacker": atk, "state": atk.state,
+                        "defender_id": 2 if atk is self.player1 else 1,
+                        "ttl": self._FD_LINGER,
+                    }
+                    return
+        if self._fd_latch:
+            self._fd_latch["ttl"] -= 1
+            if self._fd_latch["ttl"] <= 0:
+                self._fd_latch = None
 
+    def _render_frame_data(self):
+        """Bottom-center frame-data panel (lingers ~2s after the move): move name,
+        startup/active/recovery + advantage, a phase-colored timeline strip, and a
+        3rd_training_lua-style big frame-advantage number with Damage/Combo/Total."""
+        latch = self._fd_latch
+        if not latch:
+            return
+        fd = latch["fd"]
         startup, active_n, recovery = fd.startup, len(fd.active), fd.recovery
         total = min(max(1, startup + active_n + recovery), 60)
         cell_w, cell_h, gap = 6, 12, 1
         strip_w = total * (cell_w + gap)
-        panel_w = max(strip_w, 210)
-        px = 20 if side == "left" else SCREEN_WIDTH - 20 - panel_w
-        py = SCREEN_HEIGHT - 118
+        panel_w = max(strip_w, 260)
+        panel_h = 96
+        px = (SCREEN_WIDTH - panel_w) // 2
+        py = SCREEN_HEIGHT - panel_h - 8
 
-        bg = pygame.Surface((panel_w + 8, 64))
-        bg.set_alpha(150)
+        bg = pygame.Surface((panel_w + 12, panel_h))
+        bg.set_alpha(165)
         bg.fill((0, 0, 0))
-        self.screen.blit(bg, (px - 4, py - 4))
+        self.screen.blit(bg, (px - 6, py - 4))
 
-        self.screen.blit(self.small_font.render(fd.name, True, COLOR_WHITE), (px, py))
-        info = (f"S{startup} A{active_n} R{recovery}   "
-                f"hit {fd.on_hit:+d}  blk {fd.on_block:+d}")
-        self.screen.blit(self.small_font.render(info, True, (200, 200, 200)), (px, py + 16))
+        def centered(surf, y):
+            self.screen.blit(surf, (px + (panel_w - surf.get_width()) // 2, y))
 
-        ty = py + 38
-        cur = max(0, min(player.state_frame, total - 1))
+        centered(self.small_font.render(fd.name, True, COLOR_WHITE), py)
+        info = (f"S{startup}  A{active_n}  R{recovery}    "
+                f"on hit {fd.on_hit:+d}    on block {fd.on_block:+d}")
+        centered(self.small_font.render(info, True, (200, 200, 200)), py + 16)
+
+        # Timeline strip (centered); the live frame is marked only while the move
+        # is still playing (during the linger there's no marker).
+        ty = py + 34
+        strip_x = px + (panel_w - strip_w) // 2
+        atk = latch["attacker"]
+        live = atk.is_attacking() and atk.state == latch["state"]
+        cur = max(0, min(atk.state_frame, total - 1)) if live else -1
         for i in range(total):
             if i < startup:
-                col = (110, 110, 110)      # startup
+                col = (110, 110, 110)
             elif i < startup + active_n:
-                col = (210, 60, 60)        # active
+                col = (210, 60, 60)
             else:
-                col = (70, 120, 210)       # recovery
-            cx = px + i * (cell_w + gap)
+                col = (70, 120, 210)
+            cx = strip_x + i * (cell_w + gap)
             pygame.draw.rect(self.screen, col, (cx, ty, cell_w, cell_h))
             if i == cur:
                 pygame.draw.rect(self.screen, COLOR_WHITE, (cx, ty, cell_w, cell_h), 1)
+
+        # Big frame-advantage number (left) + Damage / Combo / Total (right).
+        adv_col = (120, 230, 120) if fd.on_hit >= 0 else (235, 110, 110)
+        big = self._fd_big_font.render(f"{fd.on_hit:+d}", True, adv_col)
+        by = py + 50
+        self.screen.blit(big, (px + 6, by))
+        combo = {}
+        if hasattr(self.collision_system, "get_combo_info"):
+            combo = self.collision_system.get_combo_info(latch["defender_id"]) or {}
+        stats = [
+            ("Damage", combo.get("last_damage", 0)),
+            ("Combo", combo.get("count", 0)),
+            ("Total", combo.get("damage", 0)),
+        ]
+        sx = px + 6 + big.get_width() + 16
+        for k, (label, val) in enumerate(stats):
+            s = self.small_font.render(f"{label}: {val}", True, (235, 235, 120))
+            self.screen.blit(s, (sx, by + k * 16))
 
     def _training_debug(self) -> dict:
         """Training-display state for snapshots / F10 reports: recent inputs,

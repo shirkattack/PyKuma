@@ -34,6 +34,12 @@ _HOLD_STATES = frozenset({
     CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW,
 })
 
+# Animations authored on an oversized canvas with the body's horizontal travel
+# baked into the frames (Akuma's forward/back somersault jumps). These are
+# anchored by their opaque-pixel body center, not the canvas center, so physics
+# owns the horizontal travel and the body doesn't lurch. See Akuma.render().
+_BODY_ANCHORED_ANIMS = frozenset({"jump_forward", "jump_backward"})
+
 
 class Akuma(Character):
     """Akuma (Gouki) - The Master of the Fist."""
@@ -115,6 +121,8 @@ class Akuma(Character):
         # keyed by id(); get_bounding_rect scans pixels and would otherwise run
         # twice per frame per character.
         self._feet_pad_cache = {}
+        # Same idea for horizontal body-center anchoring (somersault jump clips).
+        self._body_center_cache = {}
 
         # Per-animation ground offsets for sprites with different layouts
         self.animation_ground_offsets = {
@@ -137,6 +145,7 @@ class Akuma(Character):
         # Projectile management
         self.projectiles = []  # List of active projectiles
         self.pending_projectile_strength = None  # Store strength for spawning
+        self.pending_projectile_air = False       # was the fireball started airborne?
     
     def _setup_animations(self):
         """Register every animation as a folder clip (single source of truth).
@@ -183,6 +192,10 @@ class Akuma(Character):
             ("gohadoken",          "akuma-fireball",    14,  2, False),
             ("goshoryuken",        "akuma-dp",          20,  2, False),
             ("tatsumaki",          "akuma-hurricane",   30,  2, False),
+            # throws
+            ("throw_forward",      "akuma-throw-forward", 17, 2, False),
+            ("throw_back",         "akuma-throw-back",    14, 2, False),
+            ("throw_miss",         "akuma-throw-miss",     6, 2, False),
         ]
         for name, folder, frames, dur, loop in specs:
             self.animation_controller.add_animation(
@@ -224,6 +237,7 @@ class Akuma(Character):
 
         self.projectiles.clear()
         self.pending_projectile_strength = None
+        self.pending_projectile_air = False
         self.animation_controller.play_animation("stance", force_restart=True)
 
     def _check_special_moves(self) -> bool:
@@ -288,6 +302,8 @@ class Akuma(Character):
             Button.HEAVY_PUNCH: "heavy"
         }
         self.pending_projectile_strength = strength_map.get(strength, "light")
+        # Airborne -> Akuma's air fireball (Zanku Hadou): down-forward trajectory.
+        self.pending_projectile_air = not self.is_grounded
 
         self._transition_to_state(CharacterState.GOHADOKEN)
 
@@ -418,10 +434,18 @@ class Akuma(Character):
                 play("jump_backward", force_restart=True)
             else:
                 play("jump_up", force_restart=True)
+        elif new_state == CharacterState.THROWING:
+            # Forward/back grab clip; if it whiffs, _on_throw_whiff swaps in the
+            # miss animation the same frame (the grab resolves in update()).
+            play("throw_back" if self.throw_is_back else "throw_forward", force_restart=True)
         else:
             name = self._STATE_ANIM.get(new_state)
             if name:
                 play(name, force_restart=True)
+
+    def _on_throw_whiff(self):
+        """A throw missed: play the whiff recovery clip."""
+        self.animation_controller.play_animation("throw_miss", force_restart=True)
 
     def get_debug_state(self) -> dict:
         """Extend the base debug state with live animation/sprite info."""
@@ -432,6 +456,21 @@ class Akuma(Character):
         state["feet_y"] = round(self.y + self.feet_offset, 1)
         state["projectiles"] = len(self.projectiles)
         return state
+
+    def _body_center_offset(self, sprite: pygame.Surface) -> int:
+        """Signed px from the canvas center to the body's opaque-pixel center.
+
+        Used to anchor baked-travel somersault clips by their body instead of
+        their (oversized) canvas. Cached per sprite surface; 0 for an empty frame.
+        Measured on the unflipped sprite; the caller negates it when flipped.
+        """
+        key = id(sprite)
+        off = self._body_center_cache.get(key)
+        if off is None:
+            bbox = sprite.get_bounding_rect()
+            off = (bbox.centerx - sprite.get_width() / 2) if bbox.width else 0
+            self._body_center_cache[key] = off
+        return off
 
     def _padding_below_feet(self, sprite: pygame.Surface) -> int:
         """Transparent pixels between the character's feet and the canvas bottom.
@@ -460,12 +499,25 @@ class Akuma(Character):
         # measured on the unflipped sprite (vertical extent is flip-invariant).
         pad_below_feet = self._padding_below_feet(sprite)
 
+        # The somersault jump clips (akuma-jumpf/jumpb) are authored on an
+        # oversized canvas with the body's horizontal travel BAKED into the frames
+        # (the body sweeps ~70px across a ~220px canvas). Re-centering that canvas
+        # on self.x every frame made the body lurch ~70px toward the opponent on
+        # the first airborne frame, then drift back -- the "weird forward movement
+        # before moving the right way". For those clips, anchor the body's actual
+        # opaque-pixel center to self.x so physics (velocity_x) owns the horizontal
+        # travel and the pose is lurch-free. Other clips keep canvas-center so
+        # intentional offsets (an extended punch arm) are preserved.
+        body_anchored = self.animation_controller.current_name in _BODY_ANCHORED_ANIMS
+        body_off = self._body_center_offset(sprite) if body_anchored else 0
+
         # Folder sprites face RIGHT, so flip when facing LEFT.
         if self.facing == FacingDirection.LEFT:
             sprite = pygame.transform.flip(sprite, True, False)
+            body_off = -body_off  # the body center mirrors with the sprite
 
         sprite_rect = sprite.get_rect()
-        sprite_rect.centerx = int(self.x)
+        sprite_rect.centerx = int(self.x - body_off)
         # Feet line shared with the debug box overlay (screen_feet_y); pad seats
         # the opaque pixels on the line regardless of transparent canvas.
         sprite_rect.bottom = int(self.screen_feet_y()) + pad_below_feet
@@ -512,17 +564,32 @@ class Akuma(Character):
                 # Speed based on strength: light=7, medium=9, heavy=11 pixels/frame
                 speed_map = {"light": 7.0, "medium": 9.0, "heavy": 11.0}
                 speed = speed_map.get(self.pending_projectile_strength, 7.0)
+                fwd = 1 if self.facing == FacingDirection.RIGHT else -1
+                velocity_x = speed * fwd
 
-                # Adjust velocity based on facing direction
-                velocity_x = speed if self.facing == FacingDirection.RIGHT else -speed
+                # Spawn at HAND height on the rendered body: the body is anchored
+                # at the feet line (self.y + feet_offset), so measure up from there
+                # -- NOT from self.y (the STAGE_FLOOR reference), which put the
+                # fireball ~75px above Akuma's hands. ground_y = the feet line so an
+                # air fireball dissipates at the visible ground, not at self.y.
+                feet_y = self.y + self.feet_offset
+                spawn_y = feet_y - 70
+                ground_y = feet_y
+                if self.pending_projectile_air:
+                    # Air fireball (Zanku Hadou): down-forward (~30deg). Provisional
+                    # angle pending decomp calibration.
+                    velocity_y = speed * 0.6
+                    spawn_x = self.x + 30 * fwd
+                else:
+                    velocity_y = 0.0
+                    spawn_x = self.x + 40 * fwd
 
-                # Spawn at character position (slightly in front, at chest height)
-                spawn_x = self.x + (40 if self.facing == FacingDirection.RIGHT else -40)
-                spawn_y = self.y - 60  # Chest height
-
-                projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing, self.pending_projectile_strength)
+                projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing,
+                                       self.pending_projectile_strength,
+                                       velocity_y=velocity_y, ground_y=ground_y)
                 self.projectiles.append(projectile)
                 self.pending_projectile_strength = None  # Clear after spawning
+                self.pending_projectile_air = False
 
         # GOHADOKEN/GOSHORYUKEN/TATSUMAKI now recover when their animation
         # completes (see update()); the per-state safety timeout still guards

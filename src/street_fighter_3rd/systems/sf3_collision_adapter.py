@@ -32,7 +32,7 @@ from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
 from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
 from ..data.hitbox_repository import HitboxRepository
-from ..characters.character import apply_reaction
+from ..characters.character import apply_reaction, JUGGLE_LIMIT
 from .vfx import HitSparkType
 
 # Hit spark strength by the attacking state.
@@ -121,7 +121,7 @@ class SF3CollisionAdapter:
         # Results from last collision check
         self.last_results: List[CollisionResult] = []
 
-    def tick(self):
+    def tick(self, *characters):
         """Advance the SF3 core by exactly one game frame.
 
         Must be called once per game frame, before any check_attack_collision
@@ -129,9 +129,27 @@ class SF3CollisionAdapter:
         check_attack_collision, which runs twice per frame (P1->P2, P2->P1) and
         made every frame-windowed mechanic inside the SF3 core half as long as
         specified.
+
+        Pass the live characters so combos can be expired deterministically when
+        their defender recovers from hitstun (see below).
         """
         self.frame_counter += 1
         self.sf3_system.update_frame(self.frame_counter)
+
+        # End any active combo whose defender has recovered from hitstun. A combo
+        # is a hitstun chain, so it ends the frame the defender leaves hitstun --
+        # this is what stops mashed jabs (recovery gaps between them) from racking
+        # up a fake multi-hit combo. Deterministic; replaces the old wall-clock
+        # timeout in the combo system.
+        if characters:
+            in_hitstun_by_id = {
+                getattr(c, "player_number", i + 1): bool(
+                    getattr(c, "in_hitstun", False)
+                    or getattr(c, "hitstun_frames", 0) > 0
+                )
+                for i, c in enumerate(characters)
+            }
+            self.sf3_combo_system.update(in_hitstun_by_id)
 
     def update_parry_inputs(self, character, input_state: Dict[str, bool]):
         """Update parry input tracking for a character.
@@ -183,8 +201,8 @@ class SF3CollisionAdapter:
         # Currently using direct damage application from hit_status
         hit_occurred = False
         if self.sf3_system.hit_queue_input > 0:
-            # Update combo system
-            self.sf3_combo_system.update()
+            # (Combo expiry is handled deterministically in tick(), driven by the
+            # defender's hitstun state -- not here, and not on a wall clock.)
 
             # Apply results back to characters directly from hit_status
             hit_occurred = self._apply_collision_results(attacker, defender, vfx_manager)
@@ -432,9 +450,16 @@ class SF3CollisionAdapter:
         return state_map.get(state, 0)
     
     def _is_throwing(self, character) -> bool:
-        """Check if character is attempting a throw"""
-        # For now, no throw states defined - could add later
-        return False
+        """Check if character is attempting a throw (LP+LK grab).
+
+        The grab itself is resolved deterministically in Character.update() (see
+        _attempt_throw); this just lets the SF3 collision core know a throw is
+        active. The throw deals no normal-hitbox damage, so this only gates the
+        throw-checking path.
+        """
+        from ..data.enums import CharacterState
+        return getattr(character, "state", None) in (
+            CharacterState.THROW_STARTUP, CharacterState.THROWING)
     
     def _apply_collision_results(self, attacker, defender, vfx_manager) -> bool:
         """Apply SF3 collision results back to our Character objects.
@@ -509,9 +534,25 @@ class SF3CollisionAdapter:
             self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
             return
 
-        # Register hit with combo system and get scaled damage
+        # Juggle limit: a launched (airborne) opponent can only be hit so many
+        # times before further air-hits whiff -- this is what ends an otherwise
+        # infinite juggle. The launcher itself connects (defender still grounded
+        # here); only follow-up air-hits are gated.
+        if not defender.is_grounded and getattr(defender, "juggle_count", 0) >= JUGGLE_LIMIT:
+            return
+
+        # Register hit with combo system and get scaled damage. Capture whether
+        # the defender is STILL reacting to a prior hit BEFORE we apply the new
+        # reaction below -- that's what tells the combo system this hit links into
+        # an ongoing combo vs. starts a fresh one (mashed jabs on a recovered
+        # defender must not rack up a fake combo count).
+        defender_in_hitstun = bool(
+            getattr(defender, "in_hitstun", False)
+            or getattr(defender, "hitstun_frames", 0) > 0
+        )
         scaled_damage = self.sf3_combo_system.register_hit(
-            attacker_id, defender_id, hit_status.damage, "normal"
+            attacker_id, defender_id, hit_status.damage, "normal",
+            defender_in_hitstun=defender_in_hitstun,
         )
 
         # Apply clamped damage and the reaction the attacking move causes
@@ -526,6 +567,13 @@ class SF3CollisionAdapter:
         kb_dir = 1.0 if attacker.x <= defender.x else -1.0
         apply_reaction(defender, hit_effect, hit_status.hitstun, knockback_vx=kb * kb_dir)
         attacker.attack_connected = True  # this attack has now connected
+
+        # Count this hit against the juggle cap if it left the defender airborne
+        # (a launch or an air-to-air follow-up). Reset to 0 on landing (Character
+        # _apply_physics). apply_reaction read the pre-increment count to scale the
+        # launch height, so increment AFTER it.
+        if not defender.is_grounded:
+            defender.juggle_count = getattr(defender, "juggle_count", 0) + 1
 
         # Hitstop scales with damage so heavy hits land harder (deterministic).
         hitstop = min(HITSTOP_MAX, HITSTOP_BASE + scaled_damage // HITSTOP_PER)

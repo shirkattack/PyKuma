@@ -3,13 +3,15 @@
 import pygame
 from street_fighter_3rd.systems.animation import AnimationController, SpriteManager, create_simple_animation
 from street_fighter_3rd.data.enums import FacingDirection
+from street_fighter_3rd.data.constants import STAGE_FLOOR
 
 
 class Projectile:
     """Base projectile class for fireballs and other projectiles."""
 
     def __init__(self, x: float, y: float, velocity_x: float, owner_facing: FacingDirection,
-                 damage: int, sprite_manager: SpriteManager = None):
+                 damage: int, sprite_manager: SpriteManager = None, velocity_y: float = 0.0,
+                 ground_y: float = STAGE_FLOOR):
         """Initialize a projectile.
 
         Args:
@@ -19,10 +21,16 @@ class Projectile:
             owner_facing: Direction the owner is facing
             damage: Damage dealt on hit
             sprite_manager: Sprite manager for animations (optional)
+            velocity_y: Vertical velocity (positive = down); 0 for a flat ground
+                fireball, positive for Akuma's down-forward air fireball.
+            ground_y: Y at which a descending projectile dissipates (the visible
+                feet/ground line, not necessarily STAGE_FLOOR).
         """
         self.x = x
         self.y = y
         self.velocity_x = velocity_x
+        self.velocity_y = velocity_y
+        self.ground_y = ground_y
         self.facing = owner_facing
         self.damage = damage
         self.active = True  # Becomes False when projectile should be removed
@@ -42,6 +50,7 @@ class Projectile:
 
         # Move projectile
         self.x += self.velocity_x
+        self.y += self.velocity_y
 
         # Update animation
         if self.animation_controller:
@@ -49,6 +58,10 @@ class Projectile:
 
         # Remove if off screen (assuming 896px wide screen with some margin)
         if self.x < -100 or self.x > 1000:
+            self.active = False
+        # A descending (air) fireball dissipates when it reaches the ground.
+        if self.velocity_y > 0 and self.y >= self.ground_y:
+            self.y = self.ground_y
             self.active = False
 
     def render(self, screen: pygame.Surface):
@@ -100,7 +113,7 @@ class Gohadoken(Projectile):
     """Akuma's fireball projectile."""
 
     def __init__(self, x: float, y: float, velocity_x: float, owner_facing: FacingDirection,
-                 strength: str = "light"):
+                 strength: str = "light", velocity_y: float = 0.0, ground_y: float = STAGE_FLOOR):
         """Initialize a Gohadoken.
 
         Args:
@@ -109,6 +122,7 @@ class Gohadoken(Projectile):
             velocity_x: Horizontal velocity (already accounts for facing)
             owner_facing: Direction the owner is facing
             strength: "light", "medium", or "heavy" (affects speed/damage)
+            velocity_y: Vertical velocity (positive = down) for the air fireball.
         """
         # Damage based on strength
         damage_values = {"light": 60, "medium": 70, "heavy": 80}
@@ -118,26 +132,49 @@ class Gohadoken(Projectile):
         sprite_directory = "assets/characters/akuma/sprite_sheets"
         sprite_manager = SpriteManager(sprite_directory)
 
-        super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager)
+        super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager,
+                         velocity_y=velocity_y, ground_y=ground_y)
 
         # Hitbox for fireball
         self.hitbox_width = 60
         self.hitbox_height = 60
 
-        # Setup animation
-        self._setup_animation()
+        # PLACEHOLDER VFX: we don't have an extracted fireball-PROJECTILE sprite
+        # yet (sprites 19201-19220 and the akuma-fireball* folders are all
+        # character-sized THROW frames, not the flying ball). Until a real sprite
+        # is sourced, render a procedural energy ball (see render()). animation_
+        # controller stays None so the base sprite path is skipped.
+        self.animation_controller = None
+        self._anim_t = 0  # for a little pulsing animation
 
-    def _setup_animation(self):
-        """Setup Gohadoken animation."""
-        self.animation_controller = AnimationController(self.sprite_manager)
+    def update(self):
+        super().update()
+        self._anim_t += 1
 
-        # Gohadoken projectile animation (spinning fireball)
-        # Sprites 19201-19220 (20 frames of spinning fireball)
-        gohadoken_projectile_anim = create_simple_animation(
-            [19201, 19202, 19203, 19204, 19205, 19206, 19207, 19208, 19209, 19210,
-             19211, 19212, 19213, 19214, 19215, 19216, 19217, 19218, 19219, 19220],
-            frame_duration=2,  # Hold each frame for 2 game frames
-            loop=True  # Loop the spinning animation
-        )
-        self.animation_controller.add_animation("projectile", gohadoken_projectile_anim)
-        self.animation_controller.play_animation("projectile")
+    def render(self, screen: pygame.Surface):
+        """Procedural Gohadoken energy ball (placeholder for the real sprite).
+
+        Layered translucent orbs (outer glow -> core) with a short trail behind
+        the direction of travel, drawn at native scale into the world buffer (the
+        camera then zooms it). Pulses slightly so it reads as energy.
+        """
+        if not self.active:
+            return
+        d = 1 if self.facing == FacingDirection.RIGHT else -1
+        pulse = 2 if (self._anim_t // 3) % 2 == 0 else 0
+        w, h = 96, 56
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx, cy = 66, h // 2  # ball centered toward the front; trail to the left
+        # trailing comet tail (behind travel)
+        for i, tx in enumerate((48, 34, 22)):
+            a = 70 - i * 20
+            pygame.draw.circle(surf, (255, 110, 0, a), (tx, cy), 9 - i * 2)
+        # outer glow -> mid -> bright core
+        pygame.draw.circle(surf, (255, 120, 0, 110), (cx, cy), 18 + pulse)
+        pygame.draw.circle(surf, (255, 180, 50, 180), (cx, cy), 13 + pulse)
+        pygame.draw.circle(surf, (255, 235, 170, 255), (cx, cy), 8)
+        pygame.draw.circle(surf, (255, 255, 255, 255), (cx, cy), 4)
+        if d < 0:
+            surf = pygame.transform.flip(surf, True, False)
+        rect = surf.get_rect(center=(int(self.x), int(self.y)))
+        screen.blit(surf, rect)

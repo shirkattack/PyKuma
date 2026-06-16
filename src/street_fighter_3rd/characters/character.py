@@ -37,6 +37,28 @@ _CROUCH_STATES = frozenset({
     CharacterState.CROUCH_LIGHT_KICK, CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK,
 })
 
+# An opponent in one of these states can't be thrown (airborne, already
+# staggered, or themselves throwing). Throws only catch a grounded, actionable
+# or recovering opponent.
+_UNTHROWABLE_STATES = frozenset({
+    CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
+    CharacterState.HITSTUN_AIRBORNE, CharacterState.KNOCKDOWN,
+    CharacterState.THROW_STARTUP, CharacterState.THROWING,
+    CharacterState.THROWN, CharacterState.TECH_THROW,
+    CharacterState.JUMP_STARTUP, CharacterState.JUMPING,
+    CharacterState.JUMPING_FORWARD, CharacterState.JUMPING_BACKWARD,
+})
+
+# States from which a LP+LK throw may be initiated. Light normals are included so
+# a throw still comes out when the two buttons land a frame apart (the first
+# press briefly starts a jab, which the throw then overrides -- lights are
+# cancelable).
+_THROWABLE_FROM_STATES = frozenset({
+    CharacterState.STANDING,
+    CharacterState.WALKING_FORWARD, CharacterState.WALKING_BACKWARD,
+    CharacterState.LIGHT_PUNCH, CharacterState.LIGHT_KICK,
+})
+
 # Recovery for these reaction states is governed by hitstun_frames / physics,
 # not by animation completion, so a character subclass should hold them.
 LAUNCH_HITSTUN = 60     # generous; physics lands the character before it expires
@@ -48,6 +70,26 @@ HITSTUN_FRICTION = 0.80  # per-frame decay of grounded knockback velocity
 # ~288px off-screen for 82f and blew past the airborne timeout. Provisional pending
 # ROM/decomp juggle calibration.
 LAUNCH_VELOCITY = -9.0
+
+# Juggle limiting (prevents infinite juggles). A launched opponent can be hit at
+# most JUGGLE_LIMIT times during one airborne sequence; further air-hits whiff
+# (enforced in the collision adapter). Each successive launch also pops lower
+# (JUGGLE_LAUNCH_DECAY) so re-launchers can't keep them up forever. The mechanic
+# mirrors 3S's juggle counter; the exact per-move juggle potentials live in the
+# decomp -- these globals are conservative (name_source: inferred) until those
+# values are extracted. See data sourcing rules.
+JUGGLE_LIMIT = 3
+JUGGLE_LAUNCH_DECAY = 0.18   # each prior juggle hit shrinks the next launch by this
+JUGGLE_LAUNCH_FLOOR = 0.45   # but never below this fraction of LAUNCH_VELOCITY
+
+# Throws (universal LP+LK grab). Values mirror the shoto throw data in
+# shoto_base.py (180 dmg, ~3+2+25 frames). THROW_RANGE is the grab reach from
+# center -- a bit beyond the ~50px pushbox contact. Provisional, tagged inferred
+# pending ROM/decomp throw calibration.
+THROW_RANGE = 72
+THROW_DAMAGE = 180
+THROW_HITSTUN = 40
+THROW_TOTAL_FRAMES = 30
 
 
 def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx: float = 0.0):
@@ -63,7 +105,12 @@ def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx:
     character.in_hitstun = True
     character.velocity_x = knockback_vx
     if hit_effect == HitEffect.JUGGLE:
-        character.velocity_y = LAUNCH_VELOCITY
+        # Each prior juggle hit pops the character progressively lower, so a
+        # re-launcher can't keep them airborne forever (the hard cap is enforced
+        # by JUGGLE_LIMIT in the collision adapter).
+        decay = max(JUGGLE_LAUNCH_FLOOR,
+                    1.0 - JUGGLE_LAUNCH_DECAY * getattr(character, "juggle_count", 0))
+        character.velocity_y = LAUNCH_VELOCITY * decay
         character.is_grounded = False
         character.hitstun_frames = LAUNCH_HITSTUN
         character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
@@ -148,6 +195,17 @@ class Character:
         self.blockstun_frames = 0
         self.hitfreeze_frames = 0  # Frames of hit freeze (hitstop)
         self.hitflash_frames = 0  # Frames of white flash on hit
+        # Juggle counter: number of times this character has been hit during the
+        # CURRENT airborne sequence. Reset to 0 on landing (_apply_physics). The
+        # collision adapter caps air-hits by JUGGLE_LIMIT so a launched opponent
+        # can't be juggled forever, and apply_reaction shrinks each re-launch.
+        self.juggle_count = 0
+        # Throw bookkeeping (LP+LK grab). _throw_pending = a throw was started this
+        # frame and still needs to be resolved against the opponent (done in
+        # update(), which has the opponent). throw_is_back picks the throw variant.
+        self.throw_is_back = False
+        self._throw_pending = False
+        self._threw_successfully = False
 
         # State flags
         self.is_grounded = True
@@ -268,6 +326,10 @@ class Character:
             CharacterState.GOSHORYUKEN,
             CharacterState.TATSUMAKI,
 
+            # Can't cancel a throw (startup or the grab/whiff itself)
+            CharacterState.THROW_STARTUP,
+            CharacterState.THROWING,
+
             # Can't cancel hit reactions
             CharacterState.HITSTUN_STANDING,
             CharacterState.HITSTUN_CROUCHING,
@@ -337,6 +399,11 @@ class Character:
         # Update based on current state
         self._update_state()
 
+        # Resolve a throw started this frame now that we have the opponent.
+        if self._throw_pending:
+            self._throw_pending = False
+            self._attempt_throw(opponent)
+
         # Apply physics
         self._apply_physics()
 
@@ -395,6 +462,10 @@ class Character:
 
         direction = self.input.get_direction()
 
+        # Throw (LP+LK) takes priority over normals so a jab doesn't pre-empt it.
+        if self._check_throw():
+            return
+
         # Check for special moves first (highest priority)
         if self._check_special_moves():
             return
@@ -405,6 +476,60 @@ class Character:
 
         # Check for movement
         self._check_movement(direction)
+
+    def _check_throw(self) -> bool:
+        """Trigger a throw on a LP+LK press near the opponent.
+
+        Fires when both light buttons are held and at least one was just pressed
+        this frame (so a 1-frame stagger still throws), from a standing/walking
+        state or a just-started light normal. The grab itself is resolved in
+        update() (which has the opponent); here we only enter THROWING and record
+        the variant. Returns True if a throw was started.
+        """
+        if not self.input or not self.is_grounded:
+            return False
+        if self.state not in _THROWABLE_FROM_STATES:
+            return False
+        lp = Button.LIGHT_PUNCH in self.input.buttons_held
+        lk = Button.LIGHT_KICK in self.input.buttons_held
+        if not (lp and lk):
+            return False
+        if not (self.input.is_button_just_pressed(Button.LIGHT_PUNCH)
+                or self.input.is_button_just_pressed(Button.LIGHT_KICK)):
+            return False
+        # Direction is facing-relative (FORWARD = toward opponent); holding away
+        # selects the back throw.
+        d = self.input.get_direction()
+        self.throw_is_back = d in (InputDirection.BACK, InputDirection.DOWN_BACK,
+                                   InputDirection.UP_BACK)
+        self._throw_pending = True
+        self._transition_to_state(CharacterState.THROWING)
+        return True
+
+    def _attempt_throw(self, opponent: 'Character'):
+        """Resolve a started throw against the opponent: grab + damage if a
+        grounded, throwable opponent is in range; otherwise it whiffs."""
+        in_range = abs(self.x - opponent.x) <= THROW_RANGE
+        throwable = (opponent.is_grounded
+                     and not opponent.in_hitstun
+                     and not getattr(opponent, "is_invincible", False)
+                     and opponent.state not in _UNTHROWABLE_STATES)
+        if in_range and throwable:
+            opponent.health = max(0, opponent.health - THROW_DAMAGE)
+            apply_reaction(opponent, HitEffect.KNOCKDOWN, THROW_HITSTUN)
+            # A forward throw tosses them behind you (side switch); a back throw
+            # leaves them in front. Position is clamped/un-overlapped afterward.
+            face = 1 if self.is_facing_right() else -1
+            sign = 1 if self.throw_is_back else -1
+            opponent.x = self.x + sign * face * 60
+            self._threw_successfully = True
+        else:
+            self._threw_successfully = False
+            self._on_throw_whiff()
+
+    def _on_throw_whiff(self):
+        """Hook: a throw missed. Subclasses swap to the whiff animation."""
+        pass
 
     def _check_special_moves(self) -> bool:
         """Check for special move inputs.
@@ -619,22 +744,27 @@ class Character:
             # (physics.yaml). 95 / 14 ~= 6.8 px/frame.
             dash_speed = 6.8  # pixels per frame
             move_dir = 1 if self.is_facing_right() else -1
-            self.velocity_x = dash_speed * move_dir
-
-            # Return to standing after dash animation completes (14 frames)
+            # Return to standing after dash animation completes (14 frames).
+            # Settle to 0 on the final frame so no leftover dash velocity lunges
+            # into (and shoves) the opponent the frame after the dash ends.
             if self.state_frame >= 14:
+                self.velocity_x = 0
                 self._transition_to_state(CharacterState.STANDING)
+            else:
+                self.velocity_x = dash_speed * move_dir
 
         elif self.state == CharacterState.DASH_BACKWARD:
             # Backward dash - ROM-measured ~45px over the 9-frame clip
             # (physics.yaml). 45 / 9 = 5.0 px/frame.
             dash_speed = 5.0  # pixels per frame
             move_dir = -1 if self.is_facing_right() else 1
-            self.velocity_x = dash_speed * move_dir
-
-            # Return to standing after dash animation completes (9 frames)
+            # Return to standing after dash animation completes (9 frames);
+            # settle to 0 on the final frame (see forward-dash note above).
             if self.state_frame >= 9:
+                self.velocity_x = 0
                 self._transition_to_state(CharacterState.STANDING)
+            else:
+                self.velocity_x = dash_speed * move_dir
 
         # Attack states - handle recovery.
         # Placeholder timing until per-move frame data drives this (see the
@@ -655,6 +785,12 @@ class Character:
             self.velocity_x = 0
             if self.state_frame >= 20:
                 self._transition_to_state(CharacterState.CROUCHING)
+
+        elif self.state == CharacterState.THROWING:
+            # Throw (grab or whiff) is stationary; recover to STANDING.
+            self.velocity_x = 0
+            if self.state_frame >= THROW_TOTAL_FRAMES:
+                self._transition_to_state(CharacterState.STANDING)
 
         elif self.state in (CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
                             CharacterState.KNOCKDOWN):
@@ -680,6 +816,7 @@ class Character:
             self.velocity_y = 0
             if not self.is_grounded:
                 self.is_grounded = True
+                self.juggle_count = 0  # landed: a new airborne sequence resets the juggle cap
                 self._transition_to_state(CharacterState.STANDING)
         else:
             self.is_grounded = False
@@ -731,12 +868,25 @@ class Character:
         left_moving = abs(left.velocity_x) > 0.1 and left.velocity_x > 0   # moving right, toward right
         right_moving = abs(right.velocity_x) > 0.1 and right.velocity_x < 0  # moving left, toward left
 
+        _DASH = (CharacterState.DASH_FORWARD, CharacterState.DASH_BACKWARD)
+
         if left_moving and not right_moving:
-            # left walks/dashes into right: left advances to contact, right is pushed.
-            right.x = left.x + min_distance
+            if left.state in _DASH:
+                # A dash stops AT the pushbox contact line -- it does not shove the
+                # opponent across the screen (that read as the dasher "going
+                # through" them). Clamp the dasher back to contact; leave the
+                # opponent put. (Re-clamped every dash frame since _update_state
+                # re-applies dash velocity.)
+                left.x = right.x - min_distance
+            else:
+                # walk into the opponent: advance to contact, nudge them along.
+                right.x = left.x + min_distance
             left.velocity_x = 0
         elif right_moving and not left_moving:
-            left.x = right.x - min_distance
+            if right.state in _DASH:
+                right.x = left.x + min_distance
+            else:
+                left.x = right.x - min_distance
             right.velocity_x = 0
         else:
             # both (or neither) pressing in: split the correction 50/50.
@@ -920,6 +1070,10 @@ class Character:
         self.blockstun_frames = 0
         self.hitfreeze_frames = 0
         self.hitflash_frames = 0
+        self.juggle_count = 0
+        self.throw_is_back = False
+        self._throw_pending = False
+        self._threw_successfully = False
 
         self.is_grounded = True
         self.can_act = True

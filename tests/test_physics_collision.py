@@ -47,6 +47,20 @@ def test_dash_into_opponent_never_crosses_over_many_frames():
         assert (b.x - a.x) >= min_d - 1.0, "must stay ~pushbox apart (no tunnelling)"
 
 
+def test_dash_into_opponent_does_not_shove_them():
+    # B9: a forward dash stops AT the pushbox contact line; it must not push the
+    # standing opponent across the screen (that read as dashing "through" them),
+    # and no leftover dash velocity may lunge into them after the dash ends.
+    a = Akuma(200, STAGE_FLOOR, player_number=1); a.input = PlayerInput(1)
+    b = Akuma(300, STAGE_FLOOR, player_number=2); b.input = PlayerInput(2)
+    a.is_grounded = b.is_grounded = True
+    b_start = b.x
+    a._transition_to_state(CharacterState.DASH_FORWARD)
+    for _ in range(30):
+        a.update(b); b.update(a)
+    assert abs(b.x - b_start) < 1.0, "a standing opponent must not be shoved by a dash"
+
+
 def test_facing_stable_while_dashing_in():
     a = Akuma(200, STAGE_FLOOR, player_number=1); a.input = PlayerInput(1)
     b = Akuma(300, STAGE_FLOOR, player_number=2); b.input = PlayerInput(2)

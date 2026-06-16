@@ -36,17 +36,35 @@ def test_sf3_collision_adapter():
 
 
 def test_combo_system():
-    """Standalone combo system applies SF3 damage scaling per hit."""
+    """Standalone combo system applies SF3 damage scaling per hit.
+
+    A combo only continues while the defender is still in hitstun, so hits 2/3
+    pass defender_in_hitstun=True to express a genuine 3-hit combo.
+    """
     combo_system = SF3ComboSystem()
 
     scaled_damage_1 = combo_system.register_hit(1, 2, 100, "normal")  # 1st hit
-    scaled_damage_2 = combo_system.register_hit(1, 2, 100, "normal")  # 2nd hit
-    scaled_damage_3 = combo_system.register_hit(1, 2, 100, "normal")  # 3rd hit
+    scaled_damage_2 = combo_system.register_hit(1, 2, 100, "normal", defender_in_hitstun=True)  # 2nd hit
+    scaled_damage_3 = combo_system.register_hit(1, 2, 100, "normal", defender_in_hitstun=True)  # 3rd hit
 
     print(f"Damage scaling: 100 -> {scaled_damage_1}, {scaled_damage_2}, {scaled_damage_3}")
     assert scaled_damage_1 == 100, f"1st hit must be unscaled, got {scaled_damage_1}"
     assert scaled_damage_2 == 90, f"2nd hit must scale to 90, got {scaled_damage_2}"
     assert scaled_damage_3 == 80, f"3rd hit must scale to 80, got {scaled_damage_3}"
+
+
+def test_combo_resets_when_defender_recovers():
+    """Mashing on a recovered defender must NOT rack a fake multi-hit combo.
+
+    Each hit lands with defender_in_hitstun=False (the defender recovered between
+    hits), so every hit is a fresh 1-hit combo at full, unscaled damage -- not a
+    growing combo counter. This is the B1 fix for the clip's bogus "7 HITS".
+    """
+    combo_system = SF3ComboSystem()
+    for _ in range(7):
+        dmg = combo_system.register_hit(1, 2, 100, "normal", defender_in_hitstun=False)
+        assert dmg == 100, "a hit on a recovered defender is unscaled (new combo)"
+        assert combo_system.get_combo_count(2) == 1, "must never exceed a 1-hit combo"
 
 
 def test_yaml_hitbox_loading():

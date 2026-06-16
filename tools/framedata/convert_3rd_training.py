@@ -59,6 +59,8 @@ COMBAT_MAP = {
     "MEDIUM_KICK":         ("standing_medium_kick",   "HIGH", "NORMAL",    16, 13),
     "HEAVY_KICK":          ("standing_heavy_kick",    "HIGH", "NORMAL",    20, 15),
     "CROUCH_LIGHT_PUNCH":  ("crouching_light_punch",  "MID",  "NORMAL",    12, 10),
+    "CROUCH_MEDIUM_PUNCH": ("crouching_medium_punch", "MID",  "NORMAL",    15, 12),
+    "CROUCH_HEAVY_PUNCH":  ("crouching_heavy_punch",  "MID",  "NORMAL",    18, 14),
     "CROUCH_LIGHT_KICK":   ("crouching_light_kick",   "LOW",  "NORMAL",    13, 11),
     "CROUCH_MEDIUM_KICK":  ("crouching_medium_kick",  "LOW",  "NORMAL",    16, 13),
     "CROUCH_HEAVY_KICK":   ("crouching_heavy_kick",   "LOW",  "KNOCKDOWN", 20, 15),

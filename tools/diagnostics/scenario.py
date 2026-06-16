@@ -161,4 +161,44 @@ def launch_recovery() -> Scenario:
         p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.HEAVY_PUNCH) + hold(None, 107))
 
 
-SEED_SCENARIOS = {s.name: s for s in (jump_arc(), jab_knockback(), launch_recovery())}
+def qcf(button: Button) -> List[FrameInput]:
+    """A quarter-circle-forward motion ending in `button` (236+btn)."""
+    return (hold(InputDirection.DOWN, 2) + hold(InputDirection.DOWN_FORWARD, 2)
+            + [(InputDirection.FORWARD, [button])])
+
+
+def crouch_hp() -> Scenario:
+    """P1 crouching HP point-blank into P2 (regression: cr.HP used to do 0 damage
+    because CROUCH_HEAVY_PUNCH had no ROM move mapped)."""
+    return Scenario(
+        name="crouch_hp", frames=40,
+        p1={"x": 320, "facing": "R"}, p2={"x": 380, "facing": "L"},
+        p1_inputs=hold(InputDirection.DOWN, 4) + [(InputDirection.DOWN, [Button.HEAVY_PUNCH])]
+                  + hold(InputDirection.DOWN, 35))
+
+
+def mash_jabs() -> Scenario:
+    """P1 mashes st.LP point-blank into P2 with recovery gaps between presses.
+
+    Regression for the clip's bogus "7 HITS": jabs separated by enough idle
+    frames let P2 leave hitstun between hits, so each is its own 1-hit combo --
+    the combo counter must NOT accumulate into a multi-hit combo.
+    """
+    one_jab = tap(Button.LIGHT_PUNCH) + hold(None, 9)   # press, then idle to recover
+    return Scenario(
+        name="mash_jabs", frames=70,
+        p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},
+        p1_inputs=one_jab * 6)
+
+
+def fireball() -> Scenario:
+    """P1 throws a Gohadoken (QCF+LP); the projectile should travel forward."""
+    return Scenario(
+        name="fireball", frames=55,
+        p1={"x": 250, "facing": "R"}, p2={"x": 640, "facing": "L"},
+        p1_inputs=qcf(Button.LIGHT_PUNCH) + hold(None, 50))
+
+
+SEED_SCENARIOS = {s.name: s for s in
+                  (jump_arc(), jab_knockback(), launch_recovery(), fireball(),
+                   crouch_hp(), mash_jabs())}

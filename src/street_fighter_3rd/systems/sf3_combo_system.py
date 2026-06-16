@@ -15,7 +15,6 @@ References:
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
-import time
 
 from street_fighter_3rd.util.logging_config import get_logger
 
@@ -92,10 +91,7 @@ class SF3ComboSystem:
         0.20,  # 9th hit - 20%
         0.10,  # 10th+ hit - 10%
     ]
-    
-    # Combo timeout (if no hit for this many seconds, combo ends)
-    COMBO_TIMEOUT_SECONDS = 2.0
-    
+
     def __init__(self):
         # Combo state for each player (who is being comboed)
         self.player_combo_states: Dict[int, SF3ComboState] = {
@@ -103,29 +99,36 @@ class SF3ComboSystem:
             2: SF3ComboState()
         }
     
-    def register_hit(self, attacker_id: int, defender_id: int, base_damage: int, 
-                    hit_type: str = "normal") -> int:
+    def register_hit(self, attacker_id: int, defender_id: int, base_damage: int,
+                    hit_type: str = "normal", defender_in_hitstun: bool = False) -> int:
         """
         Register a hit and apply damage scaling
-        
+
         Args:
             attacker_id: ID of attacking player
-            defender_id: ID of defending player  
+            defender_id: ID of defending player
             base_damage: Base damage before scaling
             hit_type: Type of hit (normal, special, super)
-            
+            defender_in_hitstun: True if the defender was ALREADY in a hit reaction
+                when this hit landed. A combo is a chain the defender can't recover
+                between, so the counter only continues while this is True; a hit on
+                a recovered defender starts a fresh combo. This is the real combo
+                rule and is deterministic, unlike the old wall-clock timeout (which
+                counted mashed jabs with recovery gaps as one long combo).
+
         Returns:
             Scaled damage amount
         """
-        current_time = time.time()
+        # Timestamps are informational only (combo logic is driven by
+        # defender_in_hitstun / update(), not the clock); keep them deterministic.
+        current_time = 0.0
         combo_state = self.player_combo_states[defender_id]
-        
-        # Check if this continues an existing combo or starts a new one
-        if self._should_continue_combo(combo_state, current_time):
-            # Continue existing combo
+
+        # Continue only if the defender hasn't recovered since the last hit;
+        # otherwise start a fresh combo.
+        if combo_state.combo_active and defender_in_hitstun:
             combo_state.combo_count += 1
         else:
-            # Start new combo
             self._start_new_combo(combo_state, current_time)
         
         # Apply damage scaling
@@ -148,21 +151,9 @@ class SF3ComboSystem:
         self._update_scaling_factors(combo_state)
         
         log.debug("Combo Hit #%s: %s -> %s damage", combo_state.combo_count, base_damage, scaled_damage)
-        
+
         return scaled_damage
-    
-    def _should_continue_combo(self, combo_state: SF3ComboState, current_time: float) -> bool:
-        """Check if this hit should continue the current combo"""
-        if not combo_state.combo_active:
-            return False
-        
-        # Check timeout
-        time_since_last_hit = current_time - combo_state.last_hit_time
-        if time_since_last_hit > self.COMBO_TIMEOUT_SECONDS:
-            return False
-        
-        return True
-    
+
     def _start_new_combo(self, combo_state: SF3ComboState, current_time: float):
         """Start a new combo"""
         combo_state.reset()
@@ -196,25 +187,30 @@ class SF3ComboSystem:
         if combo_state.combo_type == SF3ComboType.JUGGLE:
             combo_state.gravity_scaling = max(0.5, 1.0 - (combo_state.combo_count * 0.1))
     
-    def end_combo(self, player_id: int, reason: str = "timeout"):
+    def end_combo(self, player_id: int, reason: str = "recovered"):
         """End a combo for a player"""
         combo_state = self.player_combo_states[player_id]
-        
+
         if combo_state.combo_active and combo_state.combo_count > 1:
-            combo_duration = time.time() - combo_state.combo_start_time
-            log.debug("COMBO ENDED: %s hits, %s damage, %.1fs (%s)", combo_state.combo_count, combo_state.combo_damage, combo_duration, reason)
-        
+            log.debug("COMBO ENDED: %s hits, %s damage (%s)",
+                      combo_state.combo_count, combo_state.combo_damage, reason)
+
         combo_state.combo_active = False
-    
-    def update(self):
-        """Update combo system (check for timeouts)"""
-        current_time = time.time()
-        
+
+    def update(self, in_hitstun_by_id: Optional[Dict[int, bool]] = None):
+        """End any active combo whose defender has recovered from hitstun.
+
+        A combo is a chain of hits the defender cannot recover between, so it
+        ends the moment the defender leaves hitstun -- NOT on a wall-clock
+        timeout (the old behavior, which both counted mashed jabs with recovery
+        gaps as one long combo and was non-deterministic). Call once per frame
+        with each player's current in-hitstun status.
+        """
+        if not in_hitstun_by_id:
+            return
         for player_id, combo_state in self.player_combo_states.items():
-            if combo_state.combo_active:
-                time_since_last_hit = current_time - combo_state.last_hit_time
-                if time_since_last_hit > self.COMBO_TIMEOUT_SECONDS:
-                    self.end_combo(player_id, "timeout")
+            if combo_state.combo_active and not in_hitstun_by_id.get(player_id, False):
+                self.end_combo(player_id, "recovered")
     
     def get_combo_count(self, player_id: int) -> int:
         """Get current combo count for a player"""
@@ -250,6 +246,7 @@ class SF3ComboSystem:
         return {
             'count': combo_state.combo_count,
             'damage': combo_state.combo_damage,
+            'last_damage': combo_state.combo_hits[-1].scaled_damage if combo_state.combo_hits else 0,
             'active': combo_state.combo_active,
             'scaling': combo_state.damage_scaling,
             'type': combo_state.combo_type.value
