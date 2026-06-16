@@ -3,13 +3,14 @@
 import pygame
 from street_fighter_3rd.systems.animation import AnimationController, SpriteManager, create_simple_animation
 from street_fighter_3rd.data.enums import FacingDirection
+from street_fighter_3rd.data.constants import STAGE_FLOOR
 
 
 class Projectile:
     """Base projectile class for fireballs and other projectiles."""
 
     def __init__(self, x: float, y: float, velocity_x: float, owner_facing: FacingDirection,
-                 damage: int, sprite_manager: SpriteManager = None):
+                 damage: int, sprite_manager: SpriteManager = None, velocity_y: float = 0.0):
         """Initialize a projectile.
 
         Args:
@@ -19,10 +20,13 @@ class Projectile:
             owner_facing: Direction the owner is facing
             damage: Damage dealt on hit
             sprite_manager: Sprite manager for animations (optional)
+            velocity_y: Vertical velocity (positive = down); 0 for a flat ground
+                fireball, positive for Akuma's down-forward air fireball.
         """
         self.x = x
         self.y = y
         self.velocity_x = velocity_x
+        self.velocity_y = velocity_y
         self.facing = owner_facing
         self.damage = damage
         self.active = True  # Becomes False when projectile should be removed
@@ -42,6 +46,7 @@ class Projectile:
 
         # Move projectile
         self.x += self.velocity_x
+        self.y += self.velocity_y
 
         # Update animation
         if self.animation_controller:
@@ -49,6 +54,10 @@ class Projectile:
 
         # Remove if off screen (assuming 896px wide screen with some margin)
         if self.x < -100 or self.x > 1000:
+            self.active = False
+        # A descending (air) fireball dissipates when it reaches the ground.
+        if self.velocity_y > 0 and self.y >= STAGE_FLOOR:
+            self.y = STAGE_FLOOR
             self.active = False
 
     def render(self, screen: pygame.Surface):
@@ -100,7 +109,7 @@ class Gohadoken(Projectile):
     """Akuma's fireball projectile."""
 
     def __init__(self, x: float, y: float, velocity_x: float, owner_facing: FacingDirection,
-                 strength: str = "light"):
+                 strength: str = "light", velocity_y: float = 0.0):
         """Initialize a Gohadoken.
 
         Args:
@@ -109,6 +118,7 @@ class Gohadoken(Projectile):
             velocity_x: Horizontal velocity (already accounts for facing)
             owner_facing: Direction the owner is facing
             strength: "light", "medium", or "heavy" (affects speed/damage)
+            velocity_y: Vertical velocity (positive = down) for the air fireball.
         """
         # Damage based on strength
         damage_values = {"light": 60, "medium": 70, "heavy": 80}
@@ -118,7 +128,8 @@ class Gohadoken(Projectile):
         sprite_directory = "assets/characters/akuma/sprite_sheets"
         sprite_manager = SpriteManager(sprite_directory)
 
-        super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager)
+        super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager,
+                         velocity_y=velocity_y)
 
         # Hitbox for fireball
         self.hitbox_width = 60

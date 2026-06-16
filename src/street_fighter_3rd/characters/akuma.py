@@ -137,6 +137,7 @@ class Akuma(Character):
         # Projectile management
         self.projectiles = []  # List of active projectiles
         self.pending_projectile_strength = None  # Store strength for spawning
+        self.pending_projectile_air = False       # was the fireball started airborne?
     
     def _setup_animations(self):
         """Register every animation as a folder clip (single source of truth).
@@ -224,6 +225,7 @@ class Akuma(Character):
 
         self.projectiles.clear()
         self.pending_projectile_strength = None
+        self.pending_projectile_air = False
         self.animation_controller.play_animation("stance", force_restart=True)
 
     def _check_special_moves(self) -> bool:
@@ -288,6 +290,8 @@ class Akuma(Character):
             Button.HEAVY_PUNCH: "heavy"
         }
         self.pending_projectile_strength = strength_map.get(strength, "light")
+        # Airborne -> Akuma's air fireball (Zanku Hadou): down-forward trajectory.
+        self.pending_projectile_air = not self.is_grounded
 
         self._transition_to_state(CharacterState.GOHADOKEN)
 
@@ -512,17 +516,26 @@ class Akuma(Character):
                 # Speed based on strength: light=7, medium=9, heavy=11 pixels/frame
                 speed_map = {"light": 7.0, "medium": 9.0, "heavy": 11.0}
                 speed = speed_map.get(self.pending_projectile_strength, 7.0)
+                fwd = 1 if self.facing == FacingDirection.RIGHT else -1
+                velocity_x = speed * fwd
 
-                # Adjust velocity based on facing direction
-                velocity_x = speed if self.facing == FacingDirection.RIGHT else -speed
+                if self.pending_projectile_air:
+                    # Air fireball (Zanku Hadou): launched down-forward from the
+                    # air so it angles toward the ground (~30deg). Provisional
+                    # angle pending decomp calibration.
+                    velocity_y = speed * 0.6
+                    spawn_x = self.x + 30 * fwd
+                    spawn_y = self.y - 40
+                else:
+                    velocity_y = 0.0
+                    spawn_x = self.x + 40 * fwd
+                    spawn_y = self.y - 60  # chest height
 
-                # Spawn at character position (slightly in front, at chest height)
-                spawn_x = self.x + (40 if self.facing == FacingDirection.RIGHT else -40)
-                spawn_y = self.y - 60  # Chest height
-
-                projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing, self.pending_projectile_strength)
+                projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing,
+                                       self.pending_projectile_strength, velocity_y=velocity_y)
                 self.projectiles.append(projectile)
                 self.pending_projectile_strength = None  # Clear after spawning
+                self.pending_projectile_air = False
 
         # GOHADOKEN/GOSHORYUKEN/TATSUMAKI now recover when their animation
         # completes (see update()); the per-state safety timeout still guards
