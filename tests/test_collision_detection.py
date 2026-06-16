@@ -86,7 +86,9 @@ def test_combo_scaling():
 
     damages = []
     for i in range(5):
-        scaled_damage = combo_system.register_hit(1, 2, 100, "normal")
+        # defender stays in hitstun across the chain -> a genuine 5-hit combo
+        scaled_damage = combo_system.register_hit(
+            1, 2, 100, "normal", defender_in_hitstun=(i > 0))
         damages.append(scaled_damage)
         print(f"Hit {i + 1}: 100 -> {scaled_damage}")
 

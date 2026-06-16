@@ -361,7 +361,7 @@ class Game:
         # ONE call: the core checks BOTH attack directions internally and tags each
         # hit with its attacker/defender, so calling it twice would re-detect (and
         # mis-attribute) the same hit back onto the attacker.
-        self.collision_system.tick()
+        self.collision_system.tick(self.player1, self.player2)
         self.collision_system.check_attack_collision(self.player1, self.player2, self.vfx_manager)
 
         # Update VFX
