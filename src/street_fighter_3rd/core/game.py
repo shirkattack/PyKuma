@@ -11,7 +11,7 @@ from street_fighter_3rd.util.logging_config import get_logger, is_strict, log_on
 from street_fighter_3rd.core.diagnostics import InvariantChecker, FrameRecorder, RING_FRAMES
 
 log = get_logger(__name__)
-from street_fighter_3rd.data.enums import GameState
+from street_fighter_3rd.data.enums import GameState, RoundResult, CharacterState
 from street_fighter_3rd.data.constants import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
@@ -223,14 +223,17 @@ class Game:
 
         # Update round manager (skip if no rounds mode is enabled)
         if not self.config.no_rounds:
+            prev_state = self._last_game_state
             self.round_manager.update(self.player1.health, self.player2.health)
+            cur_state = self.round_manager.game_state
 
             # A new round just began (ROUND_END -> PRE_ROUND): reset characters
             # and systems so every round starts from a clean slate.
-            if (self.round_manager.game_state == GameState.PRE_ROUND
-                    and self._last_game_state == GameState.ROUND_END):
+            if cur_state == GameState.PRE_ROUND and prev_state == GameState.ROUND_END:
                 self._reset_round_state()
-            self._last_game_state = self.round_manager.game_state
+            # Round-flow poses (intro on round start, win/time-over on round end).
+            self._handle_round_flow_transitions(prev_state, cur_state)
+            self._last_game_state = cur_state
 
         # Only update gameplay during PRE_ROUND and FIGHTING states (or always if no rounds)
         if self.config.no_rounds:
@@ -240,6 +243,9 @@ class Game:
             self._update_pre_round()
         elif self.round_manager.game_state == GameState.FIGHTING:
             self._update_fight()
+        elif self.round_manager.game_state in (GameState.ROUND_END, GameState.MATCH_END):
+            # Gameplay is frozen here, but keep the win/time-over pose animating.
+            self._advance_pose_animations()
 
         # Training idle-regen + animated health-bar ghost layers
         self._update_health_dynamics()
@@ -338,12 +344,54 @@ class Game:
         ]
 
     def _update_pre_round(self):
-        """Update pre-round state (characters frozen)."""
+        """Update pre-round state (characters frozen, playing their intro pose)."""
         # Update facing so characters look at each other
         self.player1._update_facing(self.player2)
         self.player2._update_facing(self.player1)
 
-        # Don't process input or update characters during pre-round freeze
+        # On the first pre-round frame, start each character's intro pose; then
+        # just advance the animation (no input/physics during the freeze).
+        if self.round_manager.state_frame <= 1:
+            self._play_char_anim(self.player1, "intro1")
+            self._play_char_anim(self.player2, "intro1")
+        self._advance_pose_animations()
+
+    def _play_char_anim(self, char, name: str):
+        """Play a named animation on a character if it has it (round-flow poses
+        bypass the state machine, so this drives the animation directly)."""
+        ac = getattr(char, "animation_controller", None)
+        if ac is not None and name in getattr(ac, "animations", {}):
+            ac.play_animation(name, force_restart=True)
+
+    def _advance_pose_animations(self):
+        """Tick both characters' animation controllers during non-fighting phases
+        (pre-round intro / round-end win/time-over), where the normal per-frame
+        character update doesn't run."""
+        for c in (self.player1, self.player2):
+            ac = getattr(c, "animation_controller", None)
+            if ac is not None:
+                ac.update()
+
+    def _handle_round_flow_transitions(self, prev_state, cur_state):
+        """Drive round-flow pose animations on game-state transitions."""
+        if cur_state == GameState.FIGHTING and prev_state == GameState.PRE_ROUND:
+            # Fight! End the intro pose -> back to neutral stance.
+            self.player1._transition_to_state(CharacterState.STANDING)
+            self.player2._transition_to_state(CharacterState.STANDING)
+        elif cur_state == GameState.ROUND_END and prev_state != GameState.ROUND_END:
+            self._set_round_end_poses()
+
+    def _set_round_end_poses(self):
+        """Winner does a win pose; on a time-over the loser does the time-over
+        pose (on a K.O. the loser is already in their knockdown animation)."""
+        winner_id = getattr(self.round_manager, "round_winner", None)
+        if winner_id is None:
+            return
+        winner = self.player1 if winner_id == 1 else self.player2
+        loser = self.player2 if winner_id == 1 else self.player1
+        self._play_char_anim(winner, "win1")
+        if getattr(self.round_manager, "round_result", None) == RoundResult.TIME_OVER:
+            self._play_char_anim(loser, "timeout")
 
     def _update_fight(self):
         """Update fighting state."""

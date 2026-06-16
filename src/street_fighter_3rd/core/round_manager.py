@@ -31,6 +31,7 @@ class RoundManager:
 
         # Round result
         self.round_result = RoundResult.NONE
+        self.round_winner = None   # winner of the round just ended (1/2), or None
         self.match_winner = None  # 1 or 2, or None
 
         # State frame counters
@@ -67,6 +68,7 @@ class RoundManager:
         """End the current round with a result."""
         self.game_state = GameState.ROUND_END
         self.round_result = result
+        self.round_winner = winner
         self.state_frame = 0
 
         # Award round win

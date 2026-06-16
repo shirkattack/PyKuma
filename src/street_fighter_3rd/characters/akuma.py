@@ -202,6 +202,13 @@ class Akuma(Character):
             # command actions
             ("overhead",           "akuma-overhead",      23, 2, False),  # UOH (MP+MK)
             ("taunt",              "akuma-taunt",         39, 2, False),  # personal action (HP+HK)
+            # round-flow poses (driven by the round manager, not the state machine)
+            ("intro1",             "akuma-intro1",        23, 3, False),  # round start
+            ("win1",               "akuma-win1",          28, 3, False),  # round won
+            ("win2",               "akuma-win2",          38, 3, False),
+            ("win3",               "akuma-win3",           9, 3, False),
+            ("timeout",            "akuma-timeout",        6, 4, False),  # time over
+            ("chipdeath",          "akuma-chipdeath",     17, 3, False),  # KO by chip
         ]
         for name, folder, frames, dur, loop in specs:
             self.animation_controller.add_animation(
