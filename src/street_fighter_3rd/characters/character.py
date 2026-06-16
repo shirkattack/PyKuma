@@ -327,6 +327,7 @@ class Character:
             CharacterState.GOSHORYUKEN,
             CharacterState.TATSUMAKI,
             CharacterState.ASHURA_SENKU,
+            CharacterState.DEMON_FLIP,
 
             # Can't cancel a throw (startup or the grab/whiff itself)
             CharacterState.THROW_STARTUP,

@@ -76,6 +76,7 @@ class CharacterState(Enum):
     GOSHORYUKEN = auto()  # Dragon punch
     TATSUMAKI = auto()  # Hurricane kick
     ASHURA_SENKU = auto()  # Teleport
+    DEMON_FLIP = auto()  # Hyakkishu (QCF+K air flip)
 
     # Super arts
     SUPER_ART_1 = auto()

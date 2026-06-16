@@ -46,6 +46,12 @@ TELEPORT_SPEED = 12.0          # px/frame during the travel window
 TELEPORT_TRAVEL_FRAMES = 15    # -> ~180px of displacement
 TELEPORT_TOTAL_FRAMES = 40     # state duration incl. recovery
 
+# Demon Flip (Hyakkishu): an arcing forward jump toward the opponent. The flip
+# itself has no hitbox -- the dive/throw/palm followups do (deferred until their
+# hitbox data exists). Arc values are provisional game-feel, flagged.
+DEMON_FLIP_RISE = -8.0         # initial vertical velocity (up)
+DEMON_FLIP_FORWARD = 6.5       # forward velocity toward the opponent
+
 
 class Akuma(Character):
     """Akuma (Gouki) - The Master of the Fist."""
@@ -76,6 +82,7 @@ class Akuma(Character):
         CharacterState.GOSHORYUKEN: "goshoryuken",
         CharacterState.TATSUMAKI: "tatsumaki",
         CharacterState.ASHURA_SENKU: "teleport",
+        CharacterState.DEMON_FLIP: "hyakkishuu",
         # command actions
         CharacterState.OVERHEAD: "overhead",
         CharacterState.TAUNT: "taunt",
@@ -213,6 +220,7 @@ class Akuma(Character):
             ("taunt",              "akuma-taunt",         39, 2, False),  # personal action (HP+HK)
             # round-flow poses (driven by the round manager, not the state machine)
             ("teleport",           "akuma-teleport",      63, 1, False),  # Ashura Senku
+            ("hyakkishuu",         "akuma-hyakkishuu",    54, 1, False),  # Demon Flip
             ("intro1",             "akuma-intro1",        23, 3, False),  # round start
             ("win1",               "akuma-win1",          28, 3, False),  # round won
             ("win2",               "akuma-win2",          38, 3, False),
@@ -301,6 +309,13 @@ class Akuma(Character):
             return True
         elif self.input.check_motion_input("DP", Button.HEAVY_PUNCH):
             self._execute_goshoryuken(Button.HEAVY_PUNCH)
+            return True
+
+        # Demon Flip / Hyakkishu (236K - Quarter Circle Forward + Kick)
+        if (self.input.check_motion_input("QCF", Button.LIGHT_KICK)
+                or self.input.check_motion_input("QCF", Button.MEDIUM_KICK)
+                or self.input.check_motion_input("QCF", Button.HEAVY_KICK)):
+            self._execute_demon_flip()
             return True
 
         # Tatsumaki Zankukyaku (214K - Quarter Circle Back + Kick)
@@ -415,6 +430,18 @@ class Akuma(Character):
         self._teleport_frames_left = TELEPORT_TRAVEL_FRAMES
         self.velocity_y = 0
         self._transition_to_state(CharacterState.ASHURA_SENKU)
+
+    def _execute_demon_flip(self):
+        """Hyakkishu: an arcing forward jump toward the opponent. The flip has no
+        hitbox; physics handles the arc and the landing recovers to STANDING.
+        (Dive/throw/palm followups are deferred until their hitbox data exists.)"""
+        log.debug("HYAKKISHU (demon flip)")
+        self.last_special_frame = self.total_frames
+        face = 1 if self.is_facing_right() else -1
+        self.velocity_y = DEMON_FLIP_RISE
+        self.velocity_x = DEMON_FLIP_FORWARD * face
+        self.is_grounded = False
+        self._transition_to_state(CharacterState.DEMON_FLIP)
 
     def update(self, opponent: 'Character'):
         """Update Akuma with animation system.
