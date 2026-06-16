@@ -246,6 +246,7 @@ class SF3ComboSystem:
         return {
             'count': combo_state.combo_count,
             'damage': combo_state.combo_damage,
+            'last_damage': combo_state.combo_hits[-1].scaled_damage if combo_state.combo_hits else 0,
             'active': combo_state.combo_active,
             'scaling': combo_state.damage_scaling,
             'type': combo_state.combo_type.value
