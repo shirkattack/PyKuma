@@ -282,6 +282,7 @@ class AnimationController:
         """
         self.sprite_manager = sprite_manager
         self.current_animation: Optional[Animation | FolderAnimation] = None
+        self.current_name: Optional[str] = None
         self.animations: Dict[str, Animation | FolderAnimation] = {}
 
     def add_animation(self, name: str, animation: Animation | FolderAnimation):
@@ -310,6 +311,7 @@ class AnimationController:
 
         # Switch to new animation
         self.current_animation = self.animations[name]
+        self.current_name = name
         self.current_animation.reset()
 
     def update(self):
