@@ -192,6 +192,10 @@ class Akuma(Character):
             ("gohadoken",          "akuma-fireball",    14,  2, False),
             ("goshoryuken",        "akuma-dp",          20,  2, False),
             ("tatsumaki",          "akuma-hurricane",   30,  2, False),
+            # throws
+            ("throw_forward",      "akuma-throw-forward", 17, 2, False),
+            ("throw_back",         "akuma-throw-back",    14, 2, False),
+            ("throw_miss",         "akuma-throw-miss",     6, 2, False),
         ]
         for name, folder, frames, dur, loop in specs:
             self.animation_controller.add_animation(
@@ -430,10 +434,18 @@ class Akuma(Character):
                 play("jump_backward", force_restart=True)
             else:
                 play("jump_up", force_restart=True)
+        elif new_state == CharacterState.THROWING:
+            # Forward/back grab clip; if it whiffs, _on_throw_whiff swaps in the
+            # miss animation the same frame (the grab resolves in update()).
+            play("throw_back" if self.throw_is_back else "throw_forward", force_restart=True)
         else:
             name = self._STATE_ANIM.get(new_state)
             if name:
                 play(name, force_restart=True)
+
+    def _on_throw_whiff(self):
+        """A throw missed: play the whiff recovery clip."""
+        self.animation_controller.play_animation("throw_miss", force_restart=True)
 
     def get_debug_state(self) -> dict:
         """Extend the base debug state with live animation/sprite info."""

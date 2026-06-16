@@ -450,9 +450,16 @@ class SF3CollisionAdapter:
         return state_map.get(state, 0)
     
     def _is_throwing(self, character) -> bool:
-        """Check if character is attempting a throw"""
-        # For now, no throw states defined - could add later
-        return False
+        """Check if character is attempting a throw (LP+LK grab).
+
+        The grab itself is resolved deterministically in Character.update() (see
+        _attempt_throw); this just lets the SF3 collision core know a throw is
+        active. The throw deals no normal-hitbox damage, so this only gates the
+        throw-checking path.
+        """
+        from ..data.enums import CharacterState
+        return getattr(character, "state", None) in (
+            CharacterState.THROW_STARTUP, CharacterState.THROWING)
     
     def _apply_collision_results(self, attacker, defender, vfx_manager) -> bool:
         """Apply SF3 collision results back to our Character objects.
