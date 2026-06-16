@@ -519,20 +519,26 @@ class Akuma(Character):
                 fwd = 1 if self.facing == FacingDirection.RIGHT else -1
                 velocity_x = speed * fwd
 
+                # Spawn at HAND height on the rendered body: the body is anchored
+                # at the feet line (self.y + feet_offset), so measure up from there
+                # -- NOT from self.y (the STAGE_FLOOR reference), which put the
+                # fireball ~75px above Akuma's hands. ground_y = the feet line so an
+                # air fireball dissipates at the visible ground, not at self.y.
+                feet_y = self.y + self.feet_offset
+                spawn_y = feet_y - 70
+                ground_y = feet_y
                 if self.pending_projectile_air:
-                    # Air fireball (Zanku Hadou): launched down-forward from the
-                    # air so it angles toward the ground (~30deg). Provisional
+                    # Air fireball (Zanku Hadou): down-forward (~30deg). Provisional
                     # angle pending decomp calibration.
                     velocity_y = speed * 0.6
                     spawn_x = self.x + 30 * fwd
-                    spawn_y = self.y - 40
                 else:
                     velocity_y = 0.0
                     spawn_x = self.x + 40 * fwd
-                    spawn_y = self.y - 60  # chest height
 
                 projectile = Gohadoken(spawn_x, spawn_y, velocity_x, self.facing,
-                                       self.pending_projectile_strength, velocity_y=velocity_y)
+                                       self.pending_projectile_strength,
+                                       velocity_y=velocity_y, ground_y=ground_y)
                 self.projectiles.append(projectile)
                 self.pending_projectile_strength = None  # Clear after spawning
                 self.pending_projectile_air = False

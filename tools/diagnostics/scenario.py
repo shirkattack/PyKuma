@@ -161,4 +161,19 @@ def launch_recovery() -> Scenario:
         p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.HEAVY_PUNCH) + hold(None, 107))
 
 
-SEED_SCENARIOS = {s.name: s for s in (jump_arc(), jab_knockback(), launch_recovery())}
+def qcf(button: Button) -> List[FrameInput]:
+    """A quarter-circle-forward motion ending in `button` (236+btn)."""
+    return (hold(InputDirection.DOWN, 2) + hold(InputDirection.DOWN_FORWARD, 2)
+            + [(InputDirection.FORWARD, [button])])
+
+
+def fireball() -> Scenario:
+    """P1 throws a Gohadoken (QCF+LP); the projectile should travel forward."""
+    return Scenario(
+        name="fireball", frames=55,
+        p1={"x": 250, "facing": "R"}, p2={"x": 640, "facing": "L"},
+        p1_inputs=qcf(Button.LIGHT_PUNCH) + hold(None, 50))
+
+
+SEED_SCENARIOS = {s.name: s for s in
+                  (jump_arc(), jab_knockback(), launch_recovery(), fireball())}
