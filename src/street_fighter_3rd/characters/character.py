@@ -326,6 +326,7 @@ class Character:
             CharacterState.GOHADOKEN,
             CharacterState.GOSHORYUKEN,
             CharacterState.TATSUMAKI,
+            CharacterState.ASHURA_SENKU,
 
             # Can't cancel a throw (startup or the grab/whiff itself)
             CharacterState.THROW_STARTUP,

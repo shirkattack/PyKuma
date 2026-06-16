@@ -175,6 +175,12 @@ class PlayerInput:
                 ],
                 button=Button.LIGHT_PUNCH
             ),
+            # Reverse dragon punch (421) -- back teleport
+            MotionInput(
+                name="RDP",  # 421
+                directions=[InputDirection.BACK, InputDirection.DOWN, InputDirection.DOWN_BACK],
+                button=Button.LIGHT_PUNCH
+            ),
         ]
 
     def connect_joystick(self, joystick_index: int) -> bool:
@@ -495,6 +501,39 @@ class PlayerInput:
         InputDirection.DOWN_FORWARD, InputDirection.DOWN_BACK,
         InputDirection.UP_FORWARD, InputDirection.UP_BACK,
     })
+
+    # Punch / kick button groups (for PPP/KKK multi-button specials).
+    _PUNCHES = (Button.LIGHT_PUNCH, Button.MEDIUM_PUNCH, Button.HEAVY_PUNCH)
+    _KICKS = (Button.LIGHT_KICK, Button.MEDIUM_KICK, Button.HEAVY_KICK)
+
+    def _multi_button_pressed(self, buttons) -> bool:
+        """True if >=2 of `buttons` are held with at least one fresh this frame
+        (a PPP/KKK-style press, tolerant of buttons not landing the same frame)."""
+        held = sum(1 for b in buttons if b in self.buttons_held)
+        fresh = any(b in self.buttons_pressed_this_frame for b in buttons)
+        return held >= 2 and fresh
+
+    def check_motion_with_punches(self, motion_name: str) -> bool:
+        """Motion + PPP (e.g. teleport / some supers)."""
+        return self._check_motion_multi(motion_name, self._PUNCHES)
+
+    def check_motion_with_kicks(self, motion_name: str) -> bool:
+        """Motion + KKK."""
+        return self._check_motion_multi(motion_name, self._KICKS)
+
+    def _check_motion_multi(self, motion_name: str, buttons) -> bool:
+        """Like check_motion_input but triggered by a multi-button (PPP/KKK)
+        press instead of a single button. Consumes the motion on match."""
+        if not self._multi_button_pressed(buttons):
+            return False
+        motion = next((m for m in self.motion_inputs if m.name == motion_name), None)
+        if not motion:
+            return False
+        start_frame = self._search_buffer_for_motion(motion.directions, motion.max_frames)
+        if start_frame is None or start_frame <= self.consumed_motion_frames.get(motion_name, -1):
+            return False
+        self.consumed_motion_frames[motion_name] = start_frame
+        return True
 
     def _search_buffer_for_motion(self, directions: List[InputDirection], max_frames: int) -> Optional[int]:
         """Search the input buffer for a sequence of directions, newest-first.

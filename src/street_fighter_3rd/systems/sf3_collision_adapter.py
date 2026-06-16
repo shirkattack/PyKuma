@@ -502,6 +502,12 @@ class SF3CollisionAdapter:
         if getattr(attacker, "attack_connected", False):
             return
 
+        # Invulnerable defender (teleport / DP startup / wake-up i-frames) -> the
+        # attack passes through. The flag is set per-frame by the character; honor
+        # it here so invincibility actually does something.
+        if getattr(defender, "is_invincible", False):
+            return
+
         attacker_id = getattr(attacker, 'player_number', 1)
         defender_id = getattr(defender, 'player_number', 2)
 

@@ -40,6 +40,12 @@ _HOLD_STATES = frozenset({
 # owns the horizontal travel and the body doesn't lurch. See Akuma.render().
 _BODY_ANCHORED_ANIMS = frozenset({"jump_forward", "jump_backward"})
 
+# Ashura Senku (teleport). Strike-invulnerable reposition; no hitbox/damage.
+# Distances/durations are provisional (game-feel), tagged pending ROM calibration.
+TELEPORT_SPEED = 12.0          # px/frame during the travel window
+TELEPORT_TRAVEL_FRAMES = 15    # -> ~180px of displacement
+TELEPORT_TOTAL_FRAMES = 40     # state duration incl. recovery
+
 
 class Akuma(Character):
     """Akuma (Gouki) - The Master of the Fist."""
@@ -69,6 +75,7 @@ class Akuma(Character):
         CharacterState.GOHADOKEN: "gohadoken",
         CharacterState.GOSHORYUKEN: "goshoryuken",
         CharacterState.TATSUMAKI: "tatsumaki",
+        CharacterState.ASHURA_SENKU: "teleport",
         # command actions
         CharacterState.OVERHEAD: "overhead",
         CharacterState.TAUNT: "taunt",
@@ -147,6 +154,8 @@ class Akuma(Character):
 
         # Projectile management
         self.projectiles = []  # List of active projectiles
+        self._teleport_dir = 0          # +1/-1 travel direction during Ashura Senku
+        self._teleport_frames_left = 0  # remaining travel frames
         self.pending_projectile_strength = None  # Store strength for spawning
         self.pending_projectile_air = False       # was the fireball started airborne?
     
@@ -203,6 +212,7 @@ class Akuma(Character):
             ("overhead",           "akuma-overhead",      23, 2, False),  # UOH (MP+MK)
             ("taunt",              "akuma-taunt",         39, 2, False),  # personal action (HP+HK)
             # round-flow poses (driven by the round manager, not the state machine)
+            ("teleport",           "akuma-teleport",      63, 1, False),  # Ashura Senku
             ("intro1",             "akuma-intro1",        23, 3, False),  # round start
             ("win1",               "akuma-win1",          28, 3, False),  # round won
             ("win2",               "akuma-win2",          38, 3, False),
@@ -271,6 +281,15 @@ class Akuma(Character):
             return True
         elif self.input.check_motion_input("QCF", Button.HEAVY_PUNCH):
             self._execute_gohadoken(Button.HEAVY_PUNCH)
+            return True
+
+        # Teleport (Ashura Senku): 623/421 + PPP or KKK. Checked BEFORE Goshoryuken
+        # (also 623+P) so the 3-button version wins; single-punch falls through to DP.
+        if self.input.check_motion_with_punches("DP") or self.input.check_motion_with_kicks("DP"):
+            self._execute_teleport(forward=True)
+            return True
+        if self.input.check_motion_with_punches("RDP") or self.input.check_motion_with_kicks("RDP"):
+            self._execute_teleport(forward=False)
             return True
 
         # Goshoryuken (623P - Dragon Punch + Punch)
@@ -385,6 +404,17 @@ class Akuma(Character):
         self.tatsu_hit_count = 0  # Track how many hits have connected
 
         self._transition_to_state(CharacterState.TATSUMAKI)
+
+    def _execute_teleport(self, forward: bool):
+        """Ashura Senku: a strike-invulnerable reposition forward (623) or back
+        (421). No hitbox/damage; movement + invuln handled in _update_state."""
+        log.debug("ASHURA SENKU (%s)", "forward" if forward else "back")
+        self.last_special_frame = self.total_frames
+        face = 1 if self.is_facing_right() else -1
+        self._teleport_dir = face if forward else -face
+        self._teleport_frames_left = TELEPORT_TRAVEL_FRAMES
+        self.velocity_y = 0
+        self._transition_to_state(CharacterState.ASHURA_SENKU)
 
     def update(self, opponent: 'Character'):
         """Update Akuma with animation system.
@@ -573,6 +603,19 @@ class Akuma(Character):
         """Update Akuma-specific state behavior."""
         # Call parent update first
         super()._update_state()
+
+        # Ashura Senku teleport: strike-invulnerable; glide the travel distance,
+        # then recover. No hitbox.
+        if self.state == CharacterState.ASHURA_SENKU:
+            self.is_invincible = True
+            if self._teleport_frames_left > 0:
+                self.velocity_x = TELEPORT_SPEED * self._teleport_dir
+                self._teleport_frames_left -= 1
+            else:
+                self.velocity_x = 0
+            if self.state_frame >= TELEPORT_TOTAL_FRAMES:
+                self._transition_to_state(CharacterState.STANDING)
+            return
 
         # Akuma-specific state handling
         if self.state == CharacterState.GOHADOKEN:
