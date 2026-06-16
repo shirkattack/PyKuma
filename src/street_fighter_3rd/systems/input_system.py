@@ -485,35 +485,59 @@ class PlayerInput:
         self.consumed_motion_frames[motion_name] = start_frame
         return True
 
-    def _search_buffer_for_motion(self, directions: List[InputDirection], max_frames: int) -> Optional[int]:
-        """Search the input buffer for a sequence of directions.
+    # Diagonal directions are OPTIONAL when matching a motion: real players (and
+    # especially keyboard users) frequently roll a quarter-circle without ever
+    # registering the in-between diagonal frame. 3S's motion detection is lenient
+    # the same way -- requiring the cardinal endpoints (e.g. down then forward for
+    # a QCF) but tolerating a dropped diagonal. The pattern's time ORDER is still
+    # enforced, so a DP (forward, down, down-forward) won't read as a QCF.
+    _OPTIONAL_DIRECTIONS = frozenset({
+        InputDirection.DOWN_FORWARD, InputDirection.DOWN_BACK,
+        InputDirection.UP_FORWARD, InputDirection.UP_BACK,
+    })
 
-        Args:
-            directions: Sequence of directions to find
-            max_frames: Maximum frames to complete the motion
+    def _search_buffer_for_motion(self, directions: List[InputDirection], max_frames: int) -> Optional[int]:
+        """Search the input buffer for a sequence of directions, newest-first.
+
+        Matches the pattern in time order, but a pattern direction that is a
+        diagonal may be SKIPPED if it never appears (input leniency). Cardinal
+        pattern directions are required.
 
         Returns:
-            Frame number of the input that started the motion (the match for
-            directions[0]), or None if the motion was not found.
+            Frame number of the input that started the motion (the match for the
+            first required direction), or None if the motion was not found.
         """
         if len(self.input_buffer) == 0:
             return None
 
-        # Start from most recent input
         pattern_index = len(directions) - 1
         frames_searched = 0
 
         for input_state in reversed(self.input_buffer):
             if frames_searched > max_frames:
-                return None
+                break
 
-            if input_state.direction == directions[pattern_index]:
-                pattern_index -= 1
-                if pattern_index < 0:
-                    return input_state.frame_number  # Found complete pattern!
+            # Try to consume this input against the pattern, skipping any optional
+            # (diagonal) pattern steps it doesn't match.
+            while pattern_index >= 0:
+                if input_state.direction == directions[pattern_index]:
+                    pattern_index -= 1
+                    if pattern_index < 0:
+                        return input_state.frame_number  # matched directions[0]
+                    break  # consumed this input; advance to the next (older) one
+                if directions[pattern_index] in self._OPTIONAL_DIRECTIONS:
+                    pattern_index -= 1  # skip the optional diagonal, re-test this input
+                    continue
+                break  # required direction not matched here; try an older input
 
             frames_searched += 1
 
+        # Accept if only optional (diagonal) pattern steps remain unmatched at the
+        # front (e.g. a QCF whose leading down was found but trailing diagonal not).
+        while pattern_index >= 0 and directions[pattern_index] in self._OPTIONAL_DIRECTIONS:
+            pattern_index -= 1
+        if pattern_index < 0 and self.input_buffer:
+            return self.input_buffer[0].frame_number
         return None
 
     def get_input_history(self, n: int = 10) -> List["InputHistoryEntry"]:
