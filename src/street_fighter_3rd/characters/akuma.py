@@ -492,6 +492,7 @@ class Akuma(Character):
         self._rendered_fallback = sprite is None
         if sprite is None:
             super().render(screen)  # rectangle placeholder
+            self._render_projectiles(screen)
             return
 
         # Align the character's ACTUAL feet (bottom of opaque pixels) to the
@@ -529,6 +530,15 @@ class Akuma(Character):
         else:
             screen.blit(sprite, sprite_rect)
 
+        # Fireballs etc. render on top, in the same world buffer as the character.
+        # (This MUST live in render() -- it used to sit only in the never-called
+        # _render_fallback_rectangle, so projectiles spawned but never drew.)
+        self._render_projectiles(screen)
+
+    def _render_projectiles(self, screen: pygame.Surface):
+        for projectile in self.projectiles:
+            projectile.render(screen)
+
     def _render_fallback_rectangle(self, screen: pygame.Surface):
         """Render fallback rectangle when sprites fail."""
         # Draw character as colored rectangle (fallback)
@@ -545,10 +555,6 @@ class Akuma(Character):
         facing_str = "RIGHT" if self.facing == FacingDirection.RIGHT else "LEFT"
         state_text = font.render(f"{self.state.name} [{facing_str}]", True, (255, 255, 255))
         screen.blit(state_text, (int(self.x - 30), rect.top - 20))
-
-        # Render projectiles
-        for projectile in self.projectiles:
-            projectile.render(screen)
 
     def _update_state(self):
         """Update Akuma-specific state behavior."""

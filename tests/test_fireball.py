@@ -53,3 +53,26 @@ def test_fireball_travels_forward_and_renders():
             xs.append(g.player1.projectiles[0].x)
     assert len(xs) >= 3
     assert xs[-1] > xs[0], "fireball should travel forward (P1 faces right)"
+
+
+def test_fireball_is_actually_drawn_by_character_render():
+    """Regression: the projectile-render loop used to live only in the
+    never-called _render_fallback_rectangle, so a fireball spawned and moved but
+    was never drawn. Assert Akuma.render() adds the projectile's pixels."""
+    from street_fighter_3rd.core.projectile import Gohadoken
+    from street_fighter_3rd.data.enums import FacingDirection
+    g = _throw_fireball()
+    p1 = g.player1
+
+    surf_a = pygame.Surface((900, 520), pygame.SRCALPHA)
+    p1.render(surf_a)
+    before = pygame.mask.from_surface(surf_a).count()
+
+    feet_y = p1.y + p1.feet_offset
+    p1.projectiles.append(Gohadoken(p1.x + 120, feet_y - 70, 7.0,
+                                    FacingDirection.RIGHT, "light", ground_y=feet_y))
+    surf_b = pygame.Surface((900, 520), pygame.SRCALPHA)
+    p1.render(surf_b)
+    after = pygame.mask.from_surface(surf_b).count()
+
+    assert after > before + 200, "Akuma.render must draw the fireball's pixels"
