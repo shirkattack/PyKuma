@@ -76,3 +76,18 @@ def test_fireball_is_actually_drawn_by_character_render():
     after = pygame.mask.from_surface(surf_b).count()
 
     assert after > before + 200, "Akuma.render must draw the fireball's pixels"
+
+
+def test_gohadoken_uses_real_projectile_sprite_when_present():
+    """When the vendored ROM projectile frames exist, the Gohadoken renders the
+    real sprite (not the procedural ball). Skips if the gitignored assets are
+    absent (CI without the art tree)."""
+    import os
+    from street_fighter_3rd.core.projectile import Gohadoken
+    from street_fighter_3rd.data.enums import FacingDirection
+    if not os.path.isdir("assets/characters/akuma/animations/akuma-gohadoken-proj"):
+        pytest.skip("projectile sprite assets not present")
+    fb = Gohadoken(300, 300, 7.0, FacingDirection.RIGHT, "light")
+    assert fb.animation_controller is not None
+    assert fb.animation_controller.get_current_sprite() is not None, \
+        "the real Gou Hadouken sprite should load"

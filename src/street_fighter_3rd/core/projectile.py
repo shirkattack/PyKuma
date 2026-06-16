@@ -1,7 +1,8 @@
 """Projectile system for special moves (fireballs, etc.)."""
 
 import pygame
-from street_fighter_3rd.systems.animation import AnimationController, SpriteManager, create_simple_animation
+from street_fighter_3rd.systems.animation import (
+    AnimationController, SpriteManager, create_simple_animation, create_folder_animation)
 from street_fighter_3rd.data.enums import FacingDirection
 from street_fighter_3rd.data.constants import STAGE_FLOOR
 
@@ -139,27 +140,40 @@ class Gohadoken(Projectile):
         self.hitbox_width = 60
         self.hitbox_height = 60
 
-        # PLACEHOLDER VFX: we don't have an extracted fireball-PROJECTILE sprite
-        # yet (sprites 19201-19220 and the akuma-fireball* folders are all
-        # character-sized THROW frames, not the flying ball). Until a real sprite
-        # is sourced, render a procedural energy ball (see render()). animation_
-        # controller stays None so the base sprite path is skipped.
-        self.animation_controller = None
-        self._anim_t = 0  # for a little pulsing animation
+        # Gou Hadouken projectile sprite (ROM rip, ids 30660-30668), cropped to a
+        # common bbox and vendored under the akuma animations tree. Authored
+        # traveling LEFT (core leads left, tail trails right), so render() flips
+        # it when facing right. Loops while in flight. If the assets are missing
+        # (gitignored tree), get_current_sprite returns None and render() falls
+        # back to the procedural energy ball.
+        self.animation_controller = AnimationController(sprite_manager)
+        self.animation_controller.add_animation(
+            "proj", create_folder_animation(
+                "assets/characters/akuma/animations/akuma-gohadoken-proj",
+                frame_count=9, frame_duration=2, loop=True))
+        self.animation_controller.play_animation("proj")
+        self._anim_t = 0  # for the procedural-fallback pulse
 
     def update(self):
         super().update()
         self._anim_t += 1
 
     def render(self, screen: pygame.Surface):
-        """Procedural Gohadoken energy ball (placeholder for the real sprite).
-
-        Layered translucent orbs (outer glow -> core) with a short trail behind
-        the direction of travel, drawn at native scale into the world buffer (the
-        camera then zooms it). Pulses slightly so it reads as energy.
-        """
+        """Draw the Gou Hadouken: the real ROM projectile sprite if available
+        (flipped to face travel), else the procedural energy ball."""
         if not self.active:
             return
+        sprite = (self.animation_controller.get_current_sprite()
+                  if self.animation_controller else None)
+        if sprite is not None:
+            # Sprite is authored traveling LEFT; flip for rightward travel.
+            if self.facing == FacingDirection.RIGHT:
+                sprite = pygame.transform.flip(sprite, True, False)
+            rect = sprite.get_rect(center=(int(self.x), int(self.y)))
+            screen.blit(sprite, rect)
+            return
+
+        # --- Procedural fallback (assets missing) ---
         d = 1 if self.facing == FacingDirection.RIGHT else -1
         pulse = 2 if (self._anim_t // 3) % 2 == 0 else 0
         w, h = 96, 56
