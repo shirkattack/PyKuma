@@ -65,7 +65,8 @@ class SF3HitStatus:
     stun: int = 0
     hitstun: int = 0
     blockstun: int = 0
-    
+    pushback: float = 0.0   # horizontal knockback magnitude (px) applied to defender
+
     # Position data
     hit_position_x: float = 0.0
     hit_position_y: float = 0.0
@@ -295,46 +296,42 @@ class SF3CollisionSystem:
                             att_pos: Tuple[float, float], def_pos: Tuple[float, float]):
         """Check one player's attacks against another's hurtboxes"""
 
-        # Get attack boxes
         attack_boxes = att_hitbox_mgr.get_current_hitboxes(SF3HitboxType.ATTACK)
+        if not attack_boxes:
+            return  # not attacking this frame -> can't hit anyone
 
-        # Get hurtboxes (body and hand)
-        body_boxes = def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.BODY)
-        hand_boxes = def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.HAND)
+        # Hurtboxes that can be struck (body + limb/hand boxes).
+        targets = (def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.BODY)
+                   + def_hitbox_mgr.get_current_hitboxes(SF3HitboxType.HAND))
 
-        # Check attacks vs body boxes
+        # Register AT MOST ONE hit per attack->defender per frame, tagged with the
+        # real attacker/defender ids. (Previously every box-overlap clobbered slot
+        # 0 with no ids, and the adapter applied it to whoever it was called with --
+        # so the second per-frame call mis-attributed the attacker's own hit back
+        # onto the attacker. One hit + ids fixes that and supports trades.)
         for attack_box in attack_boxes:
-            for body_box in body_boxes:
-                if attack_box.overlaps(body_box, att_pos, attacker.work.face, def_pos, defender.work.face):
-                    collision = SF3CollisionEvent(
-                        attacker=attacker,
-                        defender=defender,
-                        attack_box=attack_box,
-                        hit_box=body_box,
-                        collision_type="attack",
-                        hit_position=(def_pos[0], def_pos[1]),
-                        frame_number=self.current_frame
-                    )
-                    self.add_collision_event(collision)
+            for tb in targets:
+                if attack_box.overlaps(tb, att_pos, attacker.work.face,
+                                       def_pos, defender.work.face):
+                    self._queue_hit(attacker, defender, attack_box, def_pos)
+                    return
 
-                    # TODO: Implement full SF3 hit_check_main_process integration
-                    # Currently using simplified direct damage application
-                    self._direct_apply_damage(attack_box, def_pos)
-            
-            # Check attacks vs hand boxes
-            for hand_box in hand_boxes:
-                if attack_box.overlaps(hand_box, att_pos, attacker.work.face, def_pos, defender.work.face):
-                    collision = SF3CollisionEvent(
-                        attacker=attacker,
-                        defender=defender,
-                        attack_box=attack_box,
-                        hit_box=hand_box,
-                        collision_type="attack",
-                        hit_position=(def_pos[0], def_pos[1]),
-                        frame_number=self.current_frame
-                    )
-                    self.add_collision_event(collision)
-                    self._direct_apply_damage(attack_box, def_pos)
+    def _queue_hit(self, attacker, defender, attack_box, hit_position):
+        """Append one confirmed hit to the queue with its attacker/defender ids."""
+        if self.hit_queue_input >= len(self.hit_status):
+            return
+        hit = SF3HitStatus()
+        hit.attacker_id = attacker.work.player_number
+        hit.defender_id = defender.work.player_number
+        hit.damage = attack_box.damage
+        hit.hitstun = attack_box.hitstun
+        hit.blockstun = attack_box.blockstun
+        hit.pushback = getattr(attack_box, "pushback", 0.0)
+        hit.result_flags = SF3CollisionResult.HIT_CONFIRMED
+        hit.hit_position_x, hit.hit_position_y = hit_position
+        hit.frame_occurred = self.current_frame
+        self.hit_status[self.hit_queue_input] = hit
+        self.hit_queue_input += 1
     
     def _direct_apply_damage(self, attack_box: SF3Hitbox, hit_position: Tuple[float, float]):
         """

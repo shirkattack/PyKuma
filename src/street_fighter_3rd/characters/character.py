@@ -41,19 +41,29 @@ _CROUCH_STATES = frozenset({
 # not by animation completion, so a character subclass should hold them.
 LAUNCH_HITSTUN = 60     # generous; physics lands the character before it expires
 KNOCKDOWN_HITSTUN = 40
+HITSTUN_FRICTION = 0.80  # per-frame decay of grounded knockback velocity
+# Juggle launch velocity. Must be consistent with GRAVITY (0.34): apex = vy^2/2g,
+# airtime = 2*vy/g. -9 -> apex ~119px (a pop just above the jump apex of 83),
+# airtime ~53f. The old -14 was tuned for the old gravity (0.8); with 0.34 it flew
+# ~288px off-screen for 82f and blew past the airborne timeout. Provisional pending
+# ROM/decomp juggle calibration.
+LAUNCH_VELOCITY = -9.0
 
 
-def apply_reaction(character, hit_effect: HitEffect, hitstun: int):
+def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx: float = 0.0):
     """Put `character` into the reaction state for a given hit effect.
 
     Shared by the collision adapter and Character.take_damage so direct callers
     (tests, projectiles) get the same reactions. Recovery is driven by
     hitstun_frames (decremented in update()), with the floor-land transition for
-    airborne/launch.
+    airborne/launch. `knockback_vx` is the horizontal push (signed, away from the
+    attacker) applied to the defender; it decays via hitstun friction in
+    `_update_state` and is clamped by `_clamp_to_stage`.
     """
     character.in_hitstun = True
+    character.velocity_x = knockback_vx
     if hit_effect == HitEffect.JUGGLE:
-        character.velocity_y = -14.0
+        character.velocity_y = LAUNCH_VELOCITY
         character.is_grounded = False
         character.hitstun_frames = LAUNCH_HITSTUN
         character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
@@ -112,6 +122,11 @@ class Character:
         # Pushbox half-width source for character-vs-character separation. Defaults
         # to hitbox_width; characters override from ROM data (Akuma: 50).
         self.pushbox_width = self.hitbox_width
+        # An attack may only connect ONCE per active period; set when this
+        # character's current attack lands, cleared on the next state transition
+        # (i.e. when the move ends). Prevents an active hitbox re-hitting every
+        # frame. (Multi-hit specials are a future special-case.)
+        self.attack_connected = False
 
         # Game state
         self.player_number = player_number
@@ -220,7 +235,9 @@ class Character:
             # Hit reactions
             CharacterState.HITSTUN_STANDING: 60,
             CharacterState.HITSTUN_CROUCHING: 60,
-            CharacterState.HITSTUN_AIRBORNE: 60,
+            # Airborne reaction recovers on LANDING (physics-driven); this is only
+            # a genuine-stuck safety net, so it must exceed any sane juggle airtime.
+            CharacterState.HITSTUN_AIRBORNE: 120,
             CharacterState.BLOCKSTUN_HIGH: 60,
             CharacterState.BLOCKSTUN_LOW: 60,
             CharacterState.KNOCKDOWN: 120,
@@ -348,6 +365,12 @@ class Character:
         if self.facing_lock_frames > 0:
             self.facing_lock_frames -= 1
             return  # Don't change facing while locked
+
+        # Don't turn around mid-air: a character keeps its takeoff facing until it
+        # lands, so a directional jump animation doesn't flip/jerk when crossing
+        # over the opponent. Facing resolves on the ground (crossup lands first).
+        if not self.is_grounded:
+            return
 
         # Determine what facing should be
         new_facing = FacingDirection.RIGHT if self.x < opponent.x else FacingDirection.LEFT
@@ -633,6 +656,14 @@ class Character:
             if self.state_frame >= 20:
                 self._transition_to_state(CharacterState.CROUCHING)
 
+        elif self.state in (CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
+                            CharacterState.KNOCKDOWN):
+            # Grounded hit reaction: knockback slides and decays (friction), so a
+            # hit shoves the defender back a bit instead of nothing / forever.
+            self.velocity_x *= HITSTUN_FRICTION
+            if abs(self.velocity_x) < 0.2:
+                self.velocity_x = 0.0
+
     def _apply_physics(self):
         """Apply gravity and update position."""
         # Apply gravity
@@ -737,6 +768,8 @@ class Character:
             self.state = new_state
             self.state_frame = 0
             self.animation_frame = 0
+            # A new state = a fresh attack window; allow the next attack to connect.
+            self.attack_connected = False
 
             # State entry logic
             if new_state == CharacterState.JUMP_STARTUP:
@@ -857,6 +890,7 @@ class Character:
             "grounded": self.is_grounded,
             "can_act": self.can_act,
             "invincible": self.is_invincible,
+            "jump_direction": self.jump_direction.name,
             "rendering_fallback": self._rendered_fallback,
         }
 
