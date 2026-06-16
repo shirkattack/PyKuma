@@ -32,7 +32,7 @@ from ..data.enums import CharacterState, HitType, HitEffect
 from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
 from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
 from ..data.hitbox_repository import HitboxRepository
-from ..characters.character import apply_reaction
+from ..characters.character import apply_reaction, JUGGLE_LIMIT
 from .vfx import HitSparkType
 
 # Hit spark strength by the attacking state.
@@ -527,6 +527,13 @@ class SF3CollisionAdapter:
             self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
             return
 
+        # Juggle limit: a launched (airborne) opponent can only be hit so many
+        # times before further air-hits whiff -- this is what ends an otherwise
+        # infinite juggle. The launcher itself connects (defender still grounded
+        # here); only follow-up air-hits are gated.
+        if not defender.is_grounded and getattr(defender, "juggle_count", 0) >= JUGGLE_LIMIT:
+            return
+
         # Register hit with combo system and get scaled damage. Capture whether
         # the defender is STILL reacting to a prior hit BEFORE we apply the new
         # reaction below -- that's what tells the combo system this hit links into
@@ -553,6 +560,13 @@ class SF3CollisionAdapter:
         kb_dir = 1.0 if attacker.x <= defender.x else -1.0
         apply_reaction(defender, hit_effect, hit_status.hitstun, knockback_vx=kb * kb_dir)
         attacker.attack_connected = True  # this attack has now connected
+
+        # Count this hit against the juggle cap if it left the defender airborne
+        # (a launch or an air-to-air follow-up). Reset to 0 on landing (Character
+        # _apply_physics). apply_reaction read the pre-increment count to scale the
+        # launch height, so increment AFTER it.
+        if not defender.is_grounded:
+            defender.juggle_count = getattr(defender, "juggle_count", 0) + 1
 
         # Hitstop scales with damage so heavy hits land harder (deterministic).
         hitstop = min(HITSTOP_MAX, HITSTOP_BASE + scaled_damage // HITSTOP_PER)

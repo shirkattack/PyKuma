@@ -49,6 +49,17 @@ HITSTUN_FRICTION = 0.80  # per-frame decay of grounded knockback velocity
 # ROM/decomp juggle calibration.
 LAUNCH_VELOCITY = -9.0
 
+# Juggle limiting (prevents infinite juggles). A launched opponent can be hit at
+# most JUGGLE_LIMIT times during one airborne sequence; further air-hits whiff
+# (enforced in the collision adapter). Each successive launch also pops lower
+# (JUGGLE_LAUNCH_DECAY) so re-launchers can't keep them up forever. The mechanic
+# mirrors 3S's juggle counter; the exact per-move juggle potentials live in the
+# decomp -- these globals are conservative (name_source: inferred) until those
+# values are extracted. See data sourcing rules.
+JUGGLE_LIMIT = 3
+JUGGLE_LAUNCH_DECAY = 0.18   # each prior juggle hit shrinks the next launch by this
+JUGGLE_LAUNCH_FLOOR = 0.45   # but never below this fraction of LAUNCH_VELOCITY
+
 
 def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx: float = 0.0):
     """Put `character` into the reaction state for a given hit effect.
@@ -63,7 +74,12 @@ def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx:
     character.in_hitstun = True
     character.velocity_x = knockback_vx
     if hit_effect == HitEffect.JUGGLE:
-        character.velocity_y = LAUNCH_VELOCITY
+        # Each prior juggle hit pops the character progressively lower, so a
+        # re-launcher can't keep them airborne forever (the hard cap is enforced
+        # by JUGGLE_LIMIT in the collision adapter).
+        decay = max(JUGGLE_LAUNCH_FLOOR,
+                    1.0 - JUGGLE_LAUNCH_DECAY * getattr(character, "juggle_count", 0))
+        character.velocity_y = LAUNCH_VELOCITY * decay
         character.is_grounded = False
         character.hitstun_frames = LAUNCH_HITSTUN
         character._transition_to_state(CharacterState.HITSTUN_AIRBORNE)
@@ -148,6 +164,11 @@ class Character:
         self.blockstun_frames = 0
         self.hitfreeze_frames = 0  # Frames of hit freeze (hitstop)
         self.hitflash_frames = 0  # Frames of white flash on hit
+        # Juggle counter: number of times this character has been hit during the
+        # CURRENT airborne sequence. Reset to 0 on landing (_apply_physics). The
+        # collision adapter caps air-hits by JUGGLE_LIMIT so a launched opponent
+        # can't be juggled forever, and apply_reaction shrinks each re-launch.
+        self.juggle_count = 0
 
         # State flags
         self.is_grounded = True
@@ -685,6 +706,7 @@ class Character:
             self.velocity_y = 0
             if not self.is_grounded:
                 self.is_grounded = True
+                self.juggle_count = 0  # landed: a new airborne sequence resets the juggle cap
                 self._transition_to_state(CharacterState.STANDING)
         else:
             self.is_grounded = False
@@ -938,6 +960,7 @@ class Character:
         self.blockstun_frames = 0
         self.hitfreeze_frames = 0
         self.hitflash_frames = 0
+        self.juggle_count = 0
 
         self.is_grounded = True
         self.can_act = True
