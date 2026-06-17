@@ -91,7 +91,7 @@ Taunt (HP+HK).
 > flagged in code pending ROM/decomp calibration — geometry remains ROM-accurate.
 
 ### Game Modes
-- **Normal Mode** - Standard match (vs CPU once the AI lands)
+- **Normal Mode** - Standard match **vs a deterministic CPU opponent**
 - **Training Mode** - Hitbox/frame-data/input overlays, idle health regen, no timer
 - **Development Mode** - Full debug suite with performance metrics
 - **Versus Mode** - Local 2-player battles
@@ -376,7 +376,8 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 - Round-flow poses (intro / win / time-over)
 
 ### 🚧 Phase 4: Single-player & polish (IN PROGRESS)
-- **CPU AI opponent** (so single-player is a real fight) — *in progress*
+- ✅ **CPU AI opponent** — deterministic; approaches, pokes, blocks, anti-airs,
+  throws, and fireballs (Normal/Demo modes)
 - Character select + a 2nd character (Ken's class already exists, unwired)
 - Calibration pass: ROM/decomp-source the provisional damage/knockback/hitstun values
 - Cheap gaps: give UOH real damage, wire the chip-death KO pose

@@ -11,6 +11,10 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **CPU AI opponent** (deterministic, no RNG) — Normal/Demo modes now fight back:
+  approaches, pokes, blocks incoming attacks, Shoryuken anti-airs, throws at
+  point-blank, and throws the occasional fireball. Feeds the normal input pipeline,
+  so it uses the same moves a human does.
 - **Super-meter system** — a single 0–100 bar that builds on hits/blocks; a Super
   Art costs a full bar. Bars render in the bottom corners (gold when full).
 - **Super Arts**: SA1 Messatsu Gou Hadou (`236236P`, multi-hit super fireball),
@@ -59,5 +63,5 @@ ROM-accurate.
 - Provisional / not-yet-ROM-calibrated values (flagged in code): juggle limit &
   launch decay, throw damage/range, super & teleport & demon-flip damage/timing,
   super-meter gain rates, knockback magnitude, hitstun counts.
-- Known gaps tracked for upcoming work: CPU AI opponent, character select + a 2nd
-  character (Ken), UOH damage (currently 0), chip-death KO pose, sound/music.
+- Known gaps tracked for upcoming work: character select + a 2nd character (Ken),
+  UOH damage (currently 0), chip-death KO pose, sound/music.
