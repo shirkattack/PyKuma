@@ -52,37 +52,50 @@ what is and isn't playable at HEAD:
 ## ✨ Features
 
 ### Core Fighting Game Mechanics
-- ✅ **60 FPS Locked Gameplay** - Industry-standard frame timing
-- ✅ **Frame-Perfect Input System** - 60-frame buffer with motion detection (QCF, DP, QCB)
+- ✅ **60 FPS Locked Gameplay** - Deterministic fixed-timestep (no RNG)
+- ✅ **Frame-Perfect Input System** - 60-frame buffer with lenient motion detection
+  (QCF, QCB, DP, RDP, double-QCF/QCB, PPP/KKK, command sequences)
 - ✅ **State Machine Architecture** - Clean character state management
-- ✅ **Hit/Hurtbox Collision System** - Frame-accurate hitbox detection
-- ✅ **Hit Freeze (Hitstop)** - Impact feedback scaled by damage
-- ✅ **Blockstun & Hitstun** - Frame advantage mechanics
-- ✅ **Projectile System** - Fireball attacks with speed variants
-- ✅ **Special Move System** - Invincibility frames and multi-hit attacks
+- ✅ **Hit/Hurtbox Collision System** - ROM-accurate hitbox geometry
+- ✅ **Hit Freeze (Hitstop)** & **Hitstun/Blockstun** - frame-advantage feedback
+- ✅ **Combo system** - hit-chain detection (a combo is a hitstun chain, not a timer)
+  with damage scaling; juggle counter that ends infinite juggles
+- ✅ **Projectile System** - Gou Hadouken (ground + air) that deals damage on contact
+- ✅ **Throws, Parry, Invincibility** - LP+LK throws; 7-frame parry; i-frames honored
+- ✅ **Super-Meter & Super Arts** - meter builds on hits/blocks; SA1/SA2/SA3
+- ✅ **Diagnostic framework** - deterministic replays, scenario tests, ROM-golden compare
 
-### Akuma Character (Fully Implemented)
-**Movement:**
-- Standing, walking, dashing (forward/backward)
-- 3 jump types (neutral, forward, backward)
-- Crouching
+### Akuma Character
+**Movement:** standing, walking, dashing (fwd/back, stops at pushbox contact),
+3 jumps (neutral/fwd/back), crouching.
 
-**Normal Attacks (18 total):**
-- 6 standing normals (LP, MP, HP, LK, MK, HK)
-- 6 crouching normals (c.LP, c.MP, c.HP, c.LK, c.MK, c.HK)
-- 6 jumping normals (j.LP, j.MP, j.HP, j.LK, j.MK, j.HK)
+**Normals (18):** 6 standing, 6 crouching, 6 jumping (LP/MP/HP/LK/MK/HK each).
+
+**Command actions:** Throw (LP+LK, fwd/back), Universal Overhead / UOH (MP+MK),
+Taunt (HP+HK).
 
 **Special Moves:**
-- Gohadoken (Fireball): QCF+P - 3 speed variants
-- Goshoryuken (Dragon Punch): DP+P - Invincible anti-air with 2 hits
-- Tatsumaki Zankukyaku (Hurricane Kick): QCB+K - Multi-hit spinning kick (3-5 hits)
+- **Gohadoken** (fireball): QCF+P — 3 speeds; air version (Zanku Hadou) QCF+P while jumping
+- **Goshoryuken** (dragon punch): DP+P
+- **Tatsumaki Zankukyaku** (hurricane kick): QCB+K
+- **Ashura Senku** (teleport): 623/421 + PPP or KKK — strike-invulnerable reposition
+- **Hyakkishū** (demon flip): QCF+K — arcing approach (followups TBD)
+
+**Super Arts** (cost a full meter):
+- **SA1 Messatsu Gou Hadou**: 236236+P (multi-hit super fireball)
+- **SA2 Messatsu Gou Shoryu**: 236236+K (launcher)
+- **SA3 Kongou Kokuretsu Zan**: 214214+P (heavy hit)
+- **Shun Goku Satsu** (Raging Demon): LP, LP, →, LK, HP — unblockable command grab
+
+> Damage/timing for several specials & supers are **provisional game-feel values**,
+> flagged in code pending ROM/decomp calibration — geometry remains ROM-accurate.
 
 ### Game Modes
-- **Normal Mode** - Standard versus gameplay
-- **Training Mode** - Infinite health, hitbox display, frame data overlay
+- **Normal Mode** - Standard match (vs CPU once the AI lands)
+- **Training Mode** - Hitbox/frame-data/input overlays, idle health regen, no timer
 - **Development Mode** - Full debug suite with performance metrics
 - **Versus Mode** - Local 2-player battles
-- **Demo Mode** - AI demonstration
+- **Hitbox Viewer** - ROM-accurate hitbox/hurtbox inspector (`--hitbox-viewer`)
 
 ### Technical Features
 - ✅ **UV Package Manager** - Modern Python dependency management
@@ -118,53 +131,54 @@ cd pykuma
 uv sync
 ```
 
-4. **Run the game:**
+4. **Run the game** (entry points are defined in `pyproject.toml`):
 ```bash
-# With main menu (recommended)
-uv run sf3
+uv run sf3            # main menu (recommended)
+uv run sf3-menu       # same, explicit
+uv run sf3-training   # training mode directly (overlays + regen)
+uv run sf3-dev        # dev mode (full debug suite)
 
-# Training mode (direct access)
-uv run python src/street_fighter_3rd/main_with_menu.py --training --no-menu
-
-# Development mode (all debug features)
-uv run python src/street_fighter_3rd/main_with_menu.py --dev --no-menu
+# Standalone ROM-accurate hitbox inspector:
+uv run python src/street_fighter_3rd/main_with_menu.py --hitbox-viewer --no-menu
 ```
 
 ## 🕹️ Controls
 
-### Player 1 (Left Side)
-**Movement:**
-- W = Jump | S = Crouch | A/D = Walk Back/Forward
-- D,D (double-tap) = Forward Dash | A,A = Backward Dash
+Directions are written facing-relative (→ = toward the opponent). `P` = any
+punch, `K` = any kick, `PPP` = all three punches, `KKK` = all three kicks.
 
-**Attacks:**
-- J/K/L = Light/Medium/Heavy Punch
-- U/I/O = Light/Medium/Heavy Kick
+### Keyboard layout
 
-**Special Moves:**
-- **Gohadoken**: ↓↘→ + J/K/L (QCF + Punch)
-- **Goshoryuken**: →↓↘ + J/K/L (DP + Punch)
-- **Tatsumaki**: ↓↙← + U/I/O (QCB + Kick)
+| | Directions | Punches (LP/MP/HP) | Kicks (LK/MK/HK) |
+|---|---|---|---|
+| **Player 1** | `W` up · `S` down · `A/D` back/fwd | `J` `K` `L` | `U` `I` `O` |
+| **Player 2** | Arrow keys | NumPad `1` `2` `3` | NumPad `4` `5` `6` |
 
-### Player 2 (Right Side)
-**Movement:**
-- ↑ = Jump | ↓ = Crouch | ←/→ = Walk Back/Forward
+Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 
-**Attacks:**
-- NumPad 1/2/3 = Light/Medium/Heavy Punch
-- NumPad 4/5/6 = Light/Medium/Heavy Kick
+### Akuma command list (facing right)
 
-**Special Moves:**
-- **Gohadoken**: ↓↘→ + 1/2/3
-- **Goshoryuken**: →↓↘ + 1/2/3
-- **Tatsumaki**: ↓↙← + 4/5/6
+| Move | Input |
+|---|---|
+| Dash forward / back | →→ / ←← |
+| Throw (fwd / back) | LP+LK (hold ← for back throw) |
+| Universal Overhead (UOH) | MP+MK |
+| Taunt | HP+HK |
+| Gohadoken (fireball) | ↓↘→ + P  *(QCF+P; air = Zanku Hadou)* |
+| Goshoryuken (DP) | →↓↘ + P |
+| Tatsumaki (hurricane) | ↓↙← + K |
+| Ashura Senku (teleport fwd / back) | →↓↘ + PPP/KKK  /  ←↓↙ + PPP/KKK |
+| Hyakkishū (demon flip) | ↓↘→ + K |
+| **SA1** Messatsu Gou Hadou | ↓↘→↓↘→ + P  *(full meter)* |
+| **SA2** Messatsu Gou Shoryu | ↓↘→↓↘→ + K  *(full meter)* |
+| **SA3** Kongou Kokuretsu Zan | ↓↙←↓↙← + P  *(full meter)* |
+| **Raging Demon** (Shun Goku Satsu) | LP, LP, →, LK, HP  *(full meter)* |
+| Parry (high / low) | tap → / tap ↓ as the hit lands (7-frame window) |
 
-### Training Mode Hotkeys
-- **F1** - Toggle hitbox/hurtbox display
-- **F2** - Toggle frame data overlay
-- **F3** - Reset character positions
-- **R** - Reset health
-- **ESC** - Return to main menu
+### Training / debug hotkeys
+- **F1** hitbox/hurtbox display · **F2** frame-data overlay · **F3** reset positions
+- **R** reset health · **F10** issue report · **F11** save replay clip · **F12** snapshot
+- **ESC** pause / return to menu
 
 ## 📁 Project Structure
 
@@ -351,16 +365,22 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 - Main menu and multiple game modes
 
 ### ✅ Phase 2: Combat Expansion (COMPLETE)
-- Complete Akuma moveset (18 normals + 3 specials)
-- Projectile system (Gohadoken)
-- Invincibility frames (Goshoryuken)
-- Multi-hit moves (Tatsumaki)
+- Full Akuma moveset: 18 normals, throws, overhead, taunt
+- Specials: Gohadoken (+ air), Goshoryuken, Tatsumaki, teleport, demon flip
+- Projectiles that deal damage; juggle limiting; HUD (icon input display, frame-data panel)
 
-### 🚧 Phase 3: SF3 Systems (MAYBE???)
-- Parry system (SF3's signature mechanic)
-- Super meter and Super Arts
-- EX moves
-- Guard break
+### ✅ Phase 3: SF3 Systems (COMPLETE)
+- Parry system (7-frame window)
+- Super meter + Super Arts SA1/SA2/SA3
+- Raging Demon command grab
+- Round-flow poses (intro / win / time-over)
+
+### 🚧 Phase 4: Single-player & polish (IN PROGRESS)
+- **CPU AI opponent** (so single-player is a real fight) — *in progress*
+- Character select + a 2nd character (Ken's class already exists, unwired)
+- Calibration pass: ROM/decomp-source the provisional damage/knockback/hitstun values
+- Cheap gaps: give UOH real damage, wire the chip-death KO pose
+- Sound & music
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for detailed milestones.
 
