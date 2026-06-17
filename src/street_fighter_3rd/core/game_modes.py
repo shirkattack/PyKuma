@@ -33,6 +33,7 @@ class GameModeConfig:
     no_timer: bool = False
     auto_reset_position: bool = False
     regen_after_idle: bool = False  # restore health to full after a no-damage lull
+    cpu_opponent: bool = False      # P2 is driven by the AI instead of the keyboard
     
     # Training mode features
     show_damage_numbers: bool = False
@@ -50,8 +51,9 @@ class GameModeConfig:
 # Predefined configurations for each mode
 GAME_MODE_CONFIGS = {
     GameMode.NORMAL: GameModeConfig(
-        # Clean gameplay experience
-        show_combo_counter=True
+        # Clean gameplay experience vs a CPU opponent
+        show_combo_counter=True,
+        cpu_opponent=True
     ),
     
     GameMode.TRAINING: GameModeConfig(
@@ -103,7 +105,8 @@ GAME_MODE_CONFIGS = {
         # Demo mode for showcasing
         show_combo_counter=True,
         show_damage_numbers=True,
-        no_timer=True
+        no_timer=True,
+        cpu_opponent=True
     ),
 
     GameMode.HITBOX_VIEWER: GameModeConfig(

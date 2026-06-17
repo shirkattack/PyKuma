@@ -125,6 +125,15 @@ class Game:
         self.player2 = Akuma(P2_START_X, STAGE_FLOOR, player_number=2)
         self.player2.input = self.input_system.player2
 
+        # CPU opponent: drive P2 with the AI instead of the keyboard. Replace the
+        # input-system slot too (that's what input_system.update() ticks) so the
+        # AI's update() actually runs each frame.
+        if self.config.cpu_opponent:
+            from street_fighter_3rd.systems.ai_controller import AIPlayerInput
+            ai_input = AIPlayerInput(2, me=self.player2, opponent=self.player1)
+            self.input_system.player2 = ai_input
+            self.player2.input = ai_input
+
         # Start new match
         self.round_manager.start_new_match()
         self._last_game_state = self.round_manager.game_state
