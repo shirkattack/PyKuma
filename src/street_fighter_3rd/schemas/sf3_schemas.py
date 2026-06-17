@@ -14,7 +14,7 @@ Key Features:
 """
 
 from typing import List, Optional, Dict, Any, Tuple, Union, Literal
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import ConfigDict, BaseModel, Field, field_validator, model_validator
 from enum import Enum
 import yaml
 from pathlib import Path
@@ -35,10 +35,11 @@ class Vector2(BaseModel):
     x: float = Field(default=0.0, description="X coordinate")
     y: float = Field(default=0.0, description="Y coordinate")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {"x": 100.0, "y": 200.0}
-        }
+        },
+    )
 
 
 class Vector3(BaseModel):
@@ -47,10 +48,11 @@ class Vector3(BaseModel):
     y: float = Field(default=0.0, description="Y coordinate") 
     z: float = Field(default=0.0, description="Z coordinate")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {"x": 100.0, "y": 200.0, "z": 0.0}
-        }
+        },
+    )
 
 
 class CharacterArchetype(str, Enum):
@@ -90,9 +92,9 @@ class HitboxData(BaseModel):
     ai_utility: float = Field(ge=0, le=1, default=0.5, description="AI utility score")
     ai_risk_level: float = Field(ge=0, le=1, default=0.5, description="AI risk assessment")
     
-    class Config:
-        use_enum_values = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
             "example": {
                 "offset_x": 50,
                 "offset_y": -65,
@@ -102,7 +104,8 @@ class HitboxData(BaseModel):
                 "stun": 7,
                 "hit_level": "mid"
             }
-        }
+        },
+    )
 
 
 class FrameData(BaseModel):
@@ -153,8 +156,8 @@ class FrameData(BaseModel):
                     raise ValueError(f"Invincibility frame {frame} outside move duration (1-{total})")
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "startup": 5,
                 "active": 3,
@@ -164,7 +167,8 @@ class FrameData(BaseModel):
                 "block_advantage": 1,
                 "special_cancelable": True
             }
-        }
+        },
+    )
 
 
 class MoveHitboxes(BaseModel):
@@ -188,14 +192,15 @@ class MoveHitboxes(BaseModel):
             raise ValueError(f"Too many hitboxes in list: {len(v)} (max 10)")
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "attack": [{"offset_x": 50, "offset_y": -65, "width": 60, "height": 40, "damage": 115}],
                 "body": [{"offset_x": 0, "offset_y": -80, "width": 40, "height": 80}],
                 "hand": [{"offset_x": 30, "offset_y": -65, "width": 25, "height": 25}]
             }
-        }
+        },
+    )
 
 
 class MoveData(BaseModel):
@@ -244,8 +249,8 @@ class MoveData(BaseModel):
                 raise ValueError(f"Invalid input command format: {v}")
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "name": "standing_medium_punch",
                 "move_type": "normal",
@@ -259,7 +264,8 @@ class MoveData(BaseModel):
                     "attack": [{"offset_x": 50, "offset_y": -65, "width": 60, "height": 40, "damage": 115}]
                 }
             }
-        }
+        },
+    )
 
 
 class CharacterStats(BaseModel):
@@ -292,9 +298,9 @@ class CharacterStats(BaseModel):
             raise ValueError("Backward walk speed cannot exceed forward walk speed")
         return v
     
-    class Config:
-        use_enum_values = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
             "example": {
                 "name": "Akuma",
                 "sf3_character_id": 14,
@@ -303,7 +309,8 @@ class CharacterStats(BaseModel):
                 "stun": 64,
                 "walk_speed": 0.032
             }
-        }
+        },
+    )
 
 
 class AIPersonality(BaseModel):
@@ -336,8 +343,8 @@ class AIPersonality(BaseModel):
         
         return self
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "aggression": 0.7,
                 "defensive_style": 0.4,
@@ -345,7 +352,8 @@ class AIPersonality(BaseModel):
                 "combo_preference": 0.6,
                 "risk_taking": 0.5
             }
-        }
+        },
+    )
 
 
 class CharacterData(BaseModel):
@@ -404,8 +412,8 @@ class CharacterData(BaseModel):
         
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "character_info": {
                     "name": "Akuma",
@@ -419,7 +427,8 @@ class CharacterData(BaseModel):
                     }
                 }
             }
-        }
+        },
+    )
 
 
 class SF3GameConfig(BaseModel):
@@ -446,14 +455,15 @@ class SF3GameConfig(BaseModel):
             raise ValueError(f"Damage scaling must match SF3 authentic values: {SF3_DAMAGE_SCALING}")
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "damage_scaling": [100, 90, 80, 70, 60, 50, 40, 30, 20, 10],
                 "parry_window": 7,
                 "hit_queue_size": 32
             }
-        }
+        },
+    )
 
 
 def load_character_data(file_path: Path) -> CharacterData:
