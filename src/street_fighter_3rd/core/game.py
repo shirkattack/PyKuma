@@ -59,12 +59,15 @@ class Game:
     All gameplay logic is frame-based; there is no delta-time anywhere.
     """
 
-    def __init__(self, screen: pygame.Surface, game_mode_manager: GameModeManager = None):
+    def __init__(self, screen: pygame.Surface, game_mode_manager: GameModeManager = None,
+                 cpu_difficulty: str = None):
         """Initialize the game.
 
         Args:
             screen: Pygame display surface
             game_mode_manager: Optional game mode manager for different play modes
+            cpu_difficulty: AIProfile key overriding the mode's default CPU tier
+                (else taken from the menu selection or the mode config).
         """
         self.screen = screen
         self.frame_count = 0
@@ -127,12 +130,23 @@ class Game:
 
         # CPU opponent: drive P2 with the AI instead of the keyboard. Replace the
         # input-system slot too (that's what input_system.update() ticks) so the
-        # AI's update() actually runs each frame.
+        # AI's update() actually runs each frame. The difficulty tier (an AIProfile)
+        # comes from the explicit arg, else the menu selection, else the mode config.
         if self.config.cpu_opponent:
             from street_fighter_3rd.systems.ai_controller import AIPlayerInput
-            ai_input = AIPlayerInput(2, me=self.player2, opponent=self.player1)
+            from street_fighter_3rd.systems.ai_profiles import get_profile
+            diff_key = (cpu_difficulty
+                        or getattr(self.game_mode_manager, "selected_difficulty", None)
+                        or self.config.cpu_difficulty)
+            self.cpu_profile = get_profile(diff_key)
+            ai_input = AIPlayerInput(2, me=self.player2, opponent=self.player1,
+                                     profile=self.cpu_profile)
             self.input_system.player2 = ai_input
             self.player2.input = ai_input
+            # "Boss syndrome": the final boss may get a bigger health pool.
+            if self.cpu_profile.health_scale != 1.0:
+                self.player2.max_health = int(self.player2.max_health * self.cpu_profile.health_scale)
+                self.player2.health = self.player2.max_health
 
         # Start new match
         self.round_manager.start_new_match()
@@ -650,6 +664,11 @@ class Game:
         pygame.draw.rect(self.screen, COLOR_WHITE, (p2_x, 20, health_bar_width, health_bar_height), 2)
         p2_name = self.p2_name_label
         self.screen.blit(p2_name, (p2_x + health_bar_width - p2_name.get_width(), 3))
+        # CPU difficulty/boss tier label under the P2 name.
+        cpu_profile = getattr(self, "cpu_profile", None)
+        if cpu_profile is not None:
+            tier = self._render_text(self.small_font, f"CPU · {cpu_profile.name}", (235, 200, 90))
+            self.screen.blit(tier, (p2_x + health_bar_width - tier.get_width(), 44))
 
         # --- Super Art meter bars (bottom corners; gold when a super is ready) ---
         from street_fighter_3rd.characters.character import MAX_SUPER_METER

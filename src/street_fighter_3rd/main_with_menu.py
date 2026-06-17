@@ -125,7 +125,10 @@ def run_menu_loop(screen, window, clock) -> tuple[bool, GameMode, GameModeManage
         if menu.should_quit():
             return False, GameMode.NORMAL, menu.get_game_mode_manager()
         elif menu.should_start_game():
-            return True, menu.get_selected_mode(), menu.get_game_mode_manager()
+            manager = menu.get_game_mode_manager()
+            # Stash the chosen AI tier so Game can pick the CPU's AIProfile.
+            manager.selected_difficulty = menu.get_selected_difficulty()
+            return True, menu.get_selected_mode(), manager
         
         # Render
         menu.render()

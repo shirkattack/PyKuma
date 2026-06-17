@@ -21,6 +21,8 @@ from street_fighter_3rd.data.constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_WHITE, COLOR_RED, COLOR_BLUE, COLOR_YELLOW
 )
 from street_fighter_3rd.core.game_modes import GameMode, GameModeManager
+from street_fighter_3rd.systems.ai_profiles import (
+    selectable_profiles, get_profile, DEFAULT_PROFILE, PROFILES)
 
 
 class MenuState(Enum):
@@ -29,6 +31,7 @@ class MenuState(Enum):
     CONTROLS = auto()
     MOVES = auto()
     MODE_SELECT = auto()
+    DIFFICULTY_SELECT = auto()
     SETTINGS = auto()
 
 
@@ -78,7 +81,7 @@ class MainMenu:
         # Menu definitions
         self.menus = {
             MenuState.MAIN: [
-                MenuItem("START GAME", self._start_normal_game),
+                MenuItem("START GAME", submenu=MenuState.DIFFICULTY_SELECT),
                 MenuItem("TRAINING MODE", self._start_training_mode),
                 MenuItem("DEV MODE", self._start_dev_mode),
                 MenuItem("HITBOX VIEWER", self._start_hitbox_viewer_mode),
@@ -102,7 +105,8 @@ class MainMenu:
                 MenuItem("VERSUS MODE", self._select_versus_mode, available=False),
                 MenuItem("DEMO MODE", self._select_demo_mode, available=False),
                 MenuItem("BACK TO MAIN", submenu=MenuState.MAIN)
-            ]
+            ],
+            MenuState.DIFFICULTY_SELECT: self._build_difficulty_menu(),
         }
 
         # Start selection on the first available item of the current menu
@@ -111,6 +115,7 @@ class MainMenu:
         # Return values for game state
         self.start_game = False
         self.selected_mode = GameMode.NORMAL
+        self.selected_difficulty = DEFAULT_PROFILE
         self.quit_game = False
 
     def _first_available(self, state) -> int:
@@ -200,7 +205,30 @@ class MainMenu:
             self._render_moves_screen()
         elif self.current_state == MenuState.MODE_SELECT:
             self._render_mode_select_screen()
-            
+        elif self.current_state == MenuState.DIFFICULTY_SELECT:
+            self._render_difficulty_screen()
+
+    def _render_difficulty_screen(self):
+        """Render the AI difficulty (boss tier) selection screen."""
+        title = self.font_large.render("SELECT OPPONENT", True, COLOR_YELLOW)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 50)))
+
+        menu_items = self.menus[MenuState.DIFFICULTY_SELECT]
+        profiles = {p.name.upper(): p for p in PROFILES.values()}
+        start_y = 120
+        for i, item in enumerate(menu_items):
+            label, color = self._item_label_color(item, i)
+            surf = self.font_medium.render(label, True, color)
+            self.screen.blit(surf, surf.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 50)))
+            # tagline for the highlighted tier
+            if i == self.selected_index and item.text in profiles:
+                p = profiles[item.text]
+                tag = f"reaction {p.reaction_frames}f · acc {int(p.input_accuracy*100)}%"
+                if p.use_super:
+                    tag += " · uses supers"
+                d = self.font_small.render(tag, True, COLOR_BLUE)
+                self.screen.blit(d, d.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 50 + 22)))
+
     def _item_label_color(self, item, index):
         """Label (with '(soon)' suffix if locked) and color for a menu item."""
         if not item.available:
@@ -388,6 +416,22 @@ class MainMenu:
                 desc_rect = desc_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 60 + 25))
                 self.screen.blit(desc_surface, desc_rect)
                 
+    def _build_difficulty_menu(self) -> List[MenuItem]:
+        """One entry per selectable AI tier, plus a teased (locked) final boss."""
+        items = [MenuItem(p.name.upper(), self._make_start_with_difficulty(p.key))
+                 for p in selectable_profiles()]
+        items.append(MenuItem("SHIN AKUMA", available=False))  # unlocks in a later phase
+        items.append(MenuItem("BACK TO MAIN", submenu=MenuState.MAIN))
+        return items
+
+    def _make_start_with_difficulty(self, key: str) -> Callable:
+        def _start():
+            self.selected_difficulty = key
+            self.game_mode_manager.set_mode(GameMode.NORMAL)
+            self.selected_mode = GameMode.NORMAL
+            self.start_game = True
+        return _start
+
     # Menu action methods
     def _start_normal_game(self):
         """Start game in normal mode."""
@@ -456,3 +500,7 @@ class MainMenu:
     def get_game_mode_manager(self) -> GameModeManager:
         """Get the game mode manager."""
         return self.game_mode_manager
+
+    def get_selected_difficulty(self) -> str:
+        """Get the selected AI difficulty (AIProfile key)."""
+        return self.selected_difficulty

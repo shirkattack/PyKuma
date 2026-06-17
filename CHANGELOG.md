@@ -11,6 +11,13 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **AI difficulty tiers / boss ladder** — a selectable ladder of CPU profiles
+  (Novice → Brawler → Technician → Veteran → Master, with a locked input-reading
+  **Shin Akuma** final boss) chosen from a difficulty screen. Tiers differ by
+  reaction-delay, input accuracy, spacing/cadence, capability gating, and super
+  usage; all deterministic (fixed-seed PRNG + reaction buffer, no wall-clock RNG).
+  `AIProfile` registry in `systems/ai_profiles.py`; `AIController` refactored into a
+  profile-driven, frame-aware decision engine.
 - **CPU AI opponent** (deterministic, no RNG) — Normal/Demo modes now fight back:
   approaches, pokes, blocks incoming attacks, Shoryuken anti-airs, throws at
   point-blank, and throws the occasional fireball. Feeds the normal input pipeline,

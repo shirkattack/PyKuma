@@ -34,6 +34,7 @@ class GameModeConfig:
     auto_reset_position: bool = False
     regen_after_idle: bool = False  # restore health to full after a no-damage lull
     cpu_opponent: bool = False      # P2 is driven by the AI instead of the keyboard
+    cpu_difficulty: str = "brawler" # AIProfile key (see systems/ai_profiles.py)
     
     # Training mode features
     show_damage_numbers: bool = False
@@ -102,11 +103,12 @@ GAME_MODE_CONFIGS = {
     ),
     
     GameMode.DEMO: GameModeConfig(
-        # Demo mode for showcasing
+        # Demo mode for showcasing -- a tougher CPU for show
         show_combo_counter=True,
         show_damage_numbers=True,
         no_timer=True,
-        cpu_opponent=True
+        cpu_opponent=True,
+        cpu_difficulty="master"
     ),
 
     GameMode.HITBOX_VIEWER: GameModeConfig(

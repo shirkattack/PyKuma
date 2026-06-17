@@ -91,7 +91,8 @@ Taunt (HP+HK).
 > flagged in code pending ROM/decomp calibration — geometry remains ROM-accurate.
 
 ### Game Modes
-- **Normal Mode** - Standard match **vs a deterministic CPU opponent**
+- **Normal Mode** - Match vs a **selectable CPU tier** (Novice → Master; a Shin Akuma
+  boss is teased/locked) chosen from the difficulty screen
 - **Training Mode** - Hitbox/frame-data/input overlays, idle health regen, no timer
 - **Development Mode** - Full debug suite with performance metrics
 - **Versus Mode** - Local 2-player battles
@@ -378,6 +379,9 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 ### 🚧 Phase 4: Single-player & polish (IN PROGRESS)
 - ✅ **CPU AI opponent** — deterministic; approaches, pokes, blocks, anti-airs,
   throws, and fireballs (Normal/Demo modes)
+- ✅ **Difficulty tiers / boss ladder** — selectable Novice → Brawler → Technician →
+  Veteran → Master profiles (reaction delay, accuracy, aggression, super usage);
+  input-reading **Shin Akuma** final boss + arcade-ladder progression are the next phases
 - Character select + a 2nd character (Ken's class already exists, unwired)
 - Calibration pass: ROM/decomp-source the provisional damage/knockback/hitstun values
 - Cheap gaps: give UOH real damage, wire the chip-death KO pose
