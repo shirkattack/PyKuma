@@ -114,12 +114,16 @@ class Game:
         # Load stage background. Resolve against the repo root so it loads no
         # matter the working directory the game is launched from.
         from pathlib import Path
-        stage_path = Path(__file__).resolve().parents[3] / "assets" / "stages" / "ryu-stage.gif"
+        repo_root = Path(__file__).resolve().parents[3]
+        stage_path = repo_root / "assets" / "stages" / "ryu-stage.gif"
         try:
             self.stage_background = pygame.image.load(str(stage_path)).convert()
         except (pygame.error, OSError, FileNotFoundError) as e:
             log_once(log, ("stage_load",), logging.WARNING, "Could not load stage background: %s", e)
             self.stage_background = None
+
+        # Load HUD assets (custom UI graphics)
+        self.hud_assets = self._load_hud_assets(repo_root)
 
         # Create characters
         self.player1 = Akuma(P1_START_X, STAGE_FLOOR, player_number=1)
@@ -629,11 +633,19 @@ class Game:
     def _render_ui(self):
         """Render game UI (health bars, timer, round indicators, etc.).
 
-        Both health bars deplete toward the center timer: the colored
-        (remaining) health stays anchored at the inner/center end of each bar,
-        so damage eats inward from the outer edges and the eye is drawn to the
-        center. P1 (left bar) is right-anchored; P2 (right bar) is left-anchored.
+        Uses custom HUD graphics if available, otherwise falls back to simple
+        rectangle-based rendering. Both health bars deplete toward the center
+        timer: the colored (remaining) health stays anchored at the inner/center
+        end of each bar, so damage eats inward from the outer edges.
         """
+        # Use custom HUD graphics if available
+        if self.hud_assets.get("hud_bar_full"):
+            self._render_ui_custom()
+        else:
+            self._render_ui_classic()
+
+    def _render_ui_classic(self):
+        """Original rectangle-based HUD rendering (fallback)."""
         health_bar_width = 250
         health_bar_height = 20
         chip_color = (245, 245, 245)  # ghost/chip layer (recently lost health)
@@ -681,6 +693,110 @@ class Game:
             pygame.draw.rect(self.screen, (255, 215, 0) if full else (80, 170, 255),
                              (sx, sm_y, int(sm_w * pct), sm_h))
             pygame.draw.rect(self.screen, COLOR_WHITE, (sx, sm_y, sm_w, sm_h), 1)
+
+        self._render_ui_common()
+
+    def _render_ui_custom(self):
+        """Custom HUD rendering using loaded graphic assets."""
+        from street_fighter_3rd.characters.character import MAX_SUPER_METER
+
+        # Scale the full HUD bar to fit the screen width
+        hud_bar = self.hud_assets["hud_bar_full"]
+        hud_width = SCREEN_WIDTH
+        hud_height = int(hud_bar.get_height() * (hud_width / hud_bar.get_width()))
+        scaled_hud = pygame.transform.smoothscale(hud_bar, (hud_width, hud_height))
+
+        # Position at top of screen
+        hud_y = 0
+
+        # Draw the full HUD background
+        self.screen.blit(scaled_hud, (0, hud_y))
+
+        # Calculate health bar positions based on the HUD layout
+        # The health bars are in the orange/yellow gradient sections
+        # P1 health bar: approximately 210-420 pixels from left in original
+        # P2 health bar: approximately 1252-1462 pixels from left in original
+        scale_factor = hud_width / hud_bar.get_width()
+
+        # Health bar dimensions and positions (scaled to screen)
+        p1_health_x = int(210 * scale_factor)
+        p1_health_y = int((300) * scale_factor) + hud_y
+        p2_health_x = int(1252 * scale_factor)
+        p2_health_y = int((300) * scale_factor) + hud_y
+        health_bar_width = int(410 * scale_factor)
+        health_bar_height = int(28 * scale_factor)
+
+        # Draw P1 health (right-anchored - depletes from left)
+        p1_pct = max(0, self.player1.health / self.player1.max_health)
+        p1_ghost_pct = max(0, self.p1_ghost_health / self.player1.max_health)
+        p1_fill = int(health_bar_width * p1_pct)
+        p1_ghost = int(health_bar_width * p1_ghost_pct)
+
+        # Ghost/chip damage (semi-transparent white)
+        if p1_ghost > p1_fill:
+            chip_rect = pygame.Rect(p1_health_x + health_bar_width - p1_ghost,
+                                   p1_health_y, p1_ghost - p1_fill, health_bar_height)
+            pygame.draw.rect(self.screen, (200, 200, 200, 180), chip_rect)
+
+        # Current health (colored bar)
+        if p1_fill > 0:
+            health_rect = pygame.Rect(p1_health_x + health_bar_width - p1_fill,
+                                     p1_health_y, p1_fill, health_bar_height)
+            pygame.draw.rect(self.screen, self._health_color(p1_pct), health_rect)
+
+        # Draw P2 health (left-anchored - depletes from right)
+        p2_pct = max(0, self.player2.health / self.player2.max_health)
+        p2_ghost_pct = max(0, self.p2_ghost_health / self.player2.max_health)
+        p2_fill = int(health_bar_width * p2_pct)
+        p2_ghost = int(health_bar_width * p2_ghost_pct)
+
+        # Ghost/chip damage
+        if p2_ghost > p2_fill:
+            chip_rect = pygame.Rect(p2_health_x + p2_fill,
+                                   p2_health_y, p2_ghost - p2_fill, health_bar_height)
+            pygame.draw.rect(self.screen, (200, 200, 200, 180), chip_rect)
+
+        # Current health
+        if p2_fill > 0:
+            health_rect = pygame.Rect(p2_health_x, p2_health_y, p2_fill, health_bar_height)
+            pygame.draw.rect(self.screen, self._health_color(p2_pct), health_rect)
+
+        # Draw super meters in the blue "POWER" sections
+        # P1 super meter: approximately 275-415 pixels from left, y ~385
+        # P2 super meter: approximately 1257-1397 pixels from left, y ~385
+        p1_meter_x = int(275 * scale_factor)
+        p1_meter_y = int(385 * scale_factor) + hud_y
+        p2_meter_x = int(1257 * scale_factor)
+        p2_meter_y = int(385 * scale_factor) + hud_y
+        meter_width = int(140 * scale_factor)
+        meter_height = int(14 * scale_factor)
+
+        # P1 super meter
+        p1_meter = getattr(self.player1, "super_meter", 0)
+        p1_meter_pct = max(0.0, min(1.0, p1_meter / MAX_SUPER_METER))
+        p1_meter_full = p1_meter >= MAX_SUPER_METER
+        if p1_meter_pct > 0:
+            meter_rect = pygame.Rect(p1_meter_x, p1_meter_y,
+                                    int(meter_width * p1_meter_pct), meter_height)
+            pygame.draw.rect(self.screen,
+                           (255, 215, 0) if p1_meter_full else (100, 180, 255),
+                           meter_rect)
+
+        # P2 super meter
+        p2_meter = getattr(self.player2, "super_meter", 0)
+        p2_meter_pct = max(0.0, min(1.0, p2_meter / MAX_SUPER_METER))
+        p2_meter_full = p2_meter >= MAX_SUPER_METER
+        if p2_meter_pct > 0:
+            meter_rect = pygame.Rect(p2_meter_x, p2_meter_y,
+                                    int(meter_width * p2_meter_pct), meter_height)
+            pygame.draw.rect(self.screen,
+                           (255, 215, 0) if p2_meter_full else (100, 180, 255),
+                           meter_rect)
+
+        self._render_ui_common()
+
+    def _render_ui_common(self):
+        """Render UI elements common to both classic and custom HUD."""
 
         center_x = SCREEN_WIDTH // 2
 
@@ -839,6 +955,52 @@ class Game:
     _INPUT_BASELINE_Y = 380  # bottom of the column; newest row sits just above it
 
     _INPUT_ICON_H = 13  # rendered height of the vendored input icons
+
+    @staticmethod
+    def _load_hud_assets(repo_root):
+        """Load custom HUD graphics (health bars, portraits, etc.).
+
+        Returns a dict of loaded surfaces, or empty dict if assets are missing.
+        Falls back to the original rectangle-based rendering if unavailable.
+        """
+        from pathlib import Path
+        hud_path = repo_root / "assets" / "ui"
+        assets = {}
+
+        # List of HUD components to load
+        component_files = [
+            "hud_bar_full.png",  # Complete HUD bar (simplest integration)
+            "portrait_frame_left.png",
+            "portrait_frame_right.png",
+            "health_bar_left.png",
+            "health_bar_right.png",
+            "timer_center.png",
+            "power_meter_left.png",
+            "power_meter_right.png",
+            "player_badge_1p.png",
+            "player_badge_2p.png",
+        ]
+
+        for filename in component_files:
+            file_path = hud_path / filename
+            if file_path.exists():
+                try:
+                    # Load with alpha transparency
+                    surface = pygame.image.load(str(file_path)).convert_alpha()
+                    # Store without the .png extension as the key
+                    key = filename.replace(".png", "")
+                    assets[key] = surface
+                except (pygame.error, OSError) as e:
+                    log_once(log, (f"hud_{filename}",), logging.WARNING,
+                            f"Could not load HUD asset {filename}: {e}")
+            else:
+                log_once(log, (f"hud_{filename}_missing",), logging.DEBUG,
+                        f"HUD asset not found: {filename}")
+
+        if assets:
+            log.info(f"Loaded {len(assets)} HUD assets")
+
+        return assets
 
     @classmethod
     def _load_input_icons(cls):

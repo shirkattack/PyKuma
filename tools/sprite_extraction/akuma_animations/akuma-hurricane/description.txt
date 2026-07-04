@@ -1,0 +1,26 @@
+Move: akuma-hurricane
+=====================
+
+Tatsumaki Zankukyaku (QCB+K)
+
+Technical Notes:
+- Frame count: 30 frames (from extracted PNGs)
+- Startup frames: 11f (frames before attack becomes active)
+- Active frames: 1f (frames where attack can hit)
+- Recovery frames: 17f (frames after attack until neutral)
+- Damage: 100
+- Stun: 13
+- Properties: Multi-hit spinning kick. Can juggle. Airborne
+
+Frame Data Source:
+- SuperCombo Wiki (wiki.supercombo.gg)
+- SF3:3S Arcade version frame data
+
+Animation Files:
+- Total frames: 30
+- Files: frame_000.png, frame_001.png, frame_002.png, frame_003.png, frame_004.png, frame_005.png, frame_006.png, frame_007.png, frame_008.png, frame_009.png, frame_010.png, frame_011.png, frame_012.png, frame_013.png, frame_014.png, frame_015.png, frame_016.png, frame_017.png, frame_018.png, frame_019.png, frame_020.png, frame_021.png, frame_022.png, frame_023.png, frame_024.png, frame_025.png, frame_026.png, frame_027.png, frame_028.png, frame_029.png
+
+Notes:
+- Animation frame count (30) may differ from game frame data
+- Game frames are at 60 FPS
+- Startup + Active + Recovery = Total move duration in-game

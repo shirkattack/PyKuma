@@ -1,0 +1,26 @@
+Move: akuma-jump-wk
+===================
+
+Jumping Light Kick
+
+Technical Notes:
+- Frame count: 10 frames (from extracted PNGs)
+- Startup frames: 4f (frames before attack becomes active)
+- Active frames: 8f (frames where attack can hit)
+- Recovery frames: 0f (frames after attack until neutral)
+- Damage: 40
+- Stun: 5
+- Properties: Air-to-air, crossup
+
+Frame Data Source:
+- SuperCombo Wiki (wiki.supercombo.gg)
+- SF3:3S Arcade version frame data
+
+Animation Files:
+- Total frames: 10
+- Files: frame_000.png, frame_001.png, frame_002.png, frame_003.png, frame_004.png, frame_005.png, frame_006.png, frame_007.png, frame_008.png, frame_009.png
+
+Notes:
+- Animation frame count (10) may differ from game frame data
+- Game frames are at 60 FPS
+- Startup + Active + Recovery = Total move duration in-game

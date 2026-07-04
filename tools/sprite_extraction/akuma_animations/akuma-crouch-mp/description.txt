@@ -1,0 +1,26 @@
+Move: akuma-crouch-mp
+=====================
+
+Crouching Medium Punch
+
+Technical Notes:
+- Frame count: 7 frames (from extracted PNGs)
+- Startup frames: 5f (frames before attack becomes active)
+- Active frames: 3f (frames where attack can hit)
+- Recovery frames: 7f (frames after attack until neutral)
+- Damage: 95
+- Stun: 11
+- Properties: Good poke
+
+Frame Data Source:
+- SuperCombo Wiki (wiki.supercombo.gg)
+- SF3:3S Arcade version frame data
+
+Animation Files:
+- Total frames: 7
+- Files: frame_000.png, frame_001.png, frame_002.png, frame_003.png, frame_004.png, frame_005.png, frame_006.png
+
+Notes:
+- Animation frame count (7) may differ from game frame data
+- Game frames are at 60 FPS
+- Startup + Active + Recovery = Total move duration in-game

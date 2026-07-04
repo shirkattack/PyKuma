@@ -1,0 +1,26 @@
+Move: akuma-block-crouch
+========================
+
+Crouching Block
+
+Technical Notes:
+- Frame count: 5 frames (from extracted PNGs)
+- Startup frames: 0f (frames before attack becomes active)
+- Active frames: 0f (frames where attack can hit)
+- Recovery frames: 0f (frames after attack until neutral)
+- Damage: 0
+- Stun: 0
+- Properties: Blocks low attacks. Blockstun varies by opponent's attack
+
+Frame Data Source:
+- SuperCombo Wiki (wiki.supercombo.gg)
+- SF3:3S Arcade version frame data
+
+Animation Files:
+- Total frames: 5
+- Files: frame_000.png, frame_001.png, frame_002.png, frame_003.png, frame_004.png
+
+Notes:
+- Animation frame count (5) may differ from game frame data
+- Game frames are at 60 FPS
+- Startup + Active + Recovery = Total move duration in-game

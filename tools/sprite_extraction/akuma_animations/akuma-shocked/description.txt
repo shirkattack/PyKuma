@@ -1,0 +1,16 @@
+Move: akuma-shocked
+===================
+
+Stun State. Dizzy/stunned animation.
+
+Technical Notes:
+- Frame count: [Count the PNG files in this folder]
+- Startup frames: [Frames before attack becomes active]
+- Active frames: [Frames where attack can hit]
+- Recovery frames: [Frames after attack until neutral]
+- Damage: [Attack damage value]
+- Properties: [Special properties like invincibility, knockdown, etc.]
+
+Animation Files:
+- Total frames: 3
+- Files: frame_000.png, frame_001.png, frame_002.png

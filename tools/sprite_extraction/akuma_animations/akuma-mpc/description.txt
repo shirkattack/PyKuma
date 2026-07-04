@@ -1,0 +1,16 @@
+Move: akuma-mpc
+===============
+
+Close Standing Medium Punch. Close-range version with different properties.
+
+Technical Notes:
+- Frame count: [Count the PNG files in this folder]
+- Startup frames: [Frames before attack becomes active]
+- Active frames: [Frames where attack can hit]
+- Recovery frames: [Frames after attack until neutral]
+- Damage: [Attack damage value]
+- Properties: [Special properties like invincibility, knockdown, etc.]
+
+Animation Files:
+- Total frames: 9
+- Files: frame_000.png, frame_001.png, frame_002.png, frame_003.png, frame_004.png, frame_005.png, frame_006.png, frame_007.png, frame_008.png
