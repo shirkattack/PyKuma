@@ -72,7 +72,7 @@ PROFILES: Dict[str, AIProfile] = {
     "technician": AIProfile(
         key="technician", name="Technician",
         aggression=0.6, defensive_style=0.6, zoning_preference=0.6,
-        reaction_frames=0, input_accuracy=0.95, spacing_scale=1.05, act_period=20,
+        reaction_frames=0, input_accuracy=1.0, spacing_scale=1.05, act_period=20,
         use_super=True, whiff_punish=True, parry=True),
 
     "veteran": AIProfile(

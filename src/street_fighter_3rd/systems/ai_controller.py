@@ -114,13 +114,15 @@ class AIController:
             return (_N, [])
 
         # 6) Far: approach, with an occasional fireball (zoning) or jump-in.
-        choice = (self.frame // 40) % 4
-        if p.zoning and choice == 0:
-            self._queue_motion([(_D, []), (_DF, []), (_F, [Button.MEDIUM_PUNCH])])  # QCF+P
-            return self._queue.popleft()
-        if choice == 2:
-            return (_UF, [])   # jump-in approach
-        return (_F, [])        # walk forward
+        # Use RNG for variety while staying deterministic (same seed = same pattern).
+        if self.frame % 40 == 0:  # Re-decide every ~0.67 seconds
+            choice = self.rng.randint(0, 3)
+            if p.zoning and choice == 0:
+                self._queue_motion([(_D, []), (_DF, []), (_F, [Button.MEDIUM_PUNCH])])  # QCF+P
+                return self._queue.popleft()
+            if choice == 2:
+                return (_UF, [])   # jump-in approach
+        return (_F, [])        # walk forward (default)
 
     # --- helpers ---
     def _poke(self) -> Button:
