@@ -9,6 +9,7 @@ from typing import Dict
 
 from street_fighter_3rd.util.logging_config import get_logger, is_strict, log_once
 from street_fighter_3rd.core.diagnostics import InvariantChecker, FrameRecorder, RING_FRAMES
+from street_fighter_3rd.core.frame_lab import FrameLab
 
 log = get_logger(__name__)
 from street_fighter_3rd.data.enums import GameState, RoundResult, CharacterState
@@ -78,6 +79,11 @@ class Game:
         self.diagnostics = InvariantChecker()
         self.recorder = FrameRecorder()
 
+        # Frame Lab: live phase measurement + expected-vs-actual diffing.
+        # F4 toggles the SF6-style frame meter; F9 files bug tickets to bugs/.
+        # Defaults on wherever the mode already shows frame data (training/dev).
+        self.frame_lab = FrameLab()
+
         # Screen shake (deterministic): countdown + intensity, fed by the VFX
         # manager's shake_request. Fight layer is composed into this buffer then
         # blitted offset; see render() / shake_offset().
@@ -104,6 +110,8 @@ class Game:
         # Initialize game mode manager
         self.game_mode_manager = game_mode_manager or GameModeManager()
         self.config = self.game_mode_manager.get_config()
+        # Frame meter defaults on wherever the mode already shows frame data.
+        self.show_frame_meter = bool(getattr(self.config, "show_frame_data", False))
 
         # Initialize systems
         self.input_system = InputSystem()
@@ -213,6 +221,10 @@ class Game:
                 self._toggle_pause()
             elif event.key == pygame.K_F1:
                 self.debug_display = not self.debug_display
+            elif event.key == pygame.K_F4:
+                self.show_frame_meter = not self.show_frame_meter
+            elif event.key == pygame.K_F9:
+                self.frame_lab.dump_tickets(game=self)
             elif event.key == pygame.K_F10:
                 self.build_issue_report()
             elif event.key == pygame.K_F11:
@@ -295,6 +307,10 @@ class Game:
             self.recorder.record(self)
         if self.debug_display or DEBUG_MODE or is_strict():
             self.diagnostics.check(self)
+        # Frame Lab observes whenever the meter is up or replays are recording,
+        # so F9 always has a completed move to ticket. Observational only.
+        if self.show_frame_meter or self.config.record_replay or self.debug_display:
+            self.frame_lab.observe(self)
 
     def _update_health_dynamics(self):
         """Track damage timing, run training idle-regen, animate ghost bars."""
@@ -471,6 +487,7 @@ class Game:
         self.input_system.reset()
         self.vfx_manager.clear()
         self.collision_system.reset()
+        self.frame_lab.reset()
         # Reset health-bar animation + idle-regen tracking
         self.p1_ghost_health = self.player1.health
         self.p2_ghost_health = self.player2.health
@@ -508,6 +525,8 @@ class Game:
             self._blit_world_zoomed(offset)
             self._render_ui()
             self._render_training_overlays()
+            if self.show_frame_meter:
+                self.frame_lab.render(self.screen)
         else:
             self.screen.fill(COLOR_BLACK)
             if state == GameState.CONTINUE_SCREEN:
