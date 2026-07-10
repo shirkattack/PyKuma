@@ -103,16 +103,26 @@ PHASE_COLORS = {
 }
 COLOR_FREEZE = (245, 245, 245)   # hitstop notch
 COLOR_DISCREPANCY = (255, 140, 0)
+COLOR_FALLBACK = (230, 60, 200)  # placeholder rectangle was drawn
+CEL_SHADES = ((150, 150, 158), (96, 96, 104))  # alternating cel-hold shading
 
 
 @dataclass
 class Sample:
-    """One character-frame on the meter."""
+    """One character-frame on the meter: mechanical phase + sprite track."""
     frame: int
     phase: Phase
     frozen: bool
     expected_phase: Optional[Phase] = None  # from declared timing, when in a move
     move_start: bool = False
+    # Sprite track (phase 2): what was visibly drawn this frame. None when the
+    # character has no animation controller (e.g. test stubs).
+    anim: Optional[str] = None
+    cel: Optional[int] = None          # cel index within the animation
+    cel_total: Optional[int] = None
+    sprite: Optional[str] = None       # sprite number or folder/frame id
+    anim_complete: bool = False
+    fallback: bool = False             # placeholder rectangle drawn (prev frame)
 
 
 @dataclass
@@ -157,6 +167,14 @@ class MoveReport:
     advantage: Optional[int] = None       # measured; None until both actors free
     advantage_kind: str = ""              # "hit" | "block" | "knockdown" | ""
     discrepancies: List[Dict[str, Any]] = field(default_factory=list)
+    # Sprite track (phase 2)
+    expected_anim: Optional[str] = None
+    anims_seen: List[str] = field(default_factory=list)
+    fallback_frames: int = 0
+    anim_completed_at: Optional[int] = None  # non-frozen move index of completion
+    cels_shown: int = 0
+    cel_total: Optional[int] = None
+    cel_timeline: List[Dict[str, Any]] = field(default_factory=list)
 
     @property
     def total(self) -> int:
@@ -173,7 +191,50 @@ class MoveReport:
                          "advantage_kind": self.advantage_kind},
             "hits": [vars(h) for h in self.hits],
             "expected": vars(self.expected) if self.expected else None,
+            "sprite": {"expected_anim": self.expected_anim,
+                       "anims_seen": self.anims_seen,
+                       "fallback_frames": self.fallback_frames,
+                       "anim_completed_at": self.anim_completed_at,
+                       "cels_shown": self.cels_shown,
+                       "cel_total": self.cel_total},
         }
+
+
+def _sprite_info(char) -> Optional[Dict[str, Any]]:
+    """What the character is visibly drawing right now, read from the live
+    animation controller. Defensive: returns None for controller-less stubs.
+
+    Note: `fallback` reflects the PREVIOUS frame's render (the flag is set in
+    _render, which runs after update/observe) — a one-frame lag that doesn't
+    matter for counting missing-art frames."""
+    ctrl = getattr(char, "animation_controller", None)
+    if ctrl is None:
+        return None
+    try:
+        info = ctrl.get_current_frame_info()
+    except Exception:
+        return None
+    if not info or info.get("animation") is None:
+        return None
+    sprite = info.get("sprite_number")
+    if sprite is None:
+        sprite = info.get("source")
+    return {
+        "anim": info.get("animation"),
+        "cel": info.get("frame_index"),
+        "cel_total": info.get("total_frames"),
+        "sprite": str(sprite) if sprite is not None else None,
+        "complete": bool(info.get("complete")),
+        "fallback": bool(getattr(char, "_rendered_fallback", False)),
+    }
+
+
+def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
+    """The animation _STATE_ANIM says this state should play."""
+    mapping = getattr(type(char), "_STATE_ANIM", None) or getattr(char, "_STATE_ANIM", None)
+    if not mapping:
+        return None
+    return mapping.get(state)
 
 
 def _expected_for(state: CharacterState) -> Optional[Expected]:
@@ -197,13 +258,16 @@ def _expected_for(state: CharacterState) -> Optional[Expected]:
 class MoveCapture:
     """Tracks one execution of one move for one player."""
 
-    def __init__(self, player: int, state: CharacterState, start_frame: int):
+    def __init__(self, player: int, state: CharacterState, start_frame: int,
+                 expected_anim: Optional[str] = None):
         self.player = player
         self.state = state
         self.report = MoveReport(player=player, move=state.name, start_frame=start_frame)
         self.report.expected = _expected_for(state)
+        self.report.expected_anim = expected_anim
         self.seen_active = False
         self.nonfrozen_index = 0  # position on the declared timeline
+        self._last_cel_key = None
 
     def sample(self, character, frame: int) -> Sample:
         frozen = character.hitfreeze_frames > 0
@@ -237,17 +301,49 @@ class MoveCapture:
             else:
                 self.report.recovery += 1
 
-        return Sample(frame=frame, phase=phase, frozen=frozen,
-                      expected_phase=exp_phase,
-                      move_start=(self.nonfrozen_index == 1 and not frozen
-                                  and self.report.startup + self.report.active
-                                  + self.report.recovery == 1))
+        sample = Sample(frame=frame, phase=phase, frozen=frozen,
+                        expected_phase=exp_phase,
+                        move_start=(self.nonfrozen_index == 1 and not frozen
+                                    and self.report.startup + self.report.active
+                                    + self.report.recovery == 1))
+        self._record_sprite(sample, _sprite_info(character), frame, phase, frozen)
+        return sample
+
+    def _record_sprite(self, sample: Sample, sp: Optional[Dict[str, Any]],
+                       frame: int, phase: Phase, frozen: bool):
+        if sp is None:
+            return
+        r = self.report
+        sample.anim, sample.cel = sp["anim"], sp["cel"]
+        sample.cel_total, sample.sprite = sp["cel_total"], sp["sprite"]
+        sample.anim_complete, sample.fallback = sp["complete"], sp["fallback"]
+        if sp["anim"] and sp["anim"] not in r.anims_seen:
+            r.anims_seen.append(sp["anim"])
+        if sp["fallback"]:
+            r.fallback_frames += 1
+        if sp["complete"] and r.anim_completed_at is None and not frozen:
+            # frames the animation actually PLAYED (this sample is the first
+            # held-after-finish frame, so subtract it).
+            r.anim_completed_at = max(0, self.nonfrozen_index - 1)
+        if sp["cel"] is not None:
+            r.cels_shown = max(r.cels_shown, sp["cel"] + 1)
+        if sp["cel_total"] is not None:
+            r.cel_total = sp["cel_total"]
+        # cel_timeline: one row per (anim, cel) hold + every fallback frame.
+        key = (sp["anim"], sp["cel"])
+        if key != self._last_cel_key or sp["fallback"]:
+            r.cel_timeline.append({"frame": frame, "phase": phase.name,
+                                   "frozen": frozen, "anim": sp["anim"],
+                                   "cel": sp["cel"], "sprite": sp["sprite"],
+                                   "fallback": sp["fallback"]})
+            self._last_cel_key = key
 
     def close(self, frame: int, cancelled: bool) -> MoveReport:
         r = self.report
         r.end_frame = frame
         r.cancelled = cancelled
         self._diff()
+        self._diff_sprites()
         return r
 
     # -- expected vs measured -> discrepancies ------------------------------
@@ -290,6 +386,49 @@ class MoveCapture:
             if exp_stop is not None and h.hitstop != exp_stop:
                 self._flag("hitstop", h.hitstop, exp_stop,
                            "sf3_collision_adapter formula", "engine-formula")
+
+    def _diff_sprites(self):
+        """Sprite-track checks. Conservative by design: only flag what is
+        provably wrong from engine truth; alignment JUDGEMENT (does the fist
+        LOOK extended during active?) stays with the human, who files it via
+        F9 with the cel_timeline as the alignment table."""
+        r = self.report
+        if not r.anims_seen:
+            return  # no sprite track (stub, or no controller)
+        map_src = "characters/akuma.py _STATE_ANIM"
+        if r.expected_anim:
+            wrong = [a for a in r.anims_seen if a != r.expected_anim]
+            if wrong:
+                self._flag("sprite_mapping", "+".join(wrong), r.expected_anim,
+                           map_src, "engine-mapping",
+                           "a different animation than the state's mapped one "
+                           "was drawn during this move")
+        if r.fallback_frames:
+            self._flag("sprite_fallback", r.fallback_frames, 0,
+                       "renderer (placeholder rectangle)", "engine",
+                       "missing local sprite assets or a bad sprite id/path")
+        # Timing: the mechanical move is the ruler. Cancels truncate anything.
+        if not r.cancelled:
+            total = r.startup + r.active + r.recovery
+            if r.anim_completed_at is not None and r.anim_completed_at < total:
+                self._flag("sprite_timing", r.anim_completed_at, total,
+                           "data/animations.yaml (anim length vs ROM total)",
+                           "verified",
+                           "animation finished and held its last cel while the "
+                           "move was still running")
+                if r.anim_completed_at <= r.startup and r.active:
+                    self._flag("sprite_sync", r.anim_completed_at, r.startup,
+                               "cel_timeline", "verified",
+                               "animation ended before the active window began "
+                               "— the visible motion cannot match the hit")
+            elif (r.anim_completed_at is None and r.cel_total
+                  and r.cels_shown < r.cel_total):
+                self._flag("sprite_timing", f"{r.cels_shown}/{r.cel_total} cels",
+                           f"{r.cel_total}/{r.cel_total} cels",
+                           "data/animations.yaml (anim length vs ROM total)",
+                           "verified",
+                           "the move ended before the animation finished — "
+                           "trailing cels are never shown")
 
     def finalize_advantage(self):
         """Called once advantage is known; diffs it against community values."""
@@ -411,7 +550,8 @@ class FrameLab:
             if cap is None or cap.state != char.state or char.state_frame < 1:
                 if cap is not None:
                     self.last_reports[pid] = cap.close(frame, cancelled=True)
-                cap = MoveCapture(pid, char.state, frame)
+                cap = MoveCapture(pid, char.state, frame,
+                                  expected_anim=_expected_anim_for(char, char.state))
                 self.captures[pid] = cap
             return cap.sample(char, frame)
 
@@ -429,7 +569,13 @@ class FrameLab:
             phase = Phase.MOVEMENT
         else:
             phase = Phase.NEUTRAL
-        return Sample(frame=frame, phase=phase, frozen=frozen)
+        sample = Sample(frame=frame, phase=phase, frozen=frozen)
+        sp = _sprite_info(char)
+        if sp is not None:
+            sample.anim, sample.cel = sp["anim"], sp["cel"]
+            sample.cel_total, sample.sprite = sp["cel_total"], sp["sprite"]
+            sample.anim_complete, sample.fallback = sp["complete"], sp["fallback"]
+        return sample
 
     # -- rendering ------------------------------------------------------------
     def render(self, screen: pygame.Surface):
@@ -443,8 +589,24 @@ class FrameLab:
         y = {1: screen.get_height() - 118, 2: screen.get_height() - 96}
 
         for pid in (1, 2):
+            # Filmstrip row: the sprite track locked to the same frame ruler.
+            # Alternating shades per cel hold make the cel RHYTHM visible
+            # against the phase colours below; magenta = placeholder drawn;
+            # a bright tick marks each cel change.
+            shade_i, prev_key = 0, object()
             for i, s in enumerate(self.samples[pid]):
                 x = x0 + i * (pip_w + gap)
+                key = (s.anim, s.cel)
+                changed = (key != prev_key)
+                if changed:
+                    shade_i ^= 1
+                prev_key = key
+                if s.anim is not None:
+                    color = COLOR_FALLBACK if s.fallback else CEL_SHADES[shade_i]
+                    pygame.draw.rect(screen, color, (x, y[pid] - 8, pip_w, 5))
+                    if changed:
+                        pygame.draw.line(screen, COLOR_FREEZE,
+                                         (x, y[pid] - 9), (x, y[pid] - 3), 1)
                 pygame.draw.rect(screen, PHASE_COLORS[s.phase],
                                  (x, y[pid], pip_w, pip_h))
                 if s.frozen:
@@ -454,7 +616,7 @@ class FrameLab:
                                      (x, y[pid] + pip_h + 2, pip_w, 3))
                 if s.move_start:
                     pygame.draw.line(screen, COLOR_FREEZE,
-                                     (x, y[pid] - 3), (x, y[pid] + pip_h + 5), 1)
+                                     (x, y[pid] - 10), (x, y[pid] + pip_h + 5), 1)
             self._render_report_line(screen, pid, x0, y[pid] + pip_h + 8
                                      if pid == 2 else y[1] - 14)
 
@@ -476,6 +638,13 @@ class FrameLab:
             txt += f" stop{h.hitstop}"
         if r.advantage is not None:
             txt += f"  adv{r.advantage:+d}"
+        if r.anims_seen:
+            txt += f"  [{'+'.join(r.anims_seen)}"
+            if r.cel_total:
+                txt += f" {r.cels_shown}/{r.cel_total}c"
+            if r.fallback_frames:
+                txt += f" FB{r.fallback_frames}"
+            txt += "]"
         color = COLOR_DISCREPANCY if r.discrepancies else (200, 200, 200)
         screen.blit(self._font.render(txt, True, color), (x, y))
         if r.discrepancies:
@@ -528,11 +697,17 @@ class FrameLab:
     def _repro_for(self, report: MoveReport, game) -> Dict[str, Any]:
         repro: Dict[str, Any] = {
             "phase_timeline": [
-                {"frame": s.frame, "phase": s.phase.name, "frozen": s.frozen}
+                {"frame": s.frame, "phase": s.phase.name, "frozen": s.frozen,
+                 **({"anim": s.anim, "cel": s.cel, "sprite": s.sprite,
+                     "fallback": s.fallback} if s.anim is not None else {})}
                 for s in self.samples[report.player]
                 if report.start_frame <= s.frame <= (report.end_frame or s.frame)
             ],
         }
+        if report.cel_timeline:
+            # The alignment table for sprite tickets: one row per cel hold,
+            # annotated with the mechanical phase it landed in.
+            repro["cel_timeline"] = report.cel_timeline
         if game is not None and getattr(game, "recorder", None):
             span = max(10, (report.end_frame or report.start_frame)
                        - report.start_frame + 10)

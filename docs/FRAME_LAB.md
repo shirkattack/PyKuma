@@ -28,6 +28,10 @@ Two pip strips (P1 above P2), one pip per game frame, last ~90 frames:
 - **Yellow** hitstun · **Cyan** blockstun · **Grey** movement · dark = neutral
 - **White notch** on top of a pip = hitstop (frozen frames are *excluded*
   from measured counts, matching how SF3 frame data is quoted)
+- **Filmstrip row** (above each strip) = the sprite track on the same frame
+  ruler: alternating grey blocks per cel hold (you can *see* the cel rhythm
+  against the phase colours), a white tick at every cel change, **magenta**
+  where a placeholder rectangle was drawn instead of a sprite
 - **Thin underline** beneath the pips = the *declared* (expected) phase for
   that frame. When the underline colour disagrees with the pip colour, you
   are literally looking at a timing bug — the misalignment is the diagnosis.
@@ -45,6 +49,11 @@ frame advantage. Discrepancies render in **orange** with a `!!` line.
 | damage / hitstun / blockstun | community tier (Baston ESN3S) | community | data or the code that ignores it (see ticket note) |
 | hitstop | adapter formula | engine-formula | engine mis-applied freeze, or tune the constants |
 | advantage on hit/block | community tier | community | emergent — fix hitstun or recovery, never the output |
+| sprite_mapping | `_STATE_ANIM` (akuma.py) | engine-mapping | wrong/undefined animation for the state |
+| sprite_timing | anim length vs ROM total | verified | fit the animation to the move, never the reverse |
+| sprite_sync | cel timeline vs active window | verified | auto-flagged only when provably impossible; otherwise human-filed via F9 |
+| sprite_fallback | renderer | engine | missing local sprite assets or bad sprite id/path |
+| data_drift | animations.yaml embedded blocks vs ROM repo | verified | delete/regenerate the stale duplicate |
 
 Measurement details worth knowing:
 - **Cancels don't false-flag.** A move cancelled into a special legitimately
@@ -67,13 +76,35 @@ Measurement details worth knowing:
 5. Fixed tickets stay in `bugs/` with `status: fixed` as the audit trail;
    promote recurring ones into `tests/`.
 
-## Scope of v1 (and what's deliberately next)
+## The sprite track (phase 2)
 
-v1 covers the **mechanical channel** (timing, damage, hitstun, blockstun,
-hitstop, advantage). The architecture already reserves the next channels:
-sprite↔hitbox sync and sprite mapping (a filmstrip row locked to the same
-frame ruler), and a headless scripted-scenario runner so tickets can carry a
-replayable repro instead of a recorded one.
+Every ticket for a move now carries `repro.cel_timeline`: one row per cel
+hold, annotated with the mechanical phase it landed in. That table IS the
+sprite-sync spec — "the fist extends at cel 5 but the boxes go live during
+cel 3" becomes rows an assistant can act on. Automatic flags stay
+conservative (wrong animation, missing art, animation provably unable to
+match the hit); whether the *right cel* shows at the right time is a human
+judgement, filed with F9 like everything else.
+
+### Static audit (no gameplay needed)
+
+```
+python tools/framelab/audit_animations.py            # console report
+python tools/framelab/audit_animations.py --tickets  # file bugs/*.yaml
+```
+
+Cross-checks `animations.yaml` against the ROM repository per attack state:
+missing animations for mapped states, animation length vs ROM move total,
+and drift in the legacy embedded `frame_data`/`hitbox` blocks (the ROM repo
+is canonical; the embedded blocks are flagged for deletion/regeneration).
+On the current data this reports ~60 findings, including every grounded
+normal's animation length and all six unmapped jump-normal animations.
+
+## Deliberately next
+
+A headless scripted-scenario runner so tickets carry a *replayable* repro
+(input script) instead of a recorded one, and per-move regression scenarios
+generated from fixed tickets.
 
 ## Testing
 

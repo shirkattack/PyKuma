@@ -1,0 +1,40 @@
+schema_version: 1
+id: manual_demon_flip_incorrect
+created: '2026-07-10T21:10:09.966375+00:00'
+status: open
+move: DEMON_FLIP
+player: 1
+channel: sprite_mapping
+frame_range:
+- 0
+- 0
+observed: Demon Flip doesn't behave correctly
+expected:
+  value: correct arcing jump + Hyakki Go follow-ups (kick/dive/throw/none)
+  source: 3rd_training_lua Hyakkishu data + Baston notes
+  provenance: verified
+delta: null
+complaint: Akuma's Demon Flip (Hyakkishuu) isn't correct - arc trajectory and/or follow-up options aren't
+  behaving as expected.
+measured_summary:
+  note: DEMON_FLIP has an arc via DEMON_FLIP_RISE=-8.0 DEMON_FLIP_FORWARD=6.5 constants but no ROM record
+    and no follow-up input handling for the Hyakki Go options.
+repro: {}
+fix_hints:
+- Sprite channels concern the VISIBLE track, not the mechanics. The mechanical timing (ROM) is the ruler;
+  the animation must be fitted to it, never the other way around.
+- 'State -> animation mapping: characters/akuma.py (_STATE_ANIM and the state-transition handler around
+  it).'
+- 'Animation definitions (sprite lists + frame_duration): src/street_fighter_3rd/data/animations.yaml.
+  An attack animation''s game-frame length (n_sprites x frame_duration, or per-cel durations) should equal
+  the move''s ROM total so cels neither cut off nor freeze on the last pose mid-move.'
+- 'Playback engine: src/street_fighter_3rd/systems/animation.py (Animation/FolderAnimation.update, AnimationController).'
+- "Use the ticket's repro.cel_timeline: it aligns cel changes against the measured phase per frame \u2014\
+  \ the desync is visible as rows where the cel is wrong for the phase."
+- 'sprite_fallback means a placeholder rectangle was drawn: sprites are not bundled (Capcom copyright);
+  local assets come from the tools/sprite_extraction personal-use path. Missing files, not code, unless
+  the path/mapping is wrong.'
+- Extract ROM arc data (velocities, apex, distance) from 3rd_training_lua Hyakkishu
+- 'Implement Hyakki Go follow-ups: K (kick), P (dive), LK+MK (throw), no input (land normally)'
+- Add hitbox windows for each follow-up variant in akuma_hitboxes.py
+- Verify facing direction handling during the arc (crossup potential)

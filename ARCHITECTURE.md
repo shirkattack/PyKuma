@@ -2,7 +2,8 @@
 
 One page on which module is the canonical implementation of each concern.
 If you (or your AI assistant) are wondering "which of these files is real?" —
-this is the answer. Everything else of historical interest lives in `attic/`.
+this is the answer. Superseded implementations were removed from the tree;
+git history remembers them (see "The attic", below).
 
 ## The live game
 
@@ -15,7 +16,9 @@ src/street_fighter_3rd/
 │   ├── round_manager.py  # Round/timer/win state machine
 │   ├── game_modes.py     # Mode config (training, dev, no-rounds)
 │   ├── main_menu.py      # Menu for main_with_menu
-│   └── projectile.py     # Gohadoken etc.
+│   ├── projectile.py     # Gohadoken etc.
+│   ├── diagnostics.py    # Invariant checks + per-frame session recorder
+│   └── frame_lab.py      # Frame meter + measured-vs-declared diffing (F4/F9)
 ├── characters/
 │   ├── character.py      # Base: state machine, physics, reset() contract
 │   └── akuma.py          # The one playable character
@@ -44,6 +47,10 @@ src/street_fighter_3rd/
 - **Frame order per fight frame:** facing → input → parry windows →
   character updates → `collision.tick()` → collision checks (P1→P2, P2→P1)
   → VFX.
+- **ROM-driven durations.** Normals (+ Universal Overhead) end at the
+  ROM-verified total via `Character._move_total_frames()` (Akuma overrides it
+  with the hitbox-repository lookup). Animations FILL that window — they never
+  define it. Specials remain animation-driven until they get ROM records.
 - **Reset contract.** Every round starts from a clean slate:
   `Character.reset()`, `InputSystem.reset()`, `VFXManager.clear()`,
   `SF3CollisionAdapter.reset()`. If you add a stateful system, give it a
@@ -51,12 +58,13 @@ src/street_fighter_3rd/
 
 ## The attic
 
-`attic/` holds parallel implementations that are **not** imported by the live
+The `attic/` directory has been deleted from the working tree; git history
+holds the parallel implementations that were **not** imported by the live
 game: the legacy `CollisionSystem`, the alternate `SF3InputSystem`,
 keyboard_input, the `SF3AnimationController` stack, the
 `SF3GameManager`/character-select/training-mode experimental stack, and the
-alternate visual effects manager. They are kept for reference only; don't
-import them from `src/`. (Git remembers everything if you want to delete it.)
+alternate visual effects manager. They were kept only for reference and have since been removed; recover them
+from git history if ever needed. Don't reintroduce imports of them in `src/`.
 
 Characters `ken.py` / `shoto_base.py` remain in `src/` but are **experimental**:
 nothing constructs Ken yet; both players are Akuma (`core/game.py`).
@@ -89,3 +97,26 @@ tier so nothing fabricated can pass as real.
 `data/frame_data.py` still defines shared dataclasses (`MoveData` used by
 `characters/character.py`); `data/animations.yaml` holds animation timing — neither is a
 hitbox source.
+
+## Frame Lab (debugging system)
+
+The bridge between human perception ("the HP does too much damage") and a
+machine-actionable claim (`channel=damage observed=200 expected=180`). The
+frame number is the shared address space. See `docs/FRAME_LAB.md`.
+
+- `core/frame_lab.py` — live per-frame phase classification (reads the SAME
+  `state_frame + 1` indexing the collision adapter uses), move measurement
+  with hitstop excluded, expected-vs-actual diffing against the provenance
+  tiers above, sprite-track capture (anim/cel/fallback per frame), and the
+  SF6-style meter (F4).
+- `schemas/bug_ticket.py` — the Pydantic ticket format written to `bugs/`
+  (F9): one dimensioned claim per move per channel, with provenance-aware
+  `fix_hints`. `bugs/README.md` is the consumption contract for AI assistants.
+- `tools/framelab/audit_animations.py` — static cross-check of the sprite
+  track (`data/animations.yaml`) against the ROM repository; flags missing
+  animations, anim-length vs ROM-total drift, and any reintroduced embedded
+  frame_data/hitbox blocks (`data_drift`).
+- `data/animations.yaml` is **presentation-only** (sprites, durations,
+  offsets). Its legacy embedded frame_data/hitbox blocks were removed after
+  verifying nothing reads them; the ROM repository stays the sole timing and
+  geometry source of record.

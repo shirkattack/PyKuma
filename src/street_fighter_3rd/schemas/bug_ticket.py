@@ -35,6 +35,12 @@ Channel = Literal[
     "startup", "active", "recovery", "total",
     "damage", "hitstun", "blockstun", "hitstop",
     "advantage_on_hit", "advantage_on_block",
+    # sprite channels (phase 2): the visible motion vs the mechanical truth
+    "sprite_mapping",   # wrong animation playing for the state
+    "sprite_timing",    # animation length disagrees with the move's frames
+    "sprite_sync",      # cels misaligned with the startup/active/recovery windows
+    "sprite_fallback",  # placeholder rectangle drawn (missing art)
+    "data_drift",       # stale duplicated data (animations.yaml vs ROM repo)
     "observation",
 ]
 
@@ -79,9 +85,41 @@ FIX_HINTS: Dict[str, List[str]] = {
         "hitstun/blockstun applied (combat tier), then the attacker's recovery "
         "(timing tier). Fix the inputs, never fudge the output.",
     ],
+    "_sprite": [
+        "Sprite channels concern the VISIBLE track, not the mechanics. The "
+        "mechanical timing (ROM) is the ruler; the animation must be fitted "
+        "to it, never the other way around.",
+        "State -> animation mapping: characters/akuma.py (_STATE_ANIM and the "
+        "state-transition handler around it).",
+        "Animation definitions (sprite lists + frame_duration): "
+        "src/street_fighter_3rd/data/animations.yaml. An attack animation's "
+        "game-frame length (n_sprites x frame_duration, or per-cel durations) "
+        "should equal the move's ROM total so cels neither cut off nor freeze "
+        "on the last pose mid-move.",
+        "Playback engine: src/street_fighter_3rd/systems/animation.py "
+        "(Animation/FolderAnimation.update, AnimationController).",
+        "Use the ticket's repro.cel_timeline: it aligns cel changes against "
+        "the measured phase per frame — the desync is visible as rows where "
+        "the cel is wrong for the phase.",
+        "sprite_fallback means a placeholder rectangle was drawn: sprites are "
+        "not bundled (Capcom copyright); local assets come from the "
+        "tools/sprite_extraction personal-use path. Missing files, not code, "
+        "unless the path/mapping is wrong.",
+    ],
+    "data_drift": [
+        "animations.yaml embeds frame_data/hitbox blocks that PREDATE the "
+        "ROM-verified repository and have drifted from it. The ROM repo "
+        "(data/characters/akuma/hitboxes.yaml via hitbox_repository) is "
+        "canonical for timing and geometry; ARCHITECTURE.md says so.",
+        "Preferred fix: delete the stale embedded block (or regenerate it "
+        "from the repository) and make sure no live code reads it. Grep for "
+        "readers before deleting; animations.yaml should carry sprite/timing "
+        "presentation data only.",
+    ],
     "observation": [
         "No numeric mismatch was detected; use `complaint` + `measured_summary` "
-        "+ `repro.phase_timeline` to locate the issue.",
+        "+ `repro.phase_timeline` (and `repro.cel_timeline` for sprite issues) "
+        "to locate the issue.",
     ],
 }
 
@@ -93,6 +131,8 @@ def hints_for(channel: str) -> List[str]:
         return FIX_HINTS["_combat"]
     if channel in ("advantage_on_hit", "advantage_on_block"):
         return FIX_HINTS["_advantage"]
+    if channel in ("sprite_mapping", "sprite_timing", "sprite_sync", "sprite_fallback"):
+        return FIX_HINTS["_sprite"]
     return FIX_HINTS.get(channel, FIX_HINTS["observation"])
 
 

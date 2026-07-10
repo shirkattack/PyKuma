@@ -123,6 +123,12 @@ class SF3CollisionAdapter:
         # Results from last collision check
         self.last_results: List[CollisionResult] = []
 
+        # Observation log for the Frame Lab (core/frame_lab.py): one dict per
+        # applied hit/block with the values ACTUALLY applied (raw vs scaled
+        # damage, hitstun, hitstop, blockstun). Drained once per frame by
+        # FrameLab.observe(); purely observational, never read by gameplay.
+        self.hit_events: List[dict] = []
+
     def tick(self, *characters):
         """Advance the SF3 core by exactly one game frame.
 
@@ -391,9 +397,24 @@ class SF3CollisionAdapter:
         )
         return hitboxes
 
+    # States where the defender is invulnerable to being hit. 3S has no OTG on
+    # normals: once you're knocked down, you can't be hit again until you're
+    # up. Without this, an attacker can juggle -> land as KNOCKDOWN -> keep
+    # mashing normals and connect on the floor (the "neverending s.HP juggle"
+    # the user reported: launch, juggle-cap-exhaust, land, immediately hit on
+    # the ground, re-launch, forever). Wakeup invulnerability is included so
+    # a meaty timed on knockdown doesn't punish still-invulnerable frames.
+    _INVULNERABLE_STATES = frozenset({
+        CharacterState.KNOCKDOWN,
+        # Add wakeup state here when it exists as a distinct CharacterState.
+    })
+
     def _get_character_hurtboxes(self, character) -> List[pygame.Rect]:
         """Get hurtboxes from character using frame data"""
         hurtboxes = []
+
+        if character.state in self._INVULNERABLE_STATES:
+            return hurtboxes  # nothing to hit
 
         # Try to get hurtboxes from akuma_hitboxes.py (base + per-frame v_hb)
         frame_number = (character.state_frame if hasattr(character, 'state_frame') else 0) + 1
@@ -624,6 +645,17 @@ class SF3CollisionAdapter:
         attacker.hitfreeze_frames = hitstop
         defender.hitfreeze_frames = hitstop
 
+        # Frame Lab observation: record what was ACTUALLY applied.
+        self.hit_events.append({
+            "attacker": getattr(attacker, "player_number", 0),
+            "defender": getattr(defender, "player_number", 0),
+            "raw_damage": hit_status.damage,
+            "scaled_damage": scaled_damage,
+            "hitstun": hit_status.hitstun,
+            "hitstop": hitstop,
+            "blocked": False,
+        })
+
         # Spawn a strength-appropriate spark + request a screen shake on heavy
         # / knockdown-class hits.
         spark = _spark_for_state(getattr(attacker, 'state', None))
@@ -655,10 +687,13 @@ class SF3CollisionAdapter:
         # Defender can act immediately (parry advantage)
         defender._transition_to_state(CharacterState.STANDING)
         
-        # Spawn parry VFX
+        # Spawn parry VFX on the GUARD SIDE (between the fighters, at chest
+        # height) — not at the defender's center/feet, which read as "splash
+        # effects are in the wrong location".
         if vfx_manager:
-            parry_x = defender.x
-            parry_y = defender.y - 60
+            toward = 1 if attacker.x >= defender.x else -1
+            parry_x = defender.x + toward * 34
+            parry_y = defender.y - 95
             vfx_manager.spawn_hit_spark(parry_x, parry_y, HitSparkType.PARRY)
 
         if DEBUG_MODE:
@@ -685,16 +720,30 @@ class SF3CollisionAdapter:
         attacker.hitfreeze_frames = 6
         defender.hitfreeze_frames = 6
 
+        # Frame Lab observation: record what was ACTUALLY applied on block.
+        self.hit_events.append({
+            "attacker": getattr(attacker, "player_number", 0),
+            "defender": getattr(defender, "player_number", 0),
+            "raw_damage": hit_status.damage,
+            "scaled_damage": 0,
+            "hitstun": hit_status.hitstun,
+            "hitstop": 6,
+            "blocked": True,
+            "blockstun": blockstun,
+            "chip_damage": chip_damage,
+        })
+
         # Small meter gain for both on a block.
         if hasattr(attacker, "gain_super_meter"):
             attacker.gain_super_meter(METER_GAIN_ON_BLOCK)
         if hasattr(defender, "gain_super_meter"):
             defender.gain_super_meter(METER_GAIN_ON_BLOCK)
 
-        # Spawn block VFX
+        # Spawn block VFX on the guard side at chest height (see parry note).
         if vfx_manager:
-            block_x = defender.x
-            block_y = defender.y - 60
+            toward = 1 if attacker.x >= defender.x else -1
+            block_x = defender.x + toward * 34
+            block_y = defender.y - 95
             vfx_manager.spawn_hit_spark(block_x, block_y, HitSparkType.BLOCK)
 
         if DEBUG_MODE:
@@ -823,3 +872,10 @@ class SF3CollisionAdapter:
         self.debug_hitboxes.clear()
         self.debug_hurtboxes.clear()
         self.last_results.clear()
+        self.hit_events.clear()
+
+    def drain_hit_events(self) -> List[dict]:
+        """Hand the Frame Lab this frame's applied-hit observations and clear
+        the log (called once per frame from FrameLab.observe)."""
+        events, self.hit_events = self.hit_events, []
+        return events

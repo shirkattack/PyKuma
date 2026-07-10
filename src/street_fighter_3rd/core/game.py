@@ -121,14 +121,40 @@ class Game:
 
         # Load stage background. Resolve against the repo root so it loads no
         # matter the working directory the game is launched from.
+        #
+        # PRIORITY: any image dropped in assets/backgrounds/ wins (user-
+        # replaceable stage art — see assets/backgrounds/README.md for the
+        # required size, 896x512). Alphabetically first file is used if there
+        # are several. Falls back to the bundled assets/stages/ryu-stage.gif,
+        # then to the plain floor-line fallback.
         from pathlib import Path
         repo_root = Path(__file__).resolve().parents[3]
-        stage_path = repo_root / "assets" / "stages" / "ryu-stage.gif"
-        try:
-            self.stage_background = pygame.image.load(str(stage_path)).convert()
-        except (pygame.error, OSError, FileNotFoundError) as e:
-            log_once(log, ("stage_load",), logging.WARNING, "Could not load stage background: %s", e)
-            self.stage_background = None
+        self.stage_background = None
+        bg_dir = repo_root / "assets" / "backgrounds"
+        candidates = []
+        if bg_dir.is_dir():
+            candidates = sorted(
+                p for p in bg_dir.iterdir()
+                if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".bmp"))
+        candidates.append(repo_root / "assets" / "stages" / "ryu-stage.gif")
+        for stage_path in candidates:
+            try:
+                img = pygame.image.load(str(stage_path)).convert()
+                # Scale to the native resolution if the file isn't exact, so a
+                # near-miss replacement still fills the frame (a warning nudges
+                # the author toward the native size for crisp pixels).
+                if img.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+                    log_once(log, ("stage_scale",), logging.WARNING,
+                             "Stage background %s is %sx%s; scaling to %sx%s "
+                             "(author at native size for best quality)",
+                             stage_path.name, img.get_width(), img.get_height(),
+                             SCREEN_WIDTH, SCREEN_HEIGHT)
+                    img = pygame.transform.smoothscale(img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+                self.stage_background = img
+                break
+            except (pygame.error, OSError, FileNotFoundError) as e:
+                log_once(log, ("stage_load", str(stage_path)), logging.WARNING,
+                         "Could not load stage background %s: %s", stage_path.name, e)
 
         # Load HUD assets (custom UI graphics)
         self.hud_assets = self._load_hud_assets(repo_root)
@@ -968,10 +994,10 @@ class Game:
         return s
 
     # Input-display column geometry (Fightcade-style ordered, scrolling list).
-    _INPUT_ROWS = 12
-    _INPUT_ROW_H = 15
+    _INPUT_ROWS = 20
+    _INPUT_ROW_H = 14
     _INPUT_COL_W = 88
-    _INPUT_BASELINE_Y = 380  # bottom of the column; newest row sits just above it
+    _INPUT_TOP_Y = 56  # top of the column; the NEWEST input renders here
 
     _INPUT_ICON_H = 13  # rendered height of the vendored input icons
 
@@ -1056,27 +1082,27 @@ class Game:
         return [lbl for key, lbl in _BUTTON_LABELS if key in names]
 
     def _render_input_display(self, player_input, side: str):
-        """Fixed, persistent input column like Fightcade/FBNeo: newest input is
-        always anchored at the bottom and older inputs scroll upward, so the list
-        stays in chronological order in stable on-screen positions (it doesn't
-        jump around). Each row: direction arrow icon + held button icons +
-        held-frame count (falls back to text glyphs if icons are missing).
+        """Fixed, persistent input column: the NEWEST input is anchored at the
+        TOP and older inputs run downward (user request), up to 20 rows. Each
+        row: direction arrow icon + held button icons + held-frame count
+        (falls back to text glyphs if icons are missing). Inputs never
+        disappear until they scroll off the bottom of the 20-row window.
         """
         history = player_input.get_input_history(self._INPUT_ROWS)
         x = 12 if side == "left" else SCREEN_WIDTH - self._INPUT_COL_W - 8
         row_h = self._INPUT_ROW_H
         col_h = self._INPUT_ROWS * row_h + 6
-        baseline = self._INPUT_BASELINE_Y
+        top = self._INPUT_TOP_Y
         # Fixed-size backdrop so the column never resizes as history fills.
         bg = pygame.Surface((self._INPUT_COL_W, col_h))
         bg.set_alpha(130)
         bg.fill((0, 0, 0))
-        self.screen.blit(bg, (x - 4, baseline - col_h))
+        self.screen.blit(bg, (x - 4, top - 3))
         dir_icons = self._input_icons["dir"]
         btn_icons = self._input_icons["btn"]
-        # Newest at the bottom: walk history newest-first, place rows upward.
+        # Newest at the top: walk history newest-first, place rows downward.
         for k, e in enumerate(reversed(history)):
-            ry = baseline - row_h - k * row_h
+            ry = top + k * row_h
             di = dir_icons.get(e.direction.value)
             if di is not None:
                 self.screen.blit(di, (x, ry + (row_h - di.get_height()) // 2))
@@ -1119,12 +1145,13 @@ class Game:
         if not hasattr(self.collision_system, "get_combo_info"):
             return
         center_x = SCREEN_WIDTH // 2
-        for pid, anchor in ((1, center_x - 150), (2, center_x + 150)):
+        # Flanks the top-center damage panel (anchors sit outside its width).
+        for pid, anchor in ((1, center_x - 290), (2, center_x + 290)):
             c = self.collision_system.get_combo_info(pid)
             if c.get("active") and c.get("count", 0) > 1:
                 txt = f"{c['count']} HITS  {c.get('damage', 0)} DMG"
                 surf = self.small_font.render(txt, True, (255, 220, 80))
-                self.screen.blit(surf, (anchor - surf.get_width() // 2, 70))
+                self.screen.blit(surf, (anchor - surf.get_width() // 2, 52))
 
     def _update_frame_data_latch(self):
         """Capture the most-recent attacker's move frame data so the panel can
@@ -1162,7 +1189,10 @@ class Game:
         panel_w = max(strip_w, 260)
         panel_h = 96
         px = (SCREEN_WIDTH - panel_w) // 2
-        py = SCREEN_HEIGHT - panel_h - 8
+        # Anchored at the very top of the background, just under the health
+        # bars (user request: damage display up top, keeps the fight area and
+        # the F4 frame meter at the bottom unobstructed).
+        py = 48
 
         bg = pygame.Surface((panel_w + 12, panel_h))
         bg.set_alpha(165)

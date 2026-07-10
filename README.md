@@ -47,7 +47,8 @@ what is and isn't playable at HEAD:
 - ❌ No corner-pressure pushback on the attacker, no projectile-vs-projectile
   resolution yet.
 - 🧭 See `ARCHITECTURE.md` for which module is canonical for each concern;
-  superseded parallel implementations live in `attic/`.
+  superseded parallel implementations were removed from the tree
+  (git history remembers them; see ARCHITECTURE.md).
 
 ## ✨ Features
 
@@ -134,8 +135,8 @@ uv sync
 
 4. **Run the game** (entry points are defined in `pyproject.toml`):
 ```bash
-uv run sf3            # main menu (recommended)
-uv run sf3-menu       # same, explicit
+uv run sf3-menu       # main menu (recommended)
+uv run sf3            # quick play: Akuma vs Akuma, no menu
 uv run sf3-training   # training mode directly (overlays + regen)
 uv run sf3-dev        # dev mode (full debug suite)
 
@@ -178,6 +179,7 @@ Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 
 ### Training / debug hotkeys
 - **F1** hitbox/hurtbox display · **F2** frame-data overlay · **F3** reset positions
+- **F4** frame meter (SF6-style, expected-vs-actual) · **F9** file bug tickets to `bugs/`
 - **R** reset health · **F10** issue report · **F11** save replay clip · **F12** snapshot
 - **ESC** pause / return to menu
 
@@ -297,6 +299,7 @@ This approach makes the engine **robust, maintainable, and faithful to SF3's fra
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
 - **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+- **[docs/FRAME_LAB.md](docs/FRAME_LAB.md)** - Frame meter, expected-vs-actual diffing, and the `bugs/` ticket workflow
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development phases and milestones
 - **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing approach and philosophy
 

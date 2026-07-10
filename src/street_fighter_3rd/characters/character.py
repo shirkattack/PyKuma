@@ -138,15 +138,19 @@ def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx:
             character._transition_to_state(CharacterState.HITSTUN_STANDING)
 
 
-_debug_font: Optional[pygame.font.Font] = None
-
-
 def get_debug_font() -> pygame.font.Font:
-    """Shared lazily-created font for per-character debug text (Font construction is expensive)."""
-    global _debug_font
-    if _debug_font is None:
-        _debug_font = pygame.font.Font(None, 16)
-    return _debug_font
+    """Font for per-character debug/fallback text.
+
+    Deliberately NOT cached across calls: ``pygame.quit()`` frees the font
+    subsystem, and a ``Font`` built in a prior pygame session becomes a
+    dangling native handle that segfaults on use once pygame is re-initialised
+    (the test suite cycles pygame between tests; an in-app teardown/re-init
+    would do the same). There is no cheap way to tell a live cached Font from a
+    stale one, so we rebuild it each call — this is the missing-sprite fallback
+    path, not a hot loop. ``Font(None, 16)`` construction is sub-millisecond."""
+    if not pygame.font.get_init():
+        pygame.font.init()
+    return pygame.font.Font(None, 16)
 
 
 class Character:
@@ -248,6 +252,18 @@ class Character:
         # True when the last render drew the rectangle placeholder (missing art)
         self._rendered_fallback = False
 
+    def _move_total_frames(self, state: CharacterState):
+        """Total frames a one-shot attack state should last, or None.
+
+        Base characters have no frame data and fall back to the legacy
+        placeholder durations below. Characters with a ROM-verified
+        repository (Akuma) override this so THE MECHANICAL TIMING IS THE
+        RULER: the move ends at the ROM total regardless of animation length
+        (a short animation holds its last cel; a long one is truncated —
+        both flagged by the Frame Lab as sprite_timing until refitted).
+        """
+        return None
+
     def _get_max_state_frames(self) -> Dict[CharacterState, int]:
         """Define maximum frames allowed for each state to prevent infinite loops.
 
@@ -287,9 +303,11 @@ class Character:
             CharacterState.CROUCH_MEDIUM_KICK: 40,
             CharacterState.CROUCH_HEAVY_KICK: 60,
 
-            # Jumping attacks
-            CharacterState.JUMP_LIGHT_PUNCH: 30,
-            CharacterState.JUMP_MEDIUM_PUNCH: 30,
+            # Jumping attacks. Caps must sit ABOVE the ROM totals (j.LP=32,
+            # j.MP=31) or the safety timeout truncates the move; in practice
+            # air normals usually end early on landing anyway.
+            CharacterState.JUMP_LIGHT_PUNCH: 40,
+            CharacterState.JUMP_MEDIUM_PUNCH: 40,
             CharacterState.JUMP_HEAVY_PUNCH: 40,
             CharacterState.JUMP_LIGHT_KICK: 30,
             CharacterState.JUMP_MEDIUM_KICK: 30,
@@ -826,24 +844,29 @@ class Character:
             else:
                 self.velocity_x = dash_speed * move_dir
 
-        # Attack states - handle recovery.
-        # Placeholder timing until per-move frame data drives this (see the
-        # animation-controller consolidation phase). Standing/crouch normals
-        # recover to STANDING; crouch normals return to CROUCHING so a held
-        # down-input keeps crouching. Without this, crouch/jump attacks linger
-        # until the state-safety timeout (the CROUCH_HEAVY_PUNCH spam).
+        # Attack states - handle recovery. Duration comes from
+        # _move_total_frames() (ROM-verified where the character has a
+        # repository); the legacy 20-frame placeholder remains only as the
+        # fallback for characters without frame data. An air normal that runs
+        # its full duration while still airborne resumes the jump arc instead
+        # of snapping to STANDING mid-air (landing handles the ground case).
         elif self.state in [CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
                            CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
                            CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
                            CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK]:
-            if self.state_frame >= 20:
-                self._transition_to_state(CharacterState.STANDING)
+            total = self._move_total_frames(self.state) or 20
+            if self.state_frame >= total:
+                if not self.is_grounded:
+                    self._transition_to_state(CharacterState.JUMPING)
+                else:
+                    self._transition_to_state(CharacterState.STANDING)
 
         elif self.state in [CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_MEDIUM_PUNCH,
                            CharacterState.CROUCH_HEAVY_PUNCH, CharacterState.CROUCH_LIGHT_KICK,
                            CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK]:
             self.velocity_x = 0
-            if self.state_frame >= 20:
+            total = self._move_total_frames(self.state) or 20
+            if self.state_frame >= total:
                 self._transition_to_state(CharacterState.CROUCHING)
 
         elif self.state == CharacterState.THROWING:
@@ -855,7 +878,7 @@ class Character:
         elif self.state == CharacterState.OVERHEAD:
             # Universal Overhead: slow command attack; stationary, then recover.
             self.velocity_x = 0
-            if self.state_frame >= 33:
+            if self.state_frame >= (self._move_total_frames(self.state) or 33):
                 self._transition_to_state(CharacterState.STANDING)
 
         elif self.state == CharacterState.TAUNT:
@@ -889,7 +912,19 @@ class Character:
             if not self.is_grounded:
                 self.is_grounded = True
                 self.juggle_count = 0  # landed: a new airborne sequence resets the juggle cap
-                self._transition_to_state(CharacterState.STANDING)
+                if self.state in (CharacterState.HITSTUN_AIRBORNE,
+                                  CharacterState.KNOCKDOWN):
+                    # Landing from a juggle/air hit is a KNOCKDOWN (with its
+                    # wakeup window), NOT an instant return to neutral.
+                    # Landing straight into STANDING made the opponent
+                    # immediately re-launchable, which is what produced the
+                    # neverending s.HP juggle loop: launch -> juggle cap ->
+                    # land -> instantly hittable -> relaunch, forever. In 3S
+                    # a juggled character always falls into knockdown/wakeup.
+                    self.hitstun_frames = max(self.hitstun_frames, KNOCKDOWN_HITSTUN)
+                    self._transition_to_state(CharacterState.KNOCKDOWN)
+                else:
+                    self._transition_to_state(CharacterState.STANDING)
         else:
             self.is_grounded = False
 
@@ -942,6 +977,26 @@ class Character:
 
         _DASH = (CharacterState.DASH_FORWARD, CharacterState.DASH_BACKWARD)
 
+        # Corner pre-check: if one character is already cornered (was AT the
+        # wall before this frame), the whole overlap correction goes to the
+        # other. Otherwise the 50/50 split shoves the cornered defender
+        # inward, which is the "cornered opponent moves back and forth" bug
+        # (a landed crossup would push the cornered defender ~40px away from
+        # their corner). The cornered side has nowhere to go — physically
+        # and gameplay-wise.
+        if right.x >= STAGE_RIGHT_BOUND - 1 or right._prev_x >= STAGE_RIGHT_BOUND - 1:
+            right.x = STAGE_RIGHT_BOUND
+            left.x = right.x - min_distance
+            if left_moving:
+                left.velocity_x = 0
+            return
+        if left.x <= STAGE_LEFT_BOUND + 1 or left._prev_x <= STAGE_LEFT_BOUND + 1:
+            left.x = STAGE_LEFT_BOUND
+            right.x = left.x + min_distance
+            if right_moving:
+                right.velocity_x = 0
+            return
+
         if left_moving and not right_moving:
             if left.state in _DASH:
                 # A dash stops AT the pushbox contact line -- it does not shove the
@@ -969,9 +1024,8 @@ class Character:
                 left.velocity_x = 0
                 right.velocity_x = 0
 
-        # Corner: if separation pushed someone out of bounds, hold them at the
-        # wall and push the other to preserve min_distance (so you can't squeeze
-        # through a cornered opponent).
+        # Corner clamp fallback (upfront corner pre-check handles the common
+        # case; this is the belt-and-braces safety for edge splits).
         if right.x > STAGE_RIGHT_BOUND:
             right.x = STAGE_RIGHT_BOUND
             left.x = min(left.x, right.x - min_distance)

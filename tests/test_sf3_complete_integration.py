@@ -68,7 +68,15 @@ def test_combo_resets_when_defender_recovers():
 
 
 def test_yaml_hitbox_loading():
-    """The animations YAML contains hitbox data for Akuma's moves."""
+    """animations.yaml is PRESENTATION-ONLY (sprites/durations/offsets).
+
+    The legacy embedded frame_data/hitbox blocks were removed in the
+    data-harmony pass — nothing consumed them (`character.animation_hitboxes`
+    had no readers) and their values had drifted from the ROM repository,
+    which is the sole timing/geometry source of record (ARCHITECTURE.md).
+    This test now guards the NEW contract: no embedded combat data in the
+    animation file, and the ROM repository actually provides the boxes.
+    """
     assert ANIMATIONS_YAML.exists(), f"animation data file missing: {ANIMATIONS_YAML}"
 
     with open(ANIMATIONS_YAML, 'r') as f:
@@ -77,15 +85,21 @@ def test_yaml_hitbox_loading():
     akuma_anims = anim_data.get('characters', {}).get('akuma', {}).get('animations', {})
     assert akuma_anims, "animations.yaml must define animations for akuma"
 
-    hitbox_moves = [name for name, data in akuma_anims.items() if 'hitbox' in data]
-    assert hitbox_moves, "at least one Akuma move must define hitbox data"
+    embedded = [name for name, data in akuma_anims.items()
+                if 'hitbox' in data or 'frame_data' in data]
+    assert not embedded, (
+        "animations.yaml must stay presentation-only; embedded "
+        f"frame_data/hitbox blocks crept back in: {embedded} "
+        "(the ROM repository is the hitbox source of record)")
 
-    print(f"Found {len(hitbox_moves)} moves with hitbox data")
-    for move in hitbox_moves:
-        hitbox = akuma_anims[move]['hitbox']
-        assert hitbox.get('damage', 0) > 0, f"{move}: hitbox must deal damage"
-        assert hitbox.get('width', 0) > 0, f"{move}: hitbox must have a width"
-        assert hitbox.get('height', 0) > 0, f"{move}: hitbox must have a height"
+    # And the real source of record must actually serve attack boxes.
+    from street_fighter_3rd.data.enums import CharacterState
+    from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
+    mfd = get_move_frame_data(CharacterState.MEDIUM_PUNCH)
+    assert mfd is not None and mfd.hitboxes, (
+        "ROM repository must provide attack hitboxes for s.MP")
+    _frames, box = mfd.hitboxes[0]
+    assert box.width > 0 and box.height > 0 and box.damage > 0
 
 
 def test_sf3_parry_system():

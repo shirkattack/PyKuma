@@ -313,7 +313,18 @@ class SF3CollisionSystem:
             for tb in targets:
                 if attack_box.overlaps(tb, att_pos, attacker.work.face,
                                        def_pos, defender.work.face):
-                    self._queue_hit(attacker, defender, attack_box, def_pos)
+                    # Impact point = center of the attack-box / hurtbox
+                    # intersection (the engine's own truth for where contact
+                    # happened). Previously this passed def_pos — the
+                    # DEFENDER'S ORIGIN, i.e. their feet on the floor line —
+                    # which is why hit sparks rendered at the wrong location.
+                    a_rect = attack_box.get_rect(att_pos[0], att_pos[1],
+                                                 attacker.work.face)
+                    d_rect = tb.get_rect(def_pos[0], def_pos[1],
+                                         defender.work.face)
+                    clip = a_rect.clip(d_rect)
+                    impact = clip.center if clip.width > 0 else def_pos
+                    self._queue_hit(attacker, defender, attack_box, impact)
                     return
 
     def _queue_hit(self, attacker, defender, attack_box, hit_position):

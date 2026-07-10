@@ -41,11 +41,14 @@ def test_launched_character_lands_and_recovers():
     tl = run_scenario(launch_recovery())
     # the launched defender enters the airborne reaction...
     assert any(fr["players"][1]["state"] == "HITSTUN_AIRBORNE" for fr in tl)
-    # ...and by the end it has landed and recovered to a neutral grounded state
+    # ...and by the end it has landed. Landing goes to KNOCKDOWN (with its
+    # wakeup timer), not straight to STANDING -- otherwise the opponent is
+    # immediately re-launchable, which produces the neverending s.HP juggle
+    # (see the corresponding fix in Character._apply_physics).
     last = tl[-1]["players"][1]
     assert last["grounded"], "must land"
-    assert last["state"] in ("STANDING", "CROUCHING"), \
-        f"must recover, not stay stuck ({last['state']})"
+    assert last["state"] in ("STANDING", "CROUCHING", "KNOCKDOWN"), \
+        f"must land and not get stuck airborne (got {last['state']})"
 
 
 def test_airborne_reaction_does_not_hit_the_timeout():

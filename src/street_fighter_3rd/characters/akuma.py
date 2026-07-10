@@ -36,6 +36,42 @@ _HOLD_STATES = frozenset({
     CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW,
 })
 
+# States whose DURATION is driven by the ROM-verified frame data rather than
+# by animation length. THE MECHANICAL TIMING IS THE RULER: previously a normal
+# ended when its animation finished, so every animation-length error was
+# silently a gameplay-timing error (e.g. s.MP ran ~16 frames instead of the
+# ROM's 22). Now these states exit at the ROM total; a short animation holds
+# its last cel (the Frame Lab flags it as sprite_timing until the animation is
+# refitted), a long one gets truncated. Specials (Gohadoken/Goshoryuken/
+# Tatsumaki) are deliberately EXCLUDED: they have no mapped ROM record and
+# their movement/projectile logic is coupled to their animations — keep them
+# animation-driven until they get ROM records of their own.
+_ROM_TIMED_STATES = frozenset({
+    CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
+    CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
+    CharacterState.CROUCH_LIGHT_PUNCH, CharacterState.CROUCH_MEDIUM_PUNCH,
+    CharacterState.CROUCH_HEAVY_PUNCH, CharacterState.CROUCH_LIGHT_KICK,
+    CharacterState.CROUCH_MEDIUM_KICK, CharacterState.CROUCH_HEAVY_KICK,
+    CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH,
+    CharacterState.JUMP_HEAVY_PUNCH, CharacterState.JUMP_LIGHT_KICK,
+    CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
+    CharacterState.OVERHEAD,
+})
+
+_ROM_TOTAL_CACHE: dict = {}
+
+
+def _rom_total_for(state: CharacterState):
+    """ROM-verified total frames for a ROM-timed state, else None (cached)."""
+    if state not in _ROM_TIMED_STATES:
+        return None
+    if state not in _ROM_TOTAL_CACHE:
+        from street_fighter_3rd.data.hitbox_repository import HitboxRepository
+        move = HitboxRepository.instance().get_move_by_state(state.name)
+        total = move.timing.get("total") if move else None
+        _ROM_TOTAL_CACHE[state] = int(total) if total else None
+    return _ROM_TOTAL_CACHE[state]
+
 # Animations authored on an oversized canvas with the body's horizontal travel
 # baked into the frames (Akuma's forward/back somersault jumps). These are
 # anchored by their opaque-pixel body center, not the canvas center, so physics
@@ -599,8 +635,14 @@ class Akuma(Character):
             self._resolve_super(opponent)
 
         # Advance the animation, then recover one-shot moves on completion.
+        # ROM-timed states (normals + overhead) are EXCLUDED here: their exit
+        # is owned by Character._update_state via _move_total_frames(), so the
+        # animation finishing early can no longer end the move early. Specials
+        # and other one-shots (throws, reactions, supers) stay animation-driven.
         self.animation_controller.update()
-        if self.animation_controller.is_animation_complete() and self.state not in _HOLD_STATES:
+        if (_rom_total_for(self.state) is None
+                and self.animation_controller.is_animation_complete()
+                and self.state not in _HOLD_STATES):
             # A one-shot move (attack/special/reaction) finished. If we finished
             # mid-air, resume the airborne pose and let physics land us. On the
             # ground, recover to the posture the player is still holding: crouch
@@ -662,6 +704,11 @@ class Akuma(Character):
     def _on_throw_whiff(self):
         """A throw missed: play the whiff recovery clip."""
         self.animation_controller.play_animation("throw_miss", force_restart=True)
+
+    def _move_total_frames(self, state: CharacterState):
+        """ROM-verified total for ROM-timed states (see _ROM_TIMED_STATES);
+        None for everything else, which keeps animation-driven recovery."""
+        return _rom_total_for(state)
 
     def get_debug_state(self) -> dict:
         """Extend the base debug state with live animation/sprite info."""
