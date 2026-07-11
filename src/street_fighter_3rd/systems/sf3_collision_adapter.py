@@ -707,8 +707,12 @@ class SF3CollisionAdapter:
         chip_damage = max(1, hit_status.damage // 8)
         defender.health = max(0, defender.health - chip_damage)
 
-        # Apply blockstun (low block if crouching) + small pushback
-        blockstun = max(4, hit_status.hitstun // 2)
+        # Apply blockstun (low block if crouching) + small pushback.
+        # The DECLARED blockstun (calibrated from community on_block against
+        # the ROM timeline — see akuma_hitboxes._calibrated_stun) is applied
+        # when present; the old hitstun//2 derivation survives only as the
+        # fallback for boxes that carry no blockstun (e.g. projectiles).
+        blockstun = getattr(hit_status, "blockstun", 0) or max(4, hit_status.hitstun // 2)
         defender.blockstun_frames = blockstun
         crouching = defender.state in (CharacterState.CROUCHING, CharacterState.BLOCKSTUN_LOW)
         defender._transition_to_state(

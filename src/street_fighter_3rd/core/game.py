@@ -112,6 +112,9 @@ class Game:
         self.config = self.game_mode_manager.get_config()
         # Frame meter defaults on wherever the mode already shows frame data.
         self.show_frame_meter = bool(getattr(self.config, "show_frame_data", False))
+        # F2: world-coordinate grid over the background (off by default).
+        self.show_grid = False
+        self._grid_font = pygame.font.Font(None, 14)
 
         # Initialize systems
         self.input_system = InputSystem()
@@ -242,11 +245,23 @@ class Game:
         Args:
             event: Pygame event
         """
+        # Joystick hot-plug: a fight stick plugged in / powered on mid-session
+        # (or yanked) re-triggers connection. Without this, only devices
+        # present when the InputSystem was constructed were ever detected.
+        if event.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
+            self.input_system.rescan_joysticks()
+            return
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self._toggle_pause()
             elif event.key == pygame.K_F1:
                 self.debug_display = not self.debug_display
+            elif event.key == pygame.K_F2:
+                # World-coordinate grid: gives humans an address space for
+                # positions ("the spark should be at x=560, y=300") that maps
+                # 1:1 onto the world-buffer coordinates the code uses.
+                self.show_grid = not self.show_grid
             elif event.key == pygame.K_F4:
                 self.show_frame_meter = not self.show_frame_meter
             elif event.key == pygame.K_F9:
@@ -586,6 +601,11 @@ class Game:
                 2
             )
 
+        # F2 grid: drawn over the background but under the fighters, into the
+        # world buffer BEFORE the camera crop — so it zooms with the stage.
+        if self.show_grid:
+            self._render_grid()
+
         # Render characters — attacker on top so an extended limb isn't hidden
         # behind the opponent's body (default order otherwise).
         p1, p2 = self.player1, self.player2
@@ -609,6 +629,46 @@ class Game:
         )
         # NOTE: UI (health bars) is drawn on the real screen by render(), AFTER
         # the camera zoom, so it stays crisp and screen-anchored (not zoomed).
+
+    def _render_grid(self):
+        """F2: world-coordinate grid over the background.
+
+        Lines and labels are addressed in RAW WORLD-BUFFER COORDINATES — the
+        same ``x``/``y`` space every character position, hitbox rect and VFX
+        spawn point uses (y grows downward; the gold line is STAGE_FLOOR, the
+        gold vertical is the stage center). Read a location off the grid and
+        it is directly usable in code and in bug reports: "the spark should
+        spawn at x=560, y=300". Minor lines every 50 px; labeled majors every
+        100. Labels repeat across the buffer so some stay visible however the
+        camera crops/zooms.
+        """
+        surf = self.screen
+        w, h = surf.get_width(), surf.get_height()
+        minor, major = 50, 100
+        col_minor, col_major = (62, 62, 74), (105, 105, 124)
+        col_axis, col_label = (212, 176, 56), (238, 238, 238)
+
+        for x in range(0, w + 1, minor):
+            pygame.draw.line(surf, col_major if x % major == 0 else col_minor,
+                             (x, 0), (x, h), 1)
+        for y in range(0, h + 1, minor):
+            pygame.draw.line(surf, col_major if y % major == 0 else col_minor,
+                             (0, y), (w, y), 1)
+
+        # Reference axes: the floor line and the stage center.
+        pygame.draw.line(surf, col_axis, (0, STAGE_FLOOR), (w, STAGE_FLOOR), 2)
+        cx = w // 2
+        pygame.draw.line(surf, col_axis, (cx, 0), (cx, h), 1)
+
+        # x labels along the floor and near the top; y labels at three columns.
+        for x in range(0, w + 1, major):
+            t = self._render_text(self._grid_font, str(x), col_label)
+            surf.blit(t, (x + 2, STAGE_FLOOR + 4))
+            surf.blit(t, (x + 2, 22))
+        for y in range(0, h + 1, major):
+            t = self._render_text(self._grid_font, str(y), col_label)
+            for lx in (4, cx + 4, w - 44):
+                surf.blit(t, (lx, y + 2))
 
     def _compute_camera(self):
         """Crop rect (x, y, w, h) of the world buffer to zoom onto the screen.

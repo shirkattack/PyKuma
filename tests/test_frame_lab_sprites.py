@@ -24,7 +24,12 @@ from tests.test_frame_lab import StubGame, pick_normal_with_data
 
 class StubAnimController:
     """Scriptable stand-in for AnimationController: plays `anim_name` for
-    `length` game frames (1 cel per frame), then reports complete and holds."""
+    `length` game frames (1 cel per frame), then holds its last cel.
+
+    Completion matches the real playback engine (FolderAnimation.update):
+    is_finished goes True DURING the final played frame — the update that
+    consumes the last cel's hold — not on the first held frame after it.
+    drive() samples before step(), so the post-update play count is t+1."""
 
     def __init__(self, anim_name, length):
         self.anim_name, self.length, self.t = anim_name, length, 0
@@ -35,7 +40,8 @@ class StubAnimController:
     def get_current_frame_info(self):
         idx = min(self.t, self.length - 1)
         return {"animation": self.anim_name, "frame_index": idx,
-                "total_frames": self.length, "complete": self.t >= self.length,
+                "total_frames": self.length,
+                "complete": self.t + 1 >= self.length,
                 "sprite_number": 18000 + idx}
 
 
@@ -183,10 +189,7 @@ def test_mechanical_stubs_without_sprites_are_unaffected():
 
 # ------------------------------------------------------------ static audit --
 
-def test_audit_detects_real_medium_punch_drift():
-    """Pin the audit against the repo's actual data: the medium_punch
-    animation is 18 game frames vs the ROM move's 22, and its embedded
-    frame_data block has drifted from the ROM repository."""
+def _load_audit_module():
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "audit_animations",
@@ -194,23 +197,43 @@ def test_audit_detects_real_medium_punch_drift():
                      "audit_animations.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
 
+
+def test_audit_is_clean_after_rom_fit():
+    """Pin the fixed state: every registered attack animation is ROM-fitted
+    (per-cel holds sum to the ROM total — Akuma._setup_animations), every
+    mapped state has a registered animation with an existing folder, and no
+    embedded frame_data/hitbox blocks have crept back into animations.yaml."""
+    mod = _load_audit_module()
     findings = mod.audit()
-    assert findings, "audit must detect the known drift in the current data"
+    assert findings == [], findings
 
-    mp = [f for f in findings if f["move"] == "MEDIUM_PUNCH"]
-    timing = [f for f in mp if f["channel"] == "sprite_timing"]
-    assert timing and timing[0]["observed"] == 18 and timing[0]["expected"] == 22
 
-    # The legacy embedded frame_data/hitbox blocks were removed from
-    # animations.yaml (data-harmony pass); this guards against reintroduction.
-    assert not [f for f in findings if f["channel"] == "data_drift"], \
-        "embedded frame_data/hitbox blocks have crept back into animations.yaml"
+def test_audit_detects_seeded_drift():
+    """The audit must still PROVABLY detect drift: re-tune one cel hold of
+    medium_punch (+4 frames — a hand-tuned duration creeping back) and the
+    audit flags exactly that move's sprite_timing, convertible to a
+    schema-valid ticket."""
+    import pygame
+    mod = _load_audit_module()
+    pygame.init()
+    if pygame.display.get_surface() is None:
+        pygame.display.set_mode((320, 240))
+    from street_fighter_3rd.characters.akuma import Akuma
+    akuma = Akuma(0, 0, 1)
+    anim = akuma.animation_controller.animations["medium_punch"]
+    anim.frames[0].duration += 4  # seed the drift
 
-    # And the findings must convert into schema-valid tickets.
+    findings = mod.audit(controller=akuma.animation_controller,
+                         state_anim=dict(type(akuma)._STATE_ANIM))
+    timing = [f for f in findings if f["channel"] == "sprite_timing"]
+    assert len(timing) == 1 and timing[0]["move"] == "MEDIUM_PUNCH"
+    assert timing[0]["observed"] == timing[0]["expected"] + 4
+
+    # And the finding must convert into a schema-valid ticket.
     import tempfile
     with tempfile.TemporaryDirectory() as td:
-        paths = mod.write_tickets(findings[:3], out_dir=td)
-        assert len(paths) == 3
-        for p in paths:
-            load_ticket(p)
+        paths = mod.write_tickets(timing, out_dir=td)
+        assert len(paths) == 1
+        load_ticket(paths[0])

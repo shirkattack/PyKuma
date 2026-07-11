@@ -167,6 +167,10 @@ class BugTicket(BaseModel):
     repro: Dict[str, Any] = Field(default_factory=dict)
     fix_hints: List[str] = Field(default_factory=list)
 
+    # Filled when status leaves "open": what changed and where. Tickets are
+    # never deleted (they are the audit trail); this is the closing note.
+    resolution: str = ""
+
 
 def write_ticket(ticket: BugTicket, out_dir: str = "bugs") -> str:
     """Write a ticket as YAML. Returns the path."""

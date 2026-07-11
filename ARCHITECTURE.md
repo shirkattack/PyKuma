@@ -50,7 +50,14 @@ src/street_fighter_3rd/
 - **ROM-driven durations.** Normals (+ Universal Overhead) end at the
   ROM-verified total via `Character._move_total_frames()` (Akuma overrides it
   with the hitbox-repository lookup). Animations FILL that window — they never
-  define it. Specials remain animation-driven until they get ROM records.
+  define it: `Akuma._setup_animations` computes per-cel holds FROM the ROM
+  totals at registration (the folder clips there are the live sprite track;
+  `animations.yaml`'s numbered lists are a legacy path Akuma doesn't render).
+  Specials remain animation-driven until they get ROM records.
+- **Calibrated combat values.** Per-move hitstun/blockstun are back-solved
+  from the community on_hit/on_block against the ROM timeline
+  (`akuma_hitboxes._calibrated_stun`) — advantage is what the community
+  actually documents, so it is the source of truth; grounded normals only.
 - **Reset contract.** Every round starts from a clean slate:
   `Character.reset()`, `InputSystem.reset()`, `VFXManager.clear()`,
   `SF3CollisionAdapter.reset()`. If you add a stateful system, give it a

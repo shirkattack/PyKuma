@@ -38,7 +38,9 @@ Determinism note: everything here observes; nothing mutates gameplay state.
 from __future__ import annotations
 
 import collections
+import os
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional
 
@@ -84,6 +86,7 @@ _MOVEMENT_STATES = frozenset({
 class Phase(Enum):
     STARTUP = auto()
     ACTIVE = auto()
+    GAP = auto()       # between active windows of a multi-hit move (s.HK)
     RECOVERY = auto()
     HITSTUN = auto()
     BLOCKSTUN = auto()
@@ -95,6 +98,7 @@ class Phase(Enum):
 PHASE_COLORS = {
     Phase.STARTUP:   (46, 168, 66),
     Phase.ACTIVE:    (222, 48, 48),
+    Phase.GAP:       (150, 70, 58),   # ember: "the move is still hot, boxes off"
     Phase.RECOVERY:  (66, 108, 222),
     Phase.HITSTUN:   (232, 202, 44),
     Phase.BLOCKSTUN: (72, 198, 214),
@@ -105,6 +109,27 @@ COLOR_FREEZE = (245, 245, 245)   # hitstop notch
 COLOR_DISCREPANCY = (255, 140, 0)
 COLOR_FALLBACK = (230, 60, 200)  # placeholder rectangle was drawn
 CEL_SHADES = ((150, 150, 158), (96, 96, 104))  # alternating cel-hold shading
+
+# Every "!!" discrepancy the meter shows is also appended here as plain text,
+# so it can be copied/grepped instead of transcribed off the screen. Set the
+# env var to another path, or to an empty string to disable the file.
+DISCREPANCY_LOG = os.environ.get("PYKUMA_DISCREPANCY_LOG", "bugs/discrepancies.log")
+
+
+def _log_discrepancy(report, d: Dict[str, Any]) -> None:
+    """Mirror one discrepancy to the console log and the copyable text log."""
+    note = f"  ({d['note']})" if d.get("note") else ""
+    line = (f"P{report.player} {report.move} f{report.start_frame}-{report.end_frame} "
+            f"{d['channel']}: observed={d['observed']} expected={d['expected']} "
+            f"[{d['provenance']}]{note}")
+    log.warning("FrameLab: %s", line)
+    if DISCREPANCY_LOG:
+        try:
+            stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            with open(DISCREPANCY_LOG, "a", encoding="utf-8") as f:
+                f.write(f"{stamp} {line}\n")
+        except OSError:
+            pass  # never let bookkeeping break gameplay
 
 
 @dataclass
@@ -135,6 +160,8 @@ class HitEvent:
     blocked: bool
     blockstun: int = 0
     chip_damage: int = 0
+    move_frame: int = 0  # 1-indexed move frame the hit landed on (attacker's
+                         # state_frame+1 at contact — which active window hit)
 
 
 @dataclass
@@ -143,12 +170,15 @@ class Expected:
     startup: int
     active: int
     recovery: int
-    total: int
+    total: int          # ROM total — NOT s+a+r for multi-hit moves (gap between windows)
     damage: int
     hitstun: int
     blockstun: int
     on_hit: Optional[int]
     on_block: Optional[int]
+    gap: int = 0                       # frames between active windows (s.HK: 7)
+    hit_windows: int = 1               # number of distinct active windows (hits)
+    active_frames: tuple = ()          # 1-indexed declared active frames
 
 
 @dataclass
@@ -159,6 +189,7 @@ class MoveReport:
     end_frame: int = 0
     startup: int = 0            # measured, non-frozen frames
     active: int = 0
+    gap: int = 0                # boxes-off frames BETWEEN active windows (multi-hit)
     recovery: int = 0
     frozen_frames: int = 0
     cancelled: bool = False     # closed by cancelling into another attack
@@ -178,12 +209,13 @@ class MoveReport:
 
     @property
     def total(self) -> int:
-        return self.startup + self.active + self.recovery
+        return self.startup + self.active + self.gap + self.recovery
 
     def summary(self) -> Dict[str, Any]:
         return {
             "move": self.move, "player": self.player,
             "measured": {"startup": self.startup, "active": self.active,
+                         "gap": self.gap,
                          "recovery": self.recovery, "total": self.total,
                          "hitstop_frames": self.frozen_frames,
                          "cancelled": self.cancelled,
@@ -247,11 +279,18 @@ def _expected_for(state: CharacterState) -> Optional[Expected]:
         hb = mfd.hitboxes[0][1]
         dmg, hs, bs = hb.damage, hb.hitstun, hb.blockstun
     active = len(mfd.active)
+    # ROM total is the ruler; a multi-hit move (s.HK) has a GAP between its
+    # active windows, so total > startup + active + recovery.
+    total = mfd.total or (mfd.startup + active + mfd.recovery)
+    windows = 1 + sum(1 for a, b in zip(mfd.active, mfd.active[1:]) if b > a + 1)
     return Expected(
         startup=mfd.startup, active=active, recovery=mfd.recovery,
-        total=mfd.startup + active + mfd.recovery,
+        total=total,
         damage=dmg, hitstun=hs, blockstun=bs,
         on_hit=getattr(mfd, "on_hit", None), on_block=getattr(mfd, "on_block", None),
+        gap=max(0, total - (mfd.startup + active + mfd.recovery)),
+        hit_windows=windows,
+        active_frames=tuple(mfd.active),
     )
 
 
@@ -268,6 +307,9 @@ class MoveCapture:
         self.seen_active = False
         self.nonfrozen_index = 0  # position on the declared timeline
         self._last_cel_key = None
+        self._move_samples: List[tuple] = []  # (Sample, had_boxes), non-frozen only
+        e = self.report.expected
+        self._expected_active_set = frozenset(e.active_frames) if e else frozenset()
 
     def sample(self, character, frame: int) -> Sample:
         frozen = character.hitfreeze_frames > 0
@@ -278,34 +320,38 @@ class MoveCapture:
         elif not self.seen_active:
             phase = Phase.STARTUP
         else:
+            # Provisionally RECOVERY. If another active window opens later
+            # (multi-hit move), close() retro-classifies this run as GAP —
+            # both in the counts and in the already-emitted meter Samples.
             phase = Phase.RECOVERY
 
+        # Expected phase straight from the DECLARED active windows (1-indexed
+        # move frame), so a multi-hit move's underline shows S/A/GAP/A/R.
         exp_phase = None
-        if self.report.expected is not None:
-            e, i = self.report.expected, self.nonfrozen_index
-            if i < e.startup:
-                exp_phase = Phase.STARTUP
-            elif i < e.startup + e.active:
-                exp_phase = Phase.ACTIVE
-            elif i < e.total:
-                exp_phase = Phase.RECOVERY
+        e = self.report.expected
+        if e is not None and e.active_frames:
+            f = self.nonfrozen_index + 1 if not frozen else self.nonfrozen_index
+            if f >= 1:
+                if f in self._expected_active_set:
+                    exp_phase = Phase.ACTIVE
+                elif f < e.active_frames[0]:
+                    exp_phase = Phase.STARTUP
+                elif f > e.active_frames[-1]:
+                    exp_phase = Phase.RECOVERY if f <= e.total else None
+                else:
+                    exp_phase = Phase.GAP
 
         if frozen:
             self.report.frozen_frames += 1
         else:
             self.nonfrozen_index += 1
-            if phase is Phase.STARTUP:
-                self.report.startup += 1
-            elif phase is Phase.ACTIVE:
-                self.report.active += 1
-            else:
-                self.report.recovery += 1
 
         sample = Sample(frame=frame, phase=phase, frozen=frozen,
                         expected_phase=exp_phase,
-                        move_start=(self.nonfrozen_index == 1 and not frozen
-                                    and self.report.startup + self.report.active
-                                    + self.report.recovery == 1))
+                        move_start=(not frozen and self.nonfrozen_index == 1))
+        if not frozen:
+            # Kept for close(): retroactive S/A/GAP/R accounting + recolor.
+            self._move_samples.append((sample, bool(boxes)))
         self._record_sprite(sample, _sprite_info(character), frame, phase, frozen)
         return sample
 
@@ -322,9 +368,11 @@ class MoveCapture:
         if sp["fallback"]:
             r.fallback_frames += 1
         if sp["complete"] and r.anim_completed_at is None and not frozen:
-            # frames the animation actually PLAYED (this sample is the first
-            # held-after-finish frame, so subtract it).
-            r.anim_completed_at = max(0, self.nonfrozen_index - 1)
+            # frames the animation actually PLAYED. The playback engine raises
+            # is_finished DURING the final cel's last frame (update() advances
+            # past the end and clamps back), so the first complete=True sample
+            # IS the last played frame — no off-by-one correction.
+            r.anim_completed_at = self.nonfrozen_index
         if sp["cel"] is not None:
             r.cels_shown = max(r.cels_shown, sp["cel"] + 1)
         if sp["cel_total"] is not None:
@@ -342,6 +390,24 @@ class MoveCapture:
         r = self.report
         r.end_frame = frame
         r.cancelled = cancelled
+        # Retroactive S/A/GAP/R accounting from what the engine actually did:
+        # boxes-off frames BETWEEN the first and last observed box frame are
+        # GAP (multi-hit move), not recovery. Only now — at close — do we know
+        # which no-box run was the last one. Recolors the meter Samples too
+        # (same objects live in the ring).
+        flags = [b for _, b in self._move_samples]
+        first_box = flags.index(True) if True in flags else None
+        last_box = (len(flags) - 1 - flags[::-1].index(True)) if True in flags else None
+        for i, (sample, had_boxes) in enumerate(self._move_samples):
+            if had_boxes:
+                r.active += 1
+            elif first_box is None or i < first_box:
+                r.startup += 1
+            elif i < last_box:
+                r.gap += 1
+                sample.phase = Phase.GAP
+            else:
+                r.recovery += 1
         self._diff()
         self._diff_sprites()
         return r
@@ -351,6 +417,7 @@ class MoveCapture:
         d = {"channel": channel, "observed": observed, "expected": expected,
              "source": source, "provenance": provenance, "note": note}
         self.report.discrepancies.append(d)
+        _log_discrepancy(self.report, d)
 
     def _diff(self):
         r, e = self.report, self.report.expected
@@ -364,6 +431,10 @@ class MoveCapture:
             self._flag("active", r.active, e.active, rom, "verified")
         # A cancel legitimately truncates recovery/total — don't false-flag.
         if not r.cancelled:
+            if r.gap != e.gap:
+                self._flag("gap", r.gap, e.gap, rom, "verified",
+                           "boxes-off frames between the active windows of a "
+                           "multi-hit move")
             if r.recovery != e.recovery:
                 self._flag("recovery", r.recovery, e.recovery, rom, "verified")
             if r.total != e.total:
@@ -373,8 +444,8 @@ class MoveCapture:
                 if e.blockstun and h.blockstun != e.blockstun:
                     self._flag("blockstun", h.blockstun, e.blockstun, community,
                                "community",
-                               "engine derives blockstun=max(4,hitstun//2); "
-                               "declared value is not read")
+                               "declared blockstun is applied directly "
+                               "(hitstun//2 is only the no-data fallback)")
             else:
                 if e.damage and h.raw_damage != e.damage:
                     self._flag("damage", h.raw_damage, e.damage, community,
@@ -409,7 +480,7 @@ class MoveCapture:
                        "missing local sprite assets or a bad sprite id/path")
         # Timing: the mechanical move is the ruler. Cancels truncate anything.
         if not r.cancelled:
-            total = r.startup + r.active + r.recovery
+            total = r.total
             if r.anim_completed_at is not None and r.anim_completed_at < total:
                 self._flag("sprite_timing", r.anim_completed_at, total,
                            "data/animations.yaml (anim length vs ROM total)",
@@ -435,6 +506,18 @@ class MoveCapture:
         r, e = self.report, self.report.expected
         if e is None or r.advantage is None or r.cancelled:
             return
+        # Community advantage is quoted for a connect of the FINAL active
+        # window (whose stun application supersedes any earlier hit's). If
+        # only an earlier window of a multi-hit move landed (s.HK's second
+        # kick whiffed because knockback pushed the defender out), the quoted
+        # number doesn't apply — measuring against it would be a false flag.
+        if e.hit_windows > 1 and e.active_frames:
+            last_window_start = e.active_frames[-1]
+            for a, b in zip(e.active_frames, e.active_frames[1:]):
+                if b > a + 1:
+                    last_window_start = b  # start of the (eventual) final run
+            if not any(h.move_frame >= last_window_start for h in r.hits):
+                return
         if r.advantage_kind == "hit" and e.on_hit is not None and r.advantage != e.on_hit:
             self._flag("advantage_on_hit", r.advantage, e.on_hit,
                        "hitboxes.yaml combat tier", "community")
@@ -514,6 +597,7 @@ class FrameLab:
         for ev in events:
             pid = ev.get("attacker", 0)
             cap = self.captures.get(pid)
+            attacker_char = chars.get(pid)
             he = HitEvent(frame=frame,
                           raw_damage=ev.get("raw_damage", 0),
                           scaled_damage=ev.get("scaled_damage", 0),
@@ -521,7 +605,11 @@ class FrameLab:
                           hitstop=ev.get("hitstop", 0),
                           blocked=ev.get("blocked", False),
                           blockstun=ev.get("blockstun", 0),
-                          chip_damage=ev.get("chip_damage", 0))
+                          chip_damage=ev.get("chip_damage", 0),
+                          # Collision indexed boxes with state_frame+1 this
+                          # same frame — that IS the move frame that hit.
+                          move_frame=(getattr(attacker_char, "state_frame", -1) + 1
+                                      if attacker_char is not None else 0))
             if cap is not None:
                 cap.report.hits.append(he)
                 kind = "block" if he.blocked else "hit"
@@ -625,10 +713,13 @@ class FrameLab:
         if r is None:
             return
         e = r.expected
-        txt = (f"P{pid} {r.move}  meas S{r.startup}/A{r.active}/R{r.recovery} "
+        show_gap = r.gap or (e is not None and e.gap)
+        m_gap = f"/G{r.gap}" if show_gap else ""
+        txt = (f"P{pid} {r.move}  meas S{r.startup}/A{r.active}{m_gap}/R{r.recovery} "
                f"T{r.total}" + (" (cancel)" if r.cancelled else ""))
         if e:
-            txt += f"  exp S{e.startup}/A{e.active}/R{e.recovery} T{e.total}"
+            e_gap = f"/G{e.gap}" if show_gap else ""
+            txt += f"  exp S{e.startup}/A{e.active}{e_gap}/R{e.recovery} T{e.total}"
         if r.hits:
             h = r.hits[0]
             txt += (f"  blk stun{h.blockstun}" if h.blocked

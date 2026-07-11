@@ -24,7 +24,7 @@ re-deriving from the same data the engine read.
 
 Two pip strips (P1 above P2), one pip per game frame, last ~90 frames:
 
-- **Green** startup · **Red** active · **Blue** recovery
+- **Green** startup · **Red** active · **Blue** recovery · **Ember** gap (boxes-off frames BETWEEN the active windows of a multi-hit move, e.g. s.HK — not recovery)
 - **Yellow** hitstun · **Cyan** blockstun · **Grey** movement · dark = neutral
 - **White notch** on top of a pip = hitstop (frozen frames are *excluded*
   from measured counts, matching how SF3 frame data is quoted)
@@ -46,9 +46,9 @@ frame advantage. Discrepancies render in **orange** with a `!!` line.
 | Channel | Expected source | Provenance | If they differ… |
 |---|---|---|---|
 | startup / active / recovery / total | `hitboxes.yaml` (ROM dump) | verified | the **engine** is wrong — never edit the data |
-| damage / hitstun / blockstun | community tier (Baston ESN3S) | community | data or the code that ignores it (see ticket note) |
+| damage / hitstun / blockstun | community tier; hitstun/blockstun are back-solved from on_hit/on_block against the ROM timeline (`_calibrated_stun`) | community | recheck the community advantage numbers or the calibration |
 | hitstop | adapter formula | engine-formula | engine mis-applied freeze, or tune the constants |
-| advantage on hit/block | community tier | community | emergent — fix hitstun or recovery, never the output |
+| advantage on hit/block | community tier | community | emergent — fix hitstun or recovery, never the output. Only diffed when the move's FINAL active window connects (a partial multi-hit connect is not the quoted scenario) |
 | sprite_mapping | `_STATE_ANIM` (akuma.py) | engine-mapping | wrong/undefined animation for the state |
 | sprite_timing | anim length vs ROM total | verified | fit the animation to the move, never the reverse |
 | sprite_sync | cel timeline vs active window | verified | auto-flagged only when provably impossible; otherwise human-filed via F9 |
@@ -56,6 +56,12 @@ frame advantage. Discrepancies render in **orange** with a `!!` line.
 | data_drift | animations.yaml embedded blocks vs ROM repo | verified | delete/regenerate the stale duplicate |
 
 Measurement details worth knowing:
+- **Multi-hit gaps are not recovery.** Boxes-off frames between a move's
+  active windows are measured (and drawn) as GAP; recovery is only what
+  follows the last active frame, and total is diffed against the ROM total.
+- **Hitstop freezes the sprite too.** Animations no longer advance during
+  hit freeze (they used to desync from the frame data by the freeze length
+  on every connected hit).
 - **Cancels don't false-flag.** A move cancelled into a special legitimately
   truncates recovery; recovery/total diffs are skipped for cancelled moves.
 - **Advantage is measured emergently**: the frame the defender becomes
@@ -70,6 +76,10 @@ Measurement details worth knowing:
 2. Something looks off → the meter usually already shows it (orange line or
    colour misalignment). Press **F9**.
 3. Optionally add a one-line `complaint` to the ticket in `bugs/`.
+   Every `!!` line the meter shows is also appended as plain text to
+   `bugs/discrepancies.log` (and the console log), so it can be copied or
+   grepped instead of transcribed off the screen
+   (`PYKUMA_DISCREPANCY_LOG` overrides the path; empty disables).
 4. Hand the repo to your assistant: *"fix the open tickets in bugs/"*.
    `bugs/README.md` is the assistant's consumption contract — provenance
    rules, canonical files per channel, and the requirement to re-verify.
@@ -93,12 +103,15 @@ python tools/framelab/audit_animations.py            # console report
 python tools/framelab/audit_animations.py --tickets  # file bugs/*.yaml
 ```
 
-Cross-checks `animations.yaml` against the ROM repository per attack state:
-missing animations for mapped states, animation length vs ROM move total,
-and drift in the legacy embedded `frame_data`/`hitbox` blocks (the ROM repo
-is canonical; the embedded blocks are flagged for deletion/regeneration).
-On the current data this reports ~60 findings, including every grounded
-normal's animation length and all six unmapped jump-normal animations.
+Audits the LIVE sprite track — the folder animations Akuma registers in
+`_setup_animations` (NOT `animations.yaml`, whose numbered-sprite lists are
+a legacy path Akuma doesn't render): unregistered animations for mapped
+states, registered length (sum of per-cel holds) vs ROM move total, missing
+animation folders on disk, plus the `animations.yaml` embedded-block guard
+(`data_drift`). Since the ROM-fit pass, attack animations receive per-cel
+holds computed FROM the ROM totals at registration, and the audit reports
+**zero findings** — it now exists to catch regressions (a hand-tuned
+duration creeping back, a deleted folder, a remapped state).
 
 ## Deliberately next
 

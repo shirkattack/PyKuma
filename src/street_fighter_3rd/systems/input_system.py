@@ -763,6 +763,20 @@ class InputSystem:
             log.warning("Failed to auto-connect joysticks: %s", e)
             log.info("Continuing with keyboard only...")
 
+    def rescan_joysticks(self):
+        """Hot-plug support: re-enumerate devices and (re)connect players.
+
+        Called from the game loop on pygame.JOYDEVICEADDED / JOYDEVICEREMOVED.
+        Without this, a fight stick plugged in (or powered on) AFTER launch was
+        never picked up — auto-connect only ran once at InputSystem creation,
+        which is exactly the "works in Fightcade, not detected here" symptom.
+        Dropping the stale Joystick objects first also handles removal and the
+        index shuffling SDL does when a device in the middle of the list goes
+        away (keyboard input is unaffected either way)."""
+        self.player1.joystick = None
+        self.player2.joystick = None
+        self._auto_connect_joysticks()
+
     def update(self, player1_facing_right: bool = True, player2_facing_right: bool = False):
         """Update input for all players.
 

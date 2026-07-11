@@ -285,7 +285,19 @@ class Akuma(Character):
             ("timeout",            "akuma-timeout",        6, 4, False),  # time over
             ("chipdeath",          "akuma-chipdeath",     17, 3, False),  # KO by chip
         ]
+        # ROM-timed states (normals + overhead): the animation must FILL the
+        # ROM-verified move duration exactly — the mechanical timing is the
+        # ruler, the animation is fitted to it. Per-cel holds are spread with
+        # a Bresenham distribution (sum == ROM total, each cel >= 1 frame,
+        # holds differ by at most 1), replacing the hand-tuned uniform dur.
+        # Anims whose state has no ROM record (specials etc.) keep their
+        # hand-tuned uniform duration.
+        anim_state = {a: s for s, a in self._STATE_ANIM.items()}
         for name, folder, frames, dur, loop in specs:
+            total = _rom_total_for(anim_state.get(name))
+            if total and total >= frames:
+                dur = [(i + 1) * total // frames - i * total // frames
+                       for i in range(frames)]
             self.animation_controller.add_animation(
                 name, f(f"{base}/{folder}", frames, frame_duration=dur, loop=loop))
 
@@ -625,6 +637,14 @@ class Akuma(Character):
             self.hitfreeze_frames = 0
             self._execute_raging_demon()
 
+        # Hitstop freezes the SPRITE exactly as long as it freezes the
+        # mechanics (base update early-returns while hitfreeze_frames > 0,
+        # decrementing it first — so read the flag BEFORE super()). Letting
+        # the animation run through hitstop desynced the visible cels from
+        # the frame data on every connected hit (and is not how 3S looks:
+        # the impact pose holds through the freeze).
+        frozen = self.hitfreeze_frames > 0
+
         # Call parent update FIRST (this updates facing direction)
         super().update(opponent)
 
@@ -639,8 +659,10 @@ class Akuma(Character):
         # is owned by Character._update_state via _move_total_frames(), so the
         # animation finishing early can no longer end the move early. Specials
         # and other one-shots (throws, reactions, supers) stay animation-driven.
-        self.animation_controller.update()
-        if (_rom_total_for(self.state) is None
+        if not frozen:
+            self.animation_controller.update()
+        if (not frozen
+                and _rom_total_for(self.state) is None
                 and self.animation_controller.is_animation_complete()
                 and self.state not in _HOLD_STATES):
             # A one-shot move (attack/special/reaction) finished. If we finished

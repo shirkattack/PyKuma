@@ -1,0 +1,3919 @@
+schema_version: 1
+id: 029654_p1_crouch_medium_punch_sprite_timing_012
+created: '2026-07-10T23:51:36.084109+00:00'
+status: fixed
+move: CROUCH_MEDIUM_PUNCH
+player: 1
+channel: sprite_timing
+frame_range:
+- 29654
+- 29692
+observed: 5
+expected:
+  value: 22
+  source: data/animations.yaml (anim length vs ROM total)
+  provenance: verified
+delta: -17.0
+complaint: (filed from the F4 meter's !! line)
+measured_summary:
+  move: CROUCH_MEDIUM_PUNCH
+  player: 1
+  measured:
+    startup: 5
+    active: 4
+    recovery: 13
+    total: 22
+    hitstop_frames: 16
+    cancelled: false
+    advantage: -2
+    advantage_kind: hit
+  hits:
+  - frame: 29659
+    raw_damage: 110
+    scaled_damage: 110
+    hitstun: 15
+    hitstop: 16
+    blocked: false
+    blockstun: 0
+    chip_damage: 0
+  expected:
+    startup: 5
+    active: 4
+    recovery: 13
+    total: 22
+    damage: 110
+    hitstun: 15
+    blockstun: 12
+    on_hit: 1
+    on_block: 0
+  sprite:
+    expected_anim: crouch_medium_punch
+    anims_seen:
+    - crouch_medium_punch
+    fallback_frames: 0
+    anim_completed_at: 5
+    cels_shown: 7
+    cel_total: 7
+repro:
+  phase_timeline: []
+  cel_timeline:
+  - frame: 29654
+    phase: STARTUP
+    frozen: false
+    anim: crouch_medium_punch
+    cel: 0
+    sprite: akuma-crouch-mp/frame_000
+    fallback: false
+  - frame: 29655
+    phase: STARTUP
+    frozen: false
+    anim: crouch_medium_punch
+    cel: 1
+    sprite: akuma-crouch-mp/frame_001
+    fallback: false
+  - frame: 29657
+    phase: STARTUP
+    frozen: false
+    anim: crouch_medium_punch
+    cel: 2
+    sprite: akuma-crouch-mp/frame_002
+    fallback: false
+  - frame: 29659
+    phase: ACTIVE
+    frozen: true
+    anim: crouch_medium_punch
+    cel: 3
+    sprite: akuma-crouch-mp/frame_003
+    fallback: false
+  - frame: 29661
+    phase: ACTIVE
+    frozen: true
+    anim: crouch_medium_punch
+    cel: 4
+    sprite: akuma-crouch-mp/frame_004
+    fallback: false
+  - frame: 29663
+    phase: ACTIVE
+    frozen: true
+    anim: crouch_medium_punch
+    cel: 5
+    sprite: akuma-crouch-mp/frame_005
+    fallback: false
+  - frame: 29665
+    phase: ACTIVE
+    frozen: true
+    anim: crouch_medium_punch
+    cel: 6
+    sprite: akuma-crouch-mp/frame_006
+    fallback: false
+  session_clip:
+  - frame: 29793
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 27
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 103
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29794
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 28
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 104
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29795
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 29
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 105
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29796
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 30
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 106
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29797
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 31
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 107
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29798
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 32
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 108
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29799
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 33
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 109
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29800
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 34
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 110
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29801
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 35
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 111
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29802
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 36
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 112
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29803
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 37
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 113
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29804
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 38
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 114
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29805
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 39
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 115
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29806
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 40
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 6
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_006
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 116
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29807
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 41
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 117
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29808
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 42
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 118
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29809
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 43
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 119
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29810
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 44
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 120
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29811
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 45
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 121
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29812
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 46
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 7
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_007
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 122
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29813
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 47
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 123
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29814
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 48
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 124
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29815
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 49
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 125
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29816
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 50
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 126
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29817
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 51
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 127
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29818
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 52
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 8
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_008
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 128
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29819
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 53
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 129
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29820
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 54
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 130
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29821
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 55
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 131
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29822
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 56
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 132
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29823
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 57
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 133
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29824
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 58
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 9
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_009
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 134
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29825
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 59
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 135
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29826
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 60
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 136
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29827
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 61
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 137
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29828
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 62
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 138
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29829
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 63
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 139
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29830
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 64
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 0
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_000
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 140
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29831
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 65
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 141
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29832
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 66
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 142
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 3
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_003
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29833
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 67
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 143
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29834
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 68
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 144
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29835
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 69
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 145
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29836
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 70
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 1
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_001
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 146
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29837
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 71
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 147
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29838
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 72
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 148
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 4
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_004
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29839
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 73
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 149
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+  - frame: 29840
+    game_state: PRE_ROUND
+    players:
+    - player: 1
+      state: STANDING
+      state_frame: 74
+      pos:
+      - 158.0
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: L
+      health: 1050
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: UP_BACK
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 2
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_002
+      feet_y: 430
+      projectiles: 0
+    - player: 2
+      state: STANDING
+      state_frame: 150
+      pos:
+      - 104.9
+      - 344
+      vel:
+      - 0
+      - 0
+      facing: R
+      health: 320
+      max_health: 1050
+      hitstun: 0
+      blockstun: 0
+      hitfreeze: 0
+      grounded: true
+      can_act: true
+      invincible: false
+      jump_direction: NEUTRAL
+      rendering_fallback: false
+      name: Akuma
+      anim:
+        animation: stance
+        frame_index: 5
+        total_frames: 10
+        complete: false
+        source: akuma-stance/frame_005
+      feet_y: 430
+      projectiles: 0
+    inputs:
+    - dir: NEUTRAL
+      buttons: []
+    - dir: NEUTRAL
+      buttons: []
+    combo:
+    - count: 0
+      damage: 0
+      last_damage: 0
+      active: false
+      scaling: 1.0
+      type: ground
+    - count: 1
+      damage: 110
+      last_damage: 110
+      active: false
+      scaling: 0.9
+      type: ground
+fix_hints:
+- Sprite channels concern the VISIBLE track, not the mechanics. The mechanical timing (ROM) is the ruler;
+  the animation must be fitted to it, never the other way around.
+- 'State -> animation mapping: characters/akuma.py (_STATE_ANIM and the state-transition handler around
+  it).'
+- 'Animation definitions (sprite lists + frame_duration): src/street_fighter_3rd/data/animations.yaml.
+  An attack animation''s game-frame length (n_sprites x frame_duration, or per-cel durations) should equal
+  the move''s ROM total so cels neither cut off nor freeze on the last pose mid-move.'
+- 'Playback engine: src/street_fighter_3rd/systems/animation.py (Animation/FolderAnimation.update, AnimationController).'
+- "Use the ticket's repro.cel_timeline: it aligns cel changes against the measured phase per frame \u2014\
+  \ the desync is visible as rows where the cel is wrong for the phase."
+- 'sprite_fallback means a placeholder rectangle was drawn: sprites are not bundled (Capcom copyright);
+  local assets come from the tools/sprite_extraction personal-use path. Missing files, not code, unless
+  the path/mapping is wrong.'
+- animation finished and held its last cel while the move was still running
+resolution: "cr.MP played 7 cels x 2 = 14 frames vs the 22-frame ROM total; per-cel holds now sum to 22\
+  \ (Akuma._setup_animations ROM-fit). The observed '5' was the hitstop-racing artifact: animations advanced\
+  \ during hit freeze while mechanics paused \u2014 they are now frozen in lockstep (akuma.py update)."

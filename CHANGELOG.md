@@ -11,6 +11,55 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **F2 world-coordinate grid**: labeled 50/100-px grid drawn into the world
+  buffer (zooms with the camera), gold floor/stage-center axes. Gives humans
+  a shared address space for positions — "the spark should spawn at x=560,
+  y=300" maps 1:1 onto the coordinates the code uses. The frame-data overlay
+  toggle moved from F2 to **F6**.
+- **Copyable discrepancies**: every `!!` line the F4 meter shows is appended
+  as plain text to `bugs/discrepancies.log` (and the console log);
+  `PYKUMA_DISCREPANCY_LOG` overrides the path, empty disables.
+- **Joystick hot-plug**: JOYDEVICEADDED/REMOVED events trigger an input-system
+  rescan, so a fight stick plugged in (or powered on) mid-session connects
+  instead of only being detected at launch.
+- Bug tickets carry a `resolution` field (closing note) and per-hit
+  `move_frame` (which active window a hit landed on).
+
+### Fixed
+- **Frame advantage now measures the community values.** Declared
+  hitstun/blockstun were estimates, mutually inconsistent with the ROM
+  timeline (s.MK: 16 hitstun in a 23-frame move can only ever yield -3 on
+  hit vs the community +1). Hitstun/blockstun are now back-solved from
+  community on_hit/on_block against the ROM timing
+  (`akuma_hitboxes._calibrated_stun`); the adapter applies declared blockstun
+  (the old `max(4, hitstun//2)` derivation survives only as a no-data
+  fallback). Grounded normals only; air normals keep the airborne model.
+  Pinned by `tests/test_advantage_calibration.py`.
+- **Multi-hit moves no longer false-flag recovery/total.** s.HK is two hits
+  (active 6-8 and 16-20 in a 39-frame ROM total); the 7 boxes-off frames
+  between the windows are now measured and drawn as GAP (ember pips), the
+  ROM total is the diffing ruler, and community advantage is only diffed
+  when the final window connects. This was the visible
+  `!! recovery: observed 26 != expected 19` bug.
+- **Animations are ROM-fitted.** The live sprite track (folder clips in
+  `Akuma._setup_animations` — `animations.yaml`'s numbered lists are a
+  legacy path Akuma doesn't render) ran hand-tuned uniform durations
+  (e.g. MK 22 frames vs the 23-frame move, HP 28 vs 38). Attack animations
+  now get per-cel holds computed from the ROM totals at registration
+  (Bresenham distribution; `create_folder_animation` accepts per-cel
+  durations). `tools/framelab/audit_animations.py` audits the LIVE
+  controller and reports zero findings.
+- **Hitstop freezes the sprite too.** Animations advanced during hit freeze
+  while mechanics paused, desyncing cels from frame data by the freeze
+  length on every connect (and not matching 3S's held impact pose).
+- Frame Lab animation-completion measurement had an off-by-one (playback
+  raises is_finished during the final played frame, not after it).
+- All seven open Frame Lab tickets closed with resolution notes (advantage
+  on hit for s.HK/s.MK/cr.MP; sprite timing for s.MK/s.HP/cr.MP; sprite
+  sync for cr.MP).
+
+
+### Added
 - **Frame Lab** debugging system (`core/frame_lab.py`, `schemas/bug_ticket.py`,
   `tools/framelab/audit_animations.py`, `bugs/`, `docs/FRAME_LAB.md`):
   SF6-style frame meter (F4) with expected-vs-actual phase underline and a
@@ -72,17 +121,13 @@ ROM-accurate.
   document F4/F9.
 
 ### Known issues (tracked as Frame Lab tickets)
-- Tatsumaki has no hitbox data (`bugs/manual_tatsumaki_incorrect.yaml`) and
-  Demon Flip lacks ROM arc data + Hyakki Go follow-ups
-  (`bugs/manual_demon_flip_incorrect.yaml`).
-- Animation lengths in `animations.yaml` disagree with ROM totals on every
-  grounded normal (now visible as held last cels / truncated tails —
-  `sprite_timing`); the six jump normals map to undefined animations
-  (renderer falls back); measured frame advantage deviates from community
-  values pending blockstun/hitstun calibration. Run
-  `python tools/framelab/audit_animations.py --tickets` to (re)generate the
-  ticket set. With durations now ROM-driven, the remaining work is fitting
-  animations into the ROM windows and calibrating the combat formulas.
+- Tatsumaki has no hitbox data and Demon Flip lacks ROM arc data + Hyakki Go
+  follow-ups (those manual tickets were superseded by newer F9 tickets; the
+  underlying work — ROM records for the specials — remains open).
+- ~~Animation drift / advantage deviation~~ fixed: animations are ROM-fitted
+  at registration and hitstun/blockstun are calibrated from community
+  advantage; `python tools/framelab/audit_animations.py` reports zero
+  findings on the live sprite track.
 
 ### Added
 - **AI difficulty tiers / boss ladder** — a selectable ladder of CPU profiles

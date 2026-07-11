@@ -71,3 +71,4 @@ debug_snapshots/
 docs/animation_audit/
 docs/asset_catalog/**/*.png
 docs/asset_catalog/**/*.gif
+bugs/discrepancies.log

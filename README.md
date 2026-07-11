@@ -178,8 +178,9 @@ Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 | Parry (high / low) | tap → / tap ↓ as the hit lands (7-frame window) |
 
 ### Training / debug hotkeys
-- **F1** hitbox/hurtbox display · **F2** frame-data overlay · **F3** reset positions
-- **F4** frame meter (SF6-style, expected-vs-actual) · **F9** file bug tickets to `bugs/`
+- **F1** hitbox/hurtbox display · **F2** world-coordinate grid · **F3** reset positions
+- **F4** frame meter (SF6-style, expected-vs-actual) · **F6** frame-data overlay
+- **F9** file bug tickets to `bugs/` (every `!!` line also lands in `bugs/discrepancies.log`)
 - **R** reset health · **F10** issue report · **F11** save replay clip · **F12** snapshot
 - **ESC** pause / return to menu
 

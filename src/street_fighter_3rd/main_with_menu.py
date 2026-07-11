@@ -152,7 +152,9 @@ def run_game_loop(screen, window, clock, game_mode_manager: GameModeManager, tar
                         if event.key == pygame.K_F1:
                             game_mode_manager.toggle_feature('show_hitboxes')
                             game_mode_manager.toggle_feature('show_hurtboxes')
-                        elif event.key == pygame.K_F2:
+                        # F2 is NOT handled here: it falls through to
+                        # game.handle_event = the world-coordinate grid.
+                        elif event.key == pygame.K_F6:
                             game_mode_manager.toggle_feature('show_frame_data')
                         elif event.key == pygame.K_F3:
                             game.reset_positions()

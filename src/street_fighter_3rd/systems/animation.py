@@ -389,14 +389,17 @@ def create_simple_animation(sprite_numbers: List[int], frame_duration: int = 1,
     return Animation(frames, loop)
 
 
-def create_folder_animation(folder_path: str, frame_count: int, frame_duration: int = 1,
+def create_folder_animation(folder_path: str, frame_count: int, frame_duration=1,
                             loop: bool = False, start_index: int = 0) -> FolderAnimation:
     """Helper function to create animation from folder with frame_NNN.png files.
 
     Args:
         folder_path: Path to folder containing frame_000.png, frame_001.png, etc.
         frame_count: Number of frames in the animation
-        frame_duration: How many game frames to hold each sprite
+        frame_duration: How many game frames to hold each sprite. Either a
+            single int for a uniform hold, or a list of ``frame_count`` ints
+            giving each cel its own hold — used to fit an animation exactly
+            into a ROM-verified move duration (see Akuma._setup_animations).
         loop: Whether to loop animation
         start_index: First frame index to use (for sub-range clips within a folder,
             e.g. splitting a 50-frame hit folder into light/heavy/knockdown ranges)
@@ -404,6 +407,14 @@ def create_folder_animation(folder_path: str, frame_count: int, frame_duration: 
     Returns:
         FolderAnimation object
     """
-    frames = [FolderAnimationFrame(folder_path, start_index + i, frame_duration)
-              for i in range(frame_count)]
+    if isinstance(frame_duration, (list, tuple)):
+        if len(frame_duration) != frame_count:
+            raise ValueError(
+                f"{folder_path}: per-cel durations ({len(frame_duration)}) "
+                f"must match frame_count ({frame_count})")
+        durations = list(frame_duration)
+    else:
+        durations = [frame_duration] * frame_count
+    frames = [FolderAnimationFrame(folder_path, start_index + i, d)
+              for i, d in enumerate(durations)]
     return FolderAnimation(frames, loop)

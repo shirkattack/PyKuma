@@ -76,6 +76,10 @@ class MoveFrameData:
     hitboxes: List[Tuple[List[int], HitboxFrame]]  # (active_frames, hitbox)
     hurtboxes: List[HurtboxFrame]  # Character's vulnerable areas
     hit_effect: HitEffect = HitEffect.NORMAL  # reaction this move causes on hit
+    # ROM total move duration. NOT always startup+len(active)+recovery: a
+    # multi-hit move has a GAP between active windows (s.HK: active 6-8 and
+    # 16-20 inside a 39-frame total). This is the duration the engine runs.
+    total: int = 0
 
 
 def _repo() -> HitboxRepository:
@@ -87,11 +91,71 @@ def _box_key(box: SourcedBox) -> Tuple[int, int, int, int]:
             round(box.width), round(box.height))
 
 
+def _active_windows(active: List[int]) -> List[List[int]]:
+    """Split the 1-indexed active frame list into contiguous windows.
+    A single-hit move has one window; s.HK has two ([6,7,8] and [16..20])."""
+    windows: List[List[int]] = []
+    for f in active:
+        if windows and f == windows[-1][-1] + 1:
+            windows[-1].append(f)
+        else:
+            windows.append([f])
+    return windows
+
+
+_STUN_CACHE: dict = {}
+
+
+def _calibrated_stun(move: MoveRecord) -> Tuple[int, int] | None:
+    """(hitstun, blockstun) derived FROM the community advantage numbers.
+
+    The combat tier's stored hitstun/blockstun are estimates and are NOT
+    mutually consistent with the ROM timing + the community on_hit/on_block
+    (e.g. s.MK: hitstun 16 with total 23 and hit on frame 5 can only ever
+    yield -3 on hit, but the community advantage is +1). Advantage is what the
+    community actually documents, so it is the source of truth; hitstun and
+    blockstun are back-solved from it against the ROM-verified timeline:
+
+        advantage = (hit_frame + stun) - (total + 1)
+        => stun    = advantage + (total + 1) - hit_frame
+
+    with hit_frame = the first frame of the LAST active window (advantage is
+    quoted for a normal point-blank connect: earliest frame of the final hit;
+    earlier hits of a multi-hit move keep the defender stunned into the next
+    window). Grounded normals only: air normals resolve through the airborne
+    hitstun/knockdown model, where quoted advantage does not apply.
+    Returns None (keep the stored estimates) when the record lacks the data.
+    """
+    key = move.state or move.rom_id
+    if key in _STUN_CACHE:
+        return _STUN_CACHE[key]
+    result = None
+    combat = move.combat
+    state_name = move.state or ""
+    if (combat is not None
+            and combat.on_hit is not None and combat.on_block is not None
+            and not state_name.startswith("JUMP_")):
+        total = int(move.timing.get("total") or 0)
+        active = move.active_frames()
+        if total and active:
+            ref = _active_windows(list(active))[-1][0]
+            hitstun = int(combat.on_hit) + (total + 1) - ref
+            blockstun = int(combat.on_block) + (total + 1) - ref
+            if hitstun > 0 and blockstun > 0:
+                result = (hitstun, blockstun)
+    _STUN_CACHE[key] = result
+    return result
+
+
 def _hitbox_from_box(box: SourcedBox, move: MoveRecord) -> HitboxFrame:
     combat = move.combat
     damage = combat.damage if combat else 0
-    hitstun = combat.hitstun if combat else 0
-    blockstun = combat.blockstun if combat else 0
+    calibrated = _calibrated_stun(move)
+    if calibrated is not None:
+        hitstun, blockstun = calibrated
+    else:
+        hitstun = combat.hitstun if combat else 0
+        blockstun = combat.blockstun if combat else 0
     hit_type = _HIT_TYPE_BY_NAME.get(combat.hit_type if combat else "MID", HitType.MID)
     return HitboxFrame(
         offset_x=int(round(box.offset_x)),
@@ -143,6 +207,9 @@ def _build_move_frame_data(move: MoveRecord) -> MoveFrameData:
         hitboxes=hitboxes,
         hurtboxes=hurtboxes,
         hit_effect=hit_effect,
+        total=int(move.timing.get("total")
+                  or (int(move.timing.get("startup", 0)) + len(active)
+                      + int(move.timing.get("recovery", 0)))),
     )
 
 
