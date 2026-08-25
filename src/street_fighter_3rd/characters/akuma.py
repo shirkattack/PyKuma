@@ -16,6 +16,7 @@ from street_fighter_3rd.core.projectile import Gohadoken
 from street_fighter_3rd.data.constants import GRAVITY, STAGE_FLOOR
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository
 from street_fighter_3rd.graphics.palette import player_recolor
+from street_fighter_3rd.data.community import community_damage
 
 log = get_logger(__name__)
 
@@ -150,11 +151,11 @@ DEMON_FLIP_RISE = -8.0         # initial vertical velocity (up)
 DEMON_FLIP_FORWARD = 6.5       # forward velocity toward the opponent
 
 # Super Arts (provisional damage/reach, flagged for ROM/community backfill).
-SA2_DAMAGE = 180               # Messatsu Gou Shoryu (rising launcher)
+SA2_DAMAGE = 495               # Messatsu Gou Shoryu (rising launcher) -- fallback, live: community yaml
 SA2_REACH = 130
-SA3_DAMAGE = 220               # Kongou Kokuretsu Zan (heavy ground hit)
+SA3_DAMAGE = 802               # Kongou Kokuretsu Zan (heavy ground hit) -- fallback, live: community yaml
 SA3_REACH = 150
-RAGING_DEMON_DAMAGE = 500      # Shun Goku Satsu (near-fatal command grab)
+RAGING_DEMON_DAMAGE = 652      # Shun Goku Satsu (near-fatal command grab) -- fallback, live: community yaml
 RAGING_DEMON_REACH = 84        # close unblockable grab range
 
 
@@ -681,7 +682,7 @@ class Akuma(Character):
         self.is_grounded = False
         self._transition_to_state(CharacterState.DEMON_FLIP)
 
-    def _spawn_gohadoken(self, strength: str, air: bool):
+    def _spawn_gohadoken(self, strength: str, air: bool, damage: int = None):
         """Create a Gou Hadouken projectile at hand height (shared by the normal
         fireball and the SA1 super-fireball burst)."""
         speed_map = {"light": 7.0, "medium": 9.0, "heavy": 11.0}
@@ -697,7 +698,7 @@ class Akuma(Character):
             spawn_x = self.x + 40 * fwd
         self.projectiles.append(
             Gohadoken(spawn_x, spawn_y, speed * fwd, self.facing, strength,
-                      velocity_y=velocity_y, ground_y=feet_y))
+                      velocity_y=velocity_y, ground_y=feet_y, damage_override=damage))
 
     def _check_raging_demon(self) -> bool:
         """Detect the LP, LP, F, LK, HP sequence ending with HP this frame.
@@ -753,13 +754,16 @@ class Akuma(Character):
             return
         if self.state == CharacterState.SUPER_ART_2 and self.state_frame >= 6:
             self._super_hit_done = True
-            self._apply_super_hit(opponent, SA2_DAMAGE, HitEffect.JUGGLE, SA2_REACH)
+            self._apply_super_hit(opponent, community_damage("messatsu_gou_shoryu", SA2_DAMAGE),
+                                  HitEffect.JUGGLE, SA2_REACH)
         elif self.state == CharacterState.SUPER_ART_3 and self.state_frame >= 12:
             self._super_hit_done = True
-            self._apply_super_hit(opponent, SA3_DAMAGE, HitEffect.KNOCKDOWN, SA3_REACH)
+            self._apply_super_hit(opponent, community_damage("kongou_kokuretsu_zan", SA3_DAMAGE),
+                                  HitEffect.KNOCKDOWN, SA3_REACH)
         elif self.state == CharacterState.RAGING_DEMON and self.state_frame >= 4:
             self._super_hit_done = True
-            self._apply_super_hit(opponent, RAGING_DEMON_DAMAGE, HitEffect.KNOCKDOWN,
+            self._apply_super_hit(opponent, community_damage("shun_goku_satsu", RAGING_DEMON_DAMAGE),
+                                  HitEffect.KNOCKDOWN,
                                   RAGING_DEMON_REACH)
 
     def _apply_super_hit(self, opponent, damage, effect, reach):
@@ -1075,7 +1079,9 @@ class Akuma(Character):
         elif self.state == CharacterState.SUPER_ART_1:
             # Messatsu Gou Hadou: a burst of three super fireballs (multi-hit).
             if self.state_frame in (10, 16, 22):
-                self._spawn_gohadoken("heavy", air=False)
+                # Three projectiles whose damage sums to the super's community total.
+                self._spawn_gohadoken("heavy", air=False,
+                                      damage=max(1, community_damage("messatsu_gou_hadou", 352) // 3))
 
         # GOHADOKEN/GOSHORYUKEN/TATSUMAKI now recover when their animation
         # completes (see update()); the per-state safety timeout still guards

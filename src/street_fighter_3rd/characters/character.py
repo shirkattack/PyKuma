@@ -114,7 +114,7 @@ JUGGLE_LAUNCH_FLOOR = 0.45   # but never below this fraction of LAUNCH_VELOCITY
 # center -- a bit beyond the ~50px pushbox contact. Provisional, tagged inferred
 # pending ROM/decomp throw calibration.
 THROW_RANGE = 72
-THROW_DAMAGE = 180
+THROW_DAMAGE = 142   # fallback; the live value is community_damage('forward_throw') (Baston 19 x7.5)
 THROW_HITSTUN = 40
 THROW_TOTAL_FRAMES = 30
 
@@ -614,7 +614,9 @@ class Character:
                      and not getattr(opponent, "is_invincible", False)
                      and opponent.state not in _UNTHROWABLE_STATES)
         if in_range and throwable:
-            opponent.health = max(0, opponent.health - THROW_DAMAGE)
+            from street_fighter_3rd.data.community import community_damage
+            dmg = community_damage("back_throw" if self.throw_is_back else "forward_throw", THROW_DAMAGE)
+            opponent.health = max(0, opponent.health - dmg)
             apply_reaction(opponent, HitEffect.KNOCKDOWN, THROW_HITSTUN)
             # A forward throw tosses them behind you (side switch); a back throw
             # leaves them in front. Position is clamped/un-overlapped afterward.

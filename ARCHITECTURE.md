@@ -100,6 +100,9 @@ tier so nothing fabricated can pass as real.
   ROM-pointer→`CharacterState` *name* assignment guessed from timing/geometry
   (geometry is ROM-verified, the name is a guess, see
   `data/characters/akuma/move_names.json`); `community` = damage / stun / frame
+  advantage — itself GENERATED from the vendored Baston ESN3S tables
+  (`data/sources/baston/` → `tools/framedata/baston_to_community.py` →
+  `sf3_authentic_frame_data.yaml`, one damage anchor, `baston:` line per move) —
   advantage from Baston ESN3S tuning in `data/characters/akuma/sf3_authentic_frame_data.yaml`
   (NOT ROM-verified). Enforced by `tests/test_hitbox_provenance.py`.
 - **Verification:** the hitbox viewer (`--hitbox-viewer`) draws non-`verified` boxes

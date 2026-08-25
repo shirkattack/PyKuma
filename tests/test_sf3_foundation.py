@@ -142,10 +142,12 @@ def test_authentic_frame_data():
     st_mp = akuma_data['normal_attacks']['standing_medium_punch']
     
     # These are the CORRECTED values from Baston ESN3S
+    # Baston revised 'Strong' (close st.MP): 5/4/10, damage 20 -> 150 on the yaml scale.
     assert st_mp['startup'] == 5, f"Expected 5 startup, got {st_mp['startup']}"
-    assert st_mp['active'] == 3, f"Expected 3 active (corrected from our wrong 4), got {st_mp['active']}"
-    assert st_mp['recovery'] == 10, f"Expected 10 recovery (corrected from our wrong 9), got {st_mp['recovery']}"
-    assert st_mp['damage'] == 115, f"Expected 115 damage, got {st_mp['damage']}"
+    assert st_mp['active'] == 4, f"Expected 4 active (Baston revised), got {st_mp['active']}"
+    assert st_mp['recovery'] == 10, f"Expected 10 recovery, got {st_mp['recovery']}"
+    assert st_mp['damage'] == 150, f"Expected 150 damage (Baston 20 x7.5), got {st_mp['damage']}"
+    assert st_mp['baston'].startswith("Strong:"), "row must carry its Baston provenance"
     assert st_mp['stun'] == 7, f"Expected 7 stun, got {st_mp['stun']}"
     
     print(f"   ✓ Startup: {st_mp['startup']} frames")
@@ -161,9 +163,10 @@ def test_authentic_frame_data():
     hadoken = akuma_data['special_moves']['gohadoken_light']
     
     # SF3 authentic fireball data
-    assert hadoken['startup'] == 13, f"Expected 13 startup, got {hadoken['startup']}"
+    # Baston revised 'Gou Hadouken': 8/-/38 (active not listed; the yaml keeps 2).
+    assert hadoken['startup'] == 8, f"Expected 8 startup (Baston revised), got {hadoken['startup']}"
     assert hadoken['active'] == 2, f"Expected 2 active, got {hadoken['active']}"
-    assert hadoken['recovery'] == 31, f"Expected 31 recovery, got {hadoken['recovery']}"
+    assert hadoken['recovery'] == 38, f"Expected 38 recovery (Baston revised), got {hadoken['recovery']}"
     
     print(f"   ✓ Startup: {hadoken['startup']} frames (SF3 authentic)")
     print(f"   ✓ Active: {hadoken['active']} frames (SF3 authentic)")

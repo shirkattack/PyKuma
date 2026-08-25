@@ -97,10 +97,10 @@ COMBAT_MAP = {
     "HEAVY_KICK:far":      ("standing_heavy_kick_far",     "MID", "NORMAL", 20, 15),
     # Straight (neutral) jump normals: separate ROM scripts, same community row.
     "JUMP_LIGHT_PUNCH:neutral": ("jump_light_punch",  "HIGH", "NORMAL", 12, 10),
-    "JUMP_HEAVY_PUNCH:neutral": ("jump_heavy_punch",  "HIGH", "NORMAL", 18, 14),
+    "JUMP_HEAVY_PUNCH:neutral": ("jump_heavy_punch_neutral", "HIGH", "NORMAL", 18, 14),
     "JUMP_LIGHT_KICK:neutral":  ("jump_light_kick",   "HIGH", "NORMAL", 13, 11),
-    "JUMP_MEDIUM_KICK:neutral": ("jump_medium_kick",  "HIGH", "NORMAL", 16, 13),
-    "JUMP_HEAVY_KICK:neutral":  ("jump_heavy_kick",   "HIGH", "NORMAL", 20, 15),
+    "JUMP_MEDIUM_KICK:neutral": ("jump_medium_kick_neutral", "HIGH", "NORMAL", 16, 13),
+    "JUMP_HEAVY_KICK:neutral":  ("jump_heavy_kick_neutral",  "HIGH", "NORMAL", 20, 15),
     # Command normals.
     "FORWARD_MP":          ("forward_medium_punch",  "HIGH", "NORMAL", 14, 12),   # f+MP overhead, 2 hits
     "DIVE_KICK":           ("dive_kick",             "HIGH", "NORMAL", 14, 12),   # air d+MK
@@ -128,9 +128,16 @@ COMBAT_MAP = {
 # `total`/`recovery` must not be read as the move's duration.
 SEGMENT_STATES = {"GOSHORYUKEN", "TATSUMAKI", "DIVE_KICK"}
 
-# Multi-hit specials whose community damage is the move TOTAL: the per-box
-# damage is split evenly across the ROM hit windows.
-TOTAL_DAMAGE_STATES = {"GOSHORYUKEN", "TATSUMAKI", "FORWARD_MP"}
+# Segment states whose ROM script nevertheless IS the whole move the engine
+# runs (the tatsu ends when its movement table does); Baston's totals for them
+# (32/28/30) disagree with the scripts (24/30/38), so the script length replaces
+# the community total in the record.
+SCRIPT_IS_TOTAL_STATES = {"TATSUMAKI"}
+
+# Multi-hit moves whose community damage is the move TOTAL (Baston lists one
+# figure per move): the per-box damage is split evenly across the ROM hit
+# windows. Close HK is a two-hit normal (33 total, not 33 per hit).
+TOTAL_DAMAGE_STATES = {"GOSHORYUKEN", "TATSUMAKI", "FORWARD_MP", "HEAVY_KICK"}
 
 
 def split_state_key(key):
@@ -420,6 +427,8 @@ def build_move(rom_id, entry, names, combat, vhb=None):
         combat_block = combat.get(combat_key)
         if combat_block:
             combat_block = dict(combat_block)
+            if name_info["state"] in SCRIPT_IS_TOTAL_STATES and movement:
+                combat_block["total"] = len(movement)
             n_hits = max(1, len(hit_windows))
             if name_info["state"] in TOTAL_DAMAGE_STATES and n_hits > 1:
                 combat_block["damage_total"] = combat_block["damage"]

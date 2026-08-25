@@ -170,6 +170,19 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
+- **Community tier regenerated from Baston (revised) at one scale.** The
+  damage/stun/advantage rows were "Baston + tuning" on no fixed scale (st.LP
+  was 20x its Baston number, st.HP 7.5x) and many advantages disagreed with
+  Baston (st.HP +1/-2 vs -4/-6, cr.HK -2/-5 vs knockdown/-15). The three
+  Baston tables are vendored (`data/sources/baston/`) and
+  `tools/framedata/baston_to_community.py` regenerates the yaml from them:
+  damage x7.5 anchored on st. Fierce 24 -> 180 (**provisional** absolute
+  scale), stun and advantage verbatim, a `baston:` provenance line per move.
+  Jabs now do ~2% (22) instead of 5.7%; hitstun/blockstun follow the new
+  advantages. Throw, fireball and super-art damage now read the yaml
+  (`data/community.py`) instead of hard-coded constants (throw 180 -> 142,
+  fireballs 60/70/80 -> 128, SA2 180 -> 495, KKZ 220 -> 802, Raging Demon
+  500 -> 652). SA2's yaml key `tensho_kaireki_jin` renamed `messatsu_gou_shoryu`.
 - **Dead code and stale docs removed** (git history keeps them): the four
   import-broken `scripts/demo_*.py` + two superseded demos, `debug_hitbox.py`,
   `joystick_test.py`; the never-wired `characters/ken.py` / `shoto_base.py`; the
