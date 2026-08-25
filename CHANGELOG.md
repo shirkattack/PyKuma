@@ -38,6 +38,19 @@ ROM-accurate.
   `move_frame` (which active window a hit landed on).
 
 ### Fixed
+- **Block levels are enforced.** Holding back used to block everything. Guard
+  posture is now re-evaluated every frame from the held direction
+  (`Character._update_guard`: back = standing, down-back = crouching; none
+  while attacking, jumping or in hitstun; still switchable during blockstun)
+  and the collision adapter checks the hit's level against it: MID blocked
+  either way, HIGH (jump-ins, UOH, air tatsu) only standing, LOW (crouching
+  kicks) only crouching. The old flag also went stale while the guarder
+  attacked (it "blocked" during its own moves). The CPU now crouch-blocks by
+  default and stands against jump-ins/overheads (subject to its reaction delay).
+- **Low parry never worked.** A down-forward tap also counted as forward, so
+  the high parry window opened first and the low one was refused; and every
+  hit reached the parry check tagged MID. The parry now sees the real hit
+  level (lows need a down-forward parry) and the two taps are exclusive.
 - **Goshoryuken and Tatsumaki did no damage** — they had no ROM pointer
   mapping, so no hitboxes at all (every CPU anti-air DP was a whiff). Now
   1/2/3-hit DPs and multi-hit Tatsus with ROM boxes; damage is the community

@@ -40,7 +40,7 @@ from ..data.akuma_hitboxes import (
     get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data, variant_of)
 from ..data.hitbox_repository import HitboxRepository
 from ..characters.character import (
-    apply_reaction, JUGGLE_LIMIT,
+    apply_reaction, guard_covers, JUGGLE_LIMIT,
     METER_GAIN_ON_HIT, METER_GAIN_ON_TAKE, METER_GAIN_ON_BLOCK)
 from .vfx import HitSparkType
 
@@ -73,6 +73,25 @@ def _knockback_for(hit_effect: HitEffect, damage: int) -> float:
                       HitEffect.GROUND_BOUNCE, HitEffect.WALL_BOUNCE):
         base = 5.0
     return base + min(2.0, damage / 80.0)
+
+
+_HIT_LEVEL_MAP = {
+    HitType.HIGH: SF3HitLevel.HIGH,
+    HitType.OVERHEAD: SF3HitLevel.HIGH,
+    HitType.MID: SF3HitLevel.MID,
+    HitType.LOW: SF3HitLevel.LOW,
+    HitType.THROW: SF3HitLevel.UNBLOCKABLE,
+}
+
+
+def _hit_type_of(move, attacker) -> HitType:
+    """Block level of the attacker's current move (from its data), else HIGH
+    for an airborne attacker, else MID."""
+    if move is not None and getattr(move, "hitboxes", None):
+        return move.hitboxes[0][1].hit_type
+    if attacker is not None and not getattr(attacker, "is_grounded", True):
+        return HitType.HIGH
+    return HitType.MID
 
 
 def _hit_window_index(move, frame_1indexed: int) -> int:
@@ -602,13 +621,18 @@ class SF3CollisionAdapter:
         attacker_id = getattr(attacker, 'player_number', 1)
         defender_id = getattr(defender, 'player_number', 2)
 
-        # Create SF3Hitbox for parry system
-        # TODO: carry the real hit level through SF3HitStatus; MID is parryable
-        # by both high and low parry rules' high path, which matches most normals.
+        # The hit's block level comes from the attacking move's data (every
+        # box of a move shares it): MID for grounded normals and specials,
+        # HIGH for jump-ins / UOH / air tatsu, LOW for crouching kicks. An
+        # airborne attacker with no move data is treated as HIGH.
+        hit_type = _hit_type_of(move, attacker)
+        hit_level = _HIT_LEVEL_MAP.get(hit_type, SF3HitLevel.MID)
+
+        # Create SF3Hitbox for the parry system (LOW needs a down parry).
         attack_box = SF3Hitbox(
             offset_x=0, offset_y=0,
             width=10, height=10,
-            hit_level=SF3HitLevel.MID,
+            hit_level=hit_level,
             damage=hit_status.damage,
             hitstun=hit_status.hitstun
         )
@@ -616,18 +640,22 @@ class SF3CollisionAdapter:
         # Defense check: parry first (highest priority), then guard, then hit.
         att_work = self.player_works[attacker_id]
         def_work = self.player_works[defender_id]
+        guard_dir = hit_level.value
         if defender.is_grounded:
-            defense = self.sf3_parry_system.defense_ground(att_work, def_work, attack_box, "mid")
+            defense = self.sf3_parry_system.defense_ground(att_work, def_work, attack_box, guard_dir)
         else:
-            defense = self.sf3_parry_system.defense_sky(att_work, def_work, attack_box, "mid")
+            defense = self.sf3_parry_system.defense_sky(att_work, def_work, attack_box, guard_dir)
 
         if defense == SF3ParryResult.PARRY_SUCCESS:
             self._apply_parry_effects(attacker, defender, vfx_manager)
             return
 
-        # The parry system's guard check is still simplified; honor the
-        # defender's own guard signal (holding back, see _check_movement).
-        if defense == SF3ParryResult.GUARD_SUCCESS or getattr(defender, 'is_blocking', False):
+        # Guard: the defender's per-frame guard posture (Character._update_guard)
+        # must cover the hit's level -- a crouch-block does not stop an overhead
+        # or a jump-in, a standing block does not stop a sweep.
+        guarded = (getattr(defender, 'is_blocking', False)
+                   and guard_covers(hit_type, getattr(defender, 'guard_posture', None)))
+        if defense == SF3ParryResult.GUARD_SUCCESS or guarded:
             self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
             attacker.attack_connected = True
             attacker._connected_window = window
@@ -754,7 +782,8 @@ class SF3CollisionAdapter:
         # fallback for boxes that carry no blockstun (e.g. projectiles).
         blockstun = getattr(hit_status, "blockstun", 0) or max(4, hit_status.hitstun // 2)
         defender.blockstun_frames = blockstun
-        crouching = defender.state in (CharacterState.CROUCHING, CharacterState.BLOCKSTUN_LOW)
+        crouching = (getattr(defender, "guard_posture", None) == "low"
+                     or defender.state in (CharacterState.CROUCHING, CharacterState.BLOCKSTUN_LOW))
         defender._transition_to_state(
             CharacterState.BLOCKSTUN_LOW if crouching else CharacterState.BLOCKSTUN_HIGH)
         push = 3.0 if attacker.x < defender.x else -3.0

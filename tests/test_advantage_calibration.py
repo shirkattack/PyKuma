@@ -107,10 +107,13 @@ def test_declared_blockstun_is_applied(game):
     game.player2.x = game.player1.x + 80
     for _ in range(40):
         game.update()
-    # Hold the guard: _process_input recomputes is_blocking from the held
-    # direction every actionable frame, so pin the flag by muting P2's input.
+    # Hold a standing guard: the guard is recomputed from the held direction
+    # every frame (_update_guard), so pin it by muting both P2's input and
+    # its guard refresh. (st.MK is MID: any posture blocks it.)
     game.player2._process_input = lambda: None
+    game.player2._update_guard = lambda: None
     game.player2.is_blocking = True
+    game.player2.guard_posture = "high"
     start_move(game, CharacterState.MEDIUM_KICK)
     for _ in range(120):
         game.update()
