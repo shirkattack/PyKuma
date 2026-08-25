@@ -8,6 +8,7 @@ from street_fighter_3rd.characters.character import apply_reaction
 from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
 from street_fighter_3rd.data.constants import STAGE_FLOOR
 from street_fighter_3rd.data.enums import CharacterState, HitEffect
+from tests.asset_guard import require_assets, ANIMATIONS
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -55,13 +56,22 @@ def test_sweep_knocks_down():
     assert b.state == CharacterState.KNOCKDOWN
 
 
-def test_heavy_punch_launches():
-    adapter, a, b = _hit(CharacterState.HEAVY_PUNCH)  # AKUMA_ST_HP -> JUGGLE
+def test_heavy_punch_does_not_launch():
+    """st.HP is a plain hit in 3S. It used to be tagged JUGGLE (gameplay
+    tuning), which made mashed HP an endless launch loop."""
+    adapter, a, b = _hit(CharacterState.HEAVY_PUNCH)
     adapter._apply_hit_to_character(a, b, FakeHit(), None)
+    assert b.state == CharacterState.HITSTUN_STANDING
+    assert b.is_grounded and b.velocity_y == 0
+
+
+def test_launch_falls_lands_and_recovers():
+    a, b = Akuma(200, STAGE_FLOOR, 1), Akuma(300, STAGE_FLOOR, 2)
+    apply_reaction(b, HitEffect.JUGGLE, 16)
     assert b.state == CharacterState.HITSTUN_AIRBORNE
     assert b.velocity_y < 0 and not b.is_grounded
-    # falls under gravity, lands, recovers
-    for _ in range(120):
+    # falls under gravity, lands (into knockdown), recovers
+    for _ in range(200):
         b.update(a)
         if b.is_grounded and b.state == CharacterState.STANDING:
             break
@@ -92,6 +102,7 @@ def test_take_damage_respects_hit_effect():
     assert a.health == a.max_health - 10
 
 
+@require_assets(ANIMATIONS)
 def test_reaction_animations_resolve():
     a = Akuma(200, STAGE_FLOOR, 1)
     for state in (CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,

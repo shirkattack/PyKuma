@@ -13,6 +13,8 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 import pytest
 
+from tests.asset_guard import require_assets, ANIMATIONS
+
 from street_fighter_3rd.data.enums import CharacterState
 from street_fighter_3rd.core.frame_lab import FrameLab, _expected_for
 from street_fighter_3rd.schemas.bug_ticket import load_ticket
@@ -200,6 +202,7 @@ def _load_audit_module():
     return mod
 
 
+@require_assets(ANIMATIONS)
 def test_audit_is_clean_after_rom_fit():
     """Pin the fixed state: every registered attack animation is ROM-fitted
     (per-cel holds sum to the ROM total — Akuma._setup_animations), every

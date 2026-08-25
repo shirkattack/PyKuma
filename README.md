@@ -85,7 +85,7 @@ Taunt (HP+HK).
 - ✅ **Modular Architecture** - Separated systems (Input, Collision, Animation, VFX)
 - ✅ **2-Player Support** - Keyboard controls for both players
 - ✅ **Controller Support** - Joystick/hitbox support
-- ✅ **Main Menu System** - Full navigation with mode selection
+- ✅ **Main Menu System** - Start (pick your CPU opponent), Training, Dev, Hitbox Viewer, Controls
 - ✅ **YAML-Based Animation System** - Centralized frame data and hitbox definitions
 - ✅ **Debug Tools** - Hitbox visualization, frame data display, performance metrics
 

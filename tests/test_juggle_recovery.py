@@ -6,6 +6,9 @@ ROM jump arc it flew ~288px off-screen for ~82 frames and blew past the 60-frame
 airborne cap, snapping to STANDING mid-air. Launch is now -9 (apex ~119, airtime
 ~53) and the airborne reaction recovers on LANDING (cap raised to a stuck-only
 safety net).
+
+The launch is applied directly (``apply_reaction(JUGGLE)``): st.HP is a plain
+hit in 3S and no longer launches, so it can't serve as the launcher here.
 """
 
 import os
@@ -15,8 +18,10 @@ import pygame
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tools.diagnostics.scenario import run_scenario, launch_recovery
-from street_fighter_3rd.data.constants import STAGE_FLOOR, SCREEN_HEIGHT
+from tools.diagnostics.harness import new_game
+from street_fighter_3rd.characters.character import apply_reaction, LAUNCH_HITSTUN
+from street_fighter_3rd.data.constants import STAGE_FLOOR
+from street_fighter_3rd.data.enums import HitEffect
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -28,22 +33,36 @@ def pygame_headless():
     pygame.quit()
 
 
-def test_heavy_punch_launches_to_sane_apex():
-    tl = run_scenario(launch_recovery())
+def _launch_timeline(frames=110):
+    """P2 is launched on frame 2; return the per-frame timeline (same shape as
+    tools.diagnostics.scenario.run_scenario)."""
+    g = new_game()
+    g.player1.x, g.player2.x = 300, 360
+    tl = []
+    for i in range(frames):
+        if i == 2:
+            apply_reaction(g.player2, HitEffect.JUGGLE, LAUNCH_HITSTUN)
+        g.update()
+        tl.append({"frame": i, "players": [g.player1.get_debug_state(), g.player2.get_debug_state()]})
+    return tl
+
+
+def test_launch_rises_to_sane_apex():
+    tl = _launch_timeline()
     ys = [fr["players"][1]["pos"][1] for fr in tl]
     apex = STAGE_FLOOR - min(ys)
-    assert apex > 60, "heavy punch should pop the opponent up (juggle)"
+    assert apex > 60, "a launch should pop the opponent up (juggle)"
     assert apex < 220, f"apex {apex} must not fly off-screen (was ~288 with the bug)"
     assert min(ys) > 0, "launched character must stay on screen"
 
 
 def test_launched_character_lands_and_recovers():
-    tl = run_scenario(launch_recovery())
+    tl = _launch_timeline()
     # the launched defender enters the airborne reaction...
     assert any(fr["players"][1]["state"] == "HITSTUN_AIRBORNE" for fr in tl)
     # ...and by the end it has landed. Landing goes to KNOCKDOWN (with its
     # wakeup timer), not straight to STANDING -- otherwise the opponent is
-    # immediately re-launchable, which produces the neverending s.HP juggle
+    # immediately re-launchable, which produces the neverending juggle
     # (see the corresponding fix in Character._apply_physics).
     last = tl[-1]["players"][1]
     assert last["grounded"], "must land"
@@ -52,7 +71,7 @@ def test_launched_character_lands_and_recovers():
 
 
 def test_airborne_reaction_does_not_hit_the_timeout():
-    tl = run_scenario(launch_recovery())
+    tl = _launch_timeline()
     # max consecutive frames in HITSTUN_AIRBORNE must stay under the 120 safety cap
     run = best = 0
     for fr in tl:

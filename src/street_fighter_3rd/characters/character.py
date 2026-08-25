@@ -112,6 +112,10 @@ def apply_reaction(character, hit_effect: HitEffect, hitstun: int, knockback_vx:
     attacker) applied to the defender; it decays via hitstun friction in
     `_update_state` and is clamped by `_clamp_to_stage`.
     """
+    # A hit always stuns for at least a frame: with hitstun_frames == 0 the
+    # countdown never runs, and the defender sat in HITSTUN_STANDING until the
+    # 60-frame state timeout (what a combat-less UOH used to do).
+    hitstun = max(1, int(hitstun or 0))
     character.in_hitstun = True
     character.velocity_x = knockback_vx
     if hit_effect == HitEffect.JUGGLE:
@@ -170,6 +174,15 @@ class Character:
         self._prev_x = x  # x at the start of this frame (before physics); used to
                           # keep grounded pushbox order stable so a fast dash can't
                           # cross/tunnel through the opponent.
+        self._prev_grounded = True  # grounded at the start of this frame; lets the
+                                    # pushbox resolver tell "just landed" from
+                                    # "was standing here" (corner ownership).
+        self.move_variant = None    # light/medium/heavy/air_* for move families
+                                    # that share one state (specials); the
+                                    # hitbox repository picks the variant's ROM
+                                    # record.
+        self._connected_window = None  # ROM hit window the current attack last
+                                       # connected in (one connect per window).
         self.velocity_x = 0.0
         self.velocity_y = 0.0
         self.facing = FacingDirection.RIGHT if player_number == 1 else FacingDirection.LEFT
@@ -315,7 +328,7 @@ class Character:
 
             # Special moves (generous limits)
             CharacterState.GOHADOKEN: 45,
-            CharacterState.GOSHORYUKEN: 60,
+            CharacterState.GOSHORYUKEN: 80,   # HP DP: 59-frame total + slack
             CharacterState.TATSUMAKI: 60,
             CharacterState.ASHURA_SENKU: 60,
             CharacterState.DEMON_FLIP: 90,
@@ -394,6 +407,7 @@ class Character:
         # Remember where we were before this frame's physics so grounded pushbox
         # resolution can keep left/right order stable (no cross-through on a dash).
         self._prev_x = self.x
+        self._prev_grounded = self.is_grounded
 
         # Update invincibility status based on current frame
         self._update_invincibility()
@@ -895,10 +909,40 @@ class Character:
             if abs(self.velocity_x) < 0.2:
                 self.velocity_x = 0.0
 
+    def _rom_movement_step(self):
+        """(dx, dy) the ROM's movement table prescribes for this frame of the
+        current move, or None when the move is physics-driven. Subclasses with
+        ROM movement data (specials) override; dx is forward-positive, dy grows
+        DOWN (PyKuma units, converted at data-conversion time)."""
+        return None
+
+    def _on_landing(self):
+        """State transition on touchdown (called once, the frame we land)."""
+        if self.state in (CharacterState.HITSTUN_AIRBORNE,
+                          CharacterState.KNOCKDOWN):
+            # Landing from a juggle/air hit is a KNOCKDOWN (with its
+            # wakeup window), NOT an instant return to neutral.
+            # Landing straight into STANDING made the opponent
+            # immediately re-launchable, which is what produced the
+            # neverending s.HP juggle loop: launch -> juggle cap ->
+            # land -> instantly hittable -> relaunch, forever. In 3S
+            # a juggled character always falls into knockdown/wakeup.
+            self.hitstun_frames = max(self.hitstun_frames, KNOCKDOWN_HITSTUN)
+            self._transition_to_state(CharacterState.KNOCKDOWN)
+        else:
+            self._transition_to_state(CharacterState.STANDING)
+
     def _apply_physics(self):
-        """Apply gravity and update position."""
-        # Apply gravity
-        if not self.is_grounded:
+        """Apply gravity (or the move's ROM movement table) and update position."""
+        step = self._rom_movement_step()
+        if step is not None:
+            # The ROM table already encodes the arc (its own gravity); no
+            # engine gravity this frame. Velocity is set to the step so it
+            # carries over when the table runs out (physics resumes from it).
+            dx, dy = step
+            self.velocity_x = float(dx) * (1.0 if self.is_facing_right() else -1.0)
+            self.velocity_y = float(dy)
+        elif not self.is_grounded:
             self.velocity_y += GRAVITY
 
         # Update position
@@ -912,19 +956,7 @@ class Character:
             if not self.is_grounded:
                 self.is_grounded = True
                 self.juggle_count = 0  # landed: a new airborne sequence resets the juggle cap
-                if self.state in (CharacterState.HITSTUN_AIRBORNE,
-                                  CharacterState.KNOCKDOWN):
-                    # Landing from a juggle/air hit is a KNOCKDOWN (with its
-                    # wakeup window), NOT an instant return to neutral.
-                    # Landing straight into STANDING made the opponent
-                    # immediately re-launchable, which is what produced the
-                    # neverending s.HP juggle loop: launch -> juggle cap ->
-                    # land -> instantly hittable -> relaunch, forever. In 3S
-                    # a juggled character always falls into knockdown/wakeup.
-                    self.hitstun_frames = max(self.hitstun_frames, KNOCKDOWN_HITSTUN)
-                    self._transition_to_state(CharacterState.KNOCKDOWN)
-                else:
-                    self._transition_to_state(CharacterState.STANDING)
+                self._on_landing()
         else:
             self.is_grounded = False
 
@@ -954,6 +986,29 @@ class Character:
 
         # Minimum center-to-center distance from the ROM pushboxes.
         min_distance = (self.pushbox_width + opponent.pushbox_width) / 2
+
+        # Corner landing: you cannot cross up a cornered opponent. A character
+        # that was airborne last frame and comes down on top of (or behind) an
+        # opponent who was grounded AT the wall does not take the wall -- the
+        # cornered fighter keeps the corner and the lander is placed on the
+        # open side, as in 3S. Without this, an airborne jumper clamped to the
+        # wall (x == wall == opponent.x) won the prev_x tie-break below and
+        # "stole" the corner: the defender was shoved inward, both facings
+        # flipped, and (both fighters being the same Akuma sprite) it read as
+        # P1 and P2 swapping controls.
+        for lander, owner in ((self, opponent), (opponent, self)):
+            if lander._prev_grounded or not owner._prev_grounded:
+                continue
+            if owner._prev_x >= STAGE_RIGHT_BOUND - 1 and lander.x > owner.x - min_distance:
+                owner.x = STAGE_RIGHT_BOUND
+                lander.x = owner.x - min_distance
+                lander.velocity_x = 0
+                return
+            if owner._prev_x <= STAGE_LEFT_BOUND + 1 and lander.x < owner.x + min_distance:
+                owner.x = STAGE_LEFT_BOUND
+                lander.x = owner.x + min_distance
+                lander.velocity_x = 0
+                return
 
         # Determine LEFT/RIGHT order from positions BEFORE this frame's movement,
         # not the current ones: a fast dash can move past the opponent's center in
@@ -1046,6 +1101,7 @@ class Character:
             self.animation_frame = 0
             # A new state = a fresh attack window; allow the next attack to connect.
             self.attack_connected = False
+            self._connected_window = None
 
             # State entry logic
             if new_state == CharacterState.JUMP_STARTUP:
@@ -1202,6 +1258,8 @@ class Character:
         self._threw_successfully = False
 
         self.is_grounded = True
+        self._prev_x = x
+        self._prev_grounded = True
         self.can_act = True
         self.in_hitstun = False
         self.in_blockstun = False

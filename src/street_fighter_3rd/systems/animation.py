@@ -167,13 +167,18 @@ class FolderAnimation:
 class SpriteManager:
     """Manages loading and caching of sprite images."""
 
-    def __init__(self, sprite_directory: str):
+    def __init__(self, sprite_directory: str, recolor=None):
         """Initialize sprite manager.
 
         Args:
             sprite_directory: Path to directory containing sprite PNG files
+            recolor: optional ``Surface -> Surface`` applied to every sprite as
+                it is loaded (per-player palette swap). The manager is
+                per-character, so the recoloured surfaces are cached per
+                fighter and never leak into the other player's sprites.
         """
         self.sprite_directory = sprite_directory
+        self.recolor = recolor
         self.sprite_cache: Dict[int, pygame.Surface] = {}
 
     def load_sprite(self, sprite_number: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
@@ -200,6 +205,8 @@ class SpriteManager:
 
         try:
             sprite = pygame.image.load(sprite_path).convert_alpha()
+            if self.recolor is not None:
+                sprite = self.recolor(sprite)
 
             # Scale sprite
             if scale != 1.0:
@@ -255,6 +262,8 @@ class SpriteManager:
 
         try:
             sprite = pygame.image.load(sprite_path).convert_alpha()
+            if self.recolor is not None:
+                sprite = self.recolor(sprite)
 
             # Scale sprite
             if scale != 1.0:

@@ -13,7 +13,9 @@ from street_fighter_3rd.systems.animation import (
     create_folder_animation,
 )
 from street_fighter_3rd.core.projectile import Gohadoken
+from street_fighter_3rd.data.constants import GRAVITY, STAGE_FLOOR
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository
+from street_fighter_3rd.graphics.palette import player_recolor
 
 log = get_logger(__name__)
 
@@ -34,7 +36,42 @@ _HOLD_STATES = frozenset({
     CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,
     CharacterState.HITSTUN_AIRBORNE, CharacterState.KNOCKDOWN,
     CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW,
+    # Goshoryuken / Tatsumaki own their exit (Akuma._update_state): the ROM
+    # movement table drives the arc/travel, then the DP holds through its
+    # landing recovery and the tatsu ends when its table runs out. Dropping to
+    # JUMPING at clip end used to run into JUMPING's 60-frame safety cap, which
+    # forced STANDING while still in the air -- the "frozen in the idle pose,
+    # floating down" DP.
+    CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
 })
+
+# ROM-movement-driven states: their per-frame (dx, dy) comes from the move's
+# ROM script (hitboxes.yaml `movement`, via the repository) instead of engine
+# physics; physics resumes when the table ends (the fall of a DP).
+_ROM_MOVEMENT_STATES = frozenset({CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI})
+
+_STRENGTH_VARIANT = {
+    Button.LIGHT_PUNCH: "light", Button.MEDIUM_PUNCH: "medium", Button.HEAVY_PUNCH: "heavy",
+    Button.LIGHT_KICK: "light", Button.MEDIUM_KICK: "medium", Button.HEAVY_KICK: "heavy",
+}
+
+# Goshoryuken FALLBACK arc, used only when the repository has no ROM movement
+# table for the DP (e.g. a stub data set). Normally the arc is the ROM's own
+# per-frame movement (hitboxes.yaml 84f8/85c8/8658: rises 56/87/124px) with
+# physics taking over when the script ends, then a landing recovery so the
+# move lasts the Baston total (43/50/59). The fallback sizes a symmetric arc to
+# the older community totals: vy0 = g*(T+1)/2 lands on frame T exactly.
+_DP_AIRBORNE_FRAMES = {
+    Button.LIGHT_PUNCH: 37,
+    Button.MEDIUM_PUNCH: 42,
+    Button.HEAVY_PUNCH: 47,
+}
+
+
+def dp_launch_velocity(strength: Button) -> float:
+    """Vertical launch velocity that lands the DP on its last airborne frame."""
+    frames = _DP_AIRBORNE_FRAMES.get(strength, _DP_AIRBORNE_FRAMES[Button.MEDIUM_PUNCH])
+    return -GRAVITY * (frames + 1) / 2
 
 # States whose DURATION is driven by the ROM-verified frame data rather than
 # by animation length. THE MECHANICAL TIMING IS THE RULER: previously a normal
@@ -172,8 +209,11 @@ class Akuma(Character):
         # Single animation path: folder-based sprites through the AnimationController.
         # sprite_directory is only used by SpriteManager's numbered loader (unused
         # by Akuma now); folder animations resolve their own paths.
-        self.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets")
+        # P2 gets a palette swap at load time so the two Akumas can be told apart.
+        self.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets",
+                                            recolor=player_recolor("akuma", player_number))
         self.animation_controller = AnimationController(self.sprite_manager)
+        self._move_total = None  # full length of the current ROM-driven special
 
         # Set ground offset for consistent positioning
         self.ground_offset = 190  # From YAML configuration (base-class fallback)
@@ -464,14 +504,85 @@ class Akuma(Character):
         else:  # HEAVY_PUNCH
             self.invincibility_frames = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 12 frames
 
-        # Launch character upward (DP rises into the air)
-        self.velocity_y = -18.0  # Strong upward velocity
-        self.is_grounded = False
-
         # Store which strength was used for hitbox generation
         self.dp_strength = strength
+        self.move_variant = _STRENGTH_VARIANT[strength]
+
+        # The DP does not inherit walk/dash momentum: a dash-cancelled DP used
+        # to carry 6.8px/f across the whole stage.
+        self.velocity_x = 0.0
+        move = HitboxRepository.instance().get_move_by_state(
+            CharacterState.GOSHORYUKEN.name, self.move_variant)
+        if move is not None and move.movement:
+            # ROM-driven: the script's movement table lifts us from frame 1
+            # (see _rom_movement_step / Character._apply_physics); physics
+            # resumes when it ends, and the state holds until the Baston
+            # total so the landing recovery is real (see _update_state).
+            self._move_total = (move.combat.total if move.combat and move.combat.total
+                                else None)
+            total_for_anim = self._move_total or len(move.movement)
+        else:
+            # Fallback arc (no ROM table): symmetric launch sized to the
+            # community total, landing straight into STANDING.
+            self._move_total = None
+            self.velocity_y = dp_launch_velocity(strength)
+            self.is_grounded = False
+            total_for_anim = _DP_AIRBORNE_FRAMES[strength]
+
+        # Fit the DP clip to the move so the cels span the whole thing (same
+        # Bresenham spread the ROM-timed normals get at load) instead of
+        # finishing at a fixed 40 frames and holding the last cel -- which the
+        # Frame Lab would flag as sprite_timing on every DP.
+        self._fit_animation("goshoryuken", total_for_anim)
 
         self._transition_to_state(CharacterState.GOSHORYUKEN)
+
+    def _rom_move(self):
+        """The repository record for the current ROM-movement-driven state."""
+        if self.state not in _ROM_MOVEMENT_STATES:
+            return None
+        return HitboxRepository.instance().get_move_by_state(self.state.name, self.move_variant)
+
+    def _rom_movement_step(self):
+        move = self._rom_move()
+        if move is None or not move.movement:
+            return None
+        return move.movement_for_frame(self.state_frame + 1)
+
+    def _on_landing(self):
+        # A ROM-driven special keeps its state on touchdown: the DP holds for
+        # its landing recovery and the tatsu's hop touches down inside the
+        # move. Its exit is decided in _update_state. (The fallback DP, with
+        # no table, lands straight into STANDING like before.)
+        move = self._rom_move()
+        if move is not None and move.movement:
+            self.velocity_x = 0.0
+            return
+        super()._on_landing()
+
+    def _fit_animation(self, name: str, total: int):
+        """Re-time a clip so it lasts exactly `total` frames: spread the holds
+        over all cels when the move is longer than the clip, or pick an evenly
+        spaced subset of cels (1 frame each) when it is shorter (a 30-cel tatsu
+        clip inside a 24-frame ROM move)."""
+        anim = self.animation_controller.animations.get(name)
+        if anim is None or total < 1:
+            return
+        source = getattr(anim, "_source_frames", None)
+        if source is None:
+            source = anim._source_frames = list(anim.frames)
+        n = len(source)
+        if not n:
+            return
+        if total >= n:
+            anim.frames = list(source)
+            for i, frame in enumerate(anim.frames):
+                frame.duration = (i + 1) * total // n - i * total // n
+        else:
+            picked = [source[i * n // total] for i in range(total)]
+            anim.frames = [type(f)(f.folder_path, f.frame_index, 1) for f in picked]
+        if anim.current_frame_index >= len(anim.frames):
+            anim.current_frame_index = len(anim.frames) - 1
 
     def _execute_tatsumaki(self, strength: Button):
         """Execute Tatsumaki Zankukyaku (hurricane kick).
@@ -484,30 +595,32 @@ class Akuma(Character):
         # Mark special move executed (for cooldown tracking)
         self.last_special_frame = self.total_frames
 
-        # Set horizontal speed based on strength
-        if strength == Button.LIGHT_KICK:
-            horizontal_speed = 5.0
-            self.tatsu_hits = 3
-        elif strength == Button.MEDIUM_KICK:
-            horizontal_speed = 6.5
-            self.tatsu_hits = 4
-        else:  # HEAVY_KICK
-            horizontal_speed = 8.0
-            self.tatsu_hits = 5
-
-        # Apply horizontal velocity (moves in facing direction)
-        direction = 1 if self.facing == FacingDirection.RIGHT else -1
-        self.velocity_x = horizontal_speed * direction
-
-        # If in air, this is air tatsumaki (slightly different)
-        if not self.is_grounded:
-            log.debug("  (AIR VERSION)")
-            horizontal_speed *= 0.8  # Air version moves slower
-            self.velocity_x = horizontal_speed * direction
-
         # Store which strength was used for hitbox generation
         self.tatsu_strength = strength
         self.tatsu_hit_count = 0  # Track how many hits have connected
+        airborne = not self.is_grounded
+        self.move_variant = ("air_" if airborne else "") + _STRENGTH_VARIANT[strength]
+        if airborne:
+            log.debug("  (AIR VERSION)")
+
+        move = HitboxRepository.instance().get_move_by_state(
+            CharacterState.TATSUMAKI.name, self.move_variant)
+        direction = 1 if self.facing == FacingDirection.RIGHT else -1
+        if move is not None and move.movement:
+            # ROM-driven travel (92/130/173px over 24/30/38 frames for the
+            # ground LK/MK/HK; the air versions descend). The table owns
+            # velocity from frame 1; the state ends when the table runs out.
+            self.velocity_x = 0.0
+            self._move_total = len(move.movement)
+        else:
+            # Fallback: hand-tuned forward speed until the clip ends.
+            horizontal_speed = {Button.LIGHT_KICK: 5.0, Button.MEDIUM_KICK: 6.5}.get(strength, 8.0)
+            if airborne:
+                horizontal_speed *= 0.8
+            self.velocity_x = horizontal_speed * direction
+            self._move_total = None
+        if self._move_total:
+            self._fit_animation("tatsumaki", self._move_total)
 
         self._transition_to_state(CharacterState.TATSUMAKI)
 
@@ -845,6 +958,31 @@ class Akuma(Character):
         """Update Akuma-specific state behavior."""
         # Call parent update first
         super()._update_state()
+
+        # ROM-movement-driven specials own their exit.
+        if self.state == CharacterState.GOSHORYUKEN and self._move_total:
+            # Landed (table exhausted, on the ground) and the Baston total has
+            # elapsed -> the landing recovery is over.
+            if (self.is_grounded and self._rom_movement_step() is None
+                    and self.state_frame >= self._move_total):
+                self.velocity_x = 0.0
+                self._transition_to_state(CharacterState.STANDING)
+            return
+        if self.state == CharacterState.TATSUMAKI and self._move_total:
+            if self._rom_movement_step() is None:      # table exhausted
+                if (self.move_variant or "").startswith("air_"):
+                    # Air tatsu: resume the fall; physics lands us.
+                    self.velocity_x = 0.0
+                    self._transition_to_state(CharacterState.JUMPING)
+                else:
+                    # Ground tatsu ends a hair above the floor (its hop);
+                    # touch down and stand.
+                    self.y = STAGE_FLOOR
+                    self.is_grounded = True
+                    self.velocity_x = 0.0
+                    self.velocity_y = 0.0
+                    self._transition_to_state(CharacterState.STANDING)
+            return
 
         # Ashura Senku teleport: strike-invulnerable; glide the travel distance,
         # then recover. No hitbox.

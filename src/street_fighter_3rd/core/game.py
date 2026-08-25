@@ -1221,7 +1221,7 @@ class Game:
         from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
         for atk in (self.player1, self.player2):
             if atk.is_attacking():
-                fd = get_move_frame_data(atk.state)
+                fd = get_move_frame_data(atk.state, getattr(atk, "move_variant", None))
                 if fd:
                     self._fd_latch = {
                         "fd": fd, "attacker": atk, "state": atk.state,
@@ -1311,7 +1311,7 @@ class Game:
         moves = {}
         for p in (self.player1, self.player2):
             if p.is_attacking():
-                fd = get_move_frame_data(p.state)
+                fd = get_move_frame_data(p.state, getattr(p, "move_variant", None))
                 if fd:
                     moves[f"p{p.player_number}"] = {
                         "name": fd.name, "startup": fd.startup, "active": fd.active,

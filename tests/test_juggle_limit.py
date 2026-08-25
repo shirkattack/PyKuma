@@ -34,7 +34,8 @@ def test_repeated_air_hits_are_capped():
     g = new_game()
     p1, p2 = g.player1, g.player2
     p1.x, p2.x = 320, 360
-    p1._transition_to_state(CharacterState.HEAVY_PUNCH)  # a JUGGLE launcher
+    apply_reaction(p2, HitEffect.JUGGLE, 12)   # launch (st.HP no longer launches)
+    p1._transition_to_state(CharacterState.HEAVY_PUNCH)  # follow-up air hits
     hs = SimpleNamespace(damage=20, hitstun=12)
 
     hits_landed = 0
@@ -45,7 +46,7 @@ def test_repeated_air_hits_are_capped():
         if p2.health < before:
             hits_landed += 1
 
-    # launch + (JUGGLE_LIMIT-1) follow-ups connect, then air-hits whiff.
+    # JUGGLE_LIMIT air follow-ups connect, then air-hits whiff.
     assert hits_landed == JUGGLE_LIMIT, f"expected {JUGGLE_LIMIT} hits, got {hits_landed}"
     assert p2.juggle_count <= JUGGLE_LIMIT
 

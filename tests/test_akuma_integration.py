@@ -6,6 +6,8 @@ integration and updated for a frame without crashing.
 import pygame
 import pytest
 
+from tests.asset_guard import require_assets, ANIMATIONS
+
 from street_fighter_3rd.characters.akuma import Akuma
 
 
@@ -17,6 +19,7 @@ def pygame_headless():
     pygame.quit()
 
 
+@require_assets(ANIMATIONS)
 def test_akuma_creation():
     """Akuma constructs with SF3-authentic stats and a sprite system flag."""
     akuma = Akuma(200, 500, player_number=1)

@@ -15,6 +15,11 @@ from street_fighter_3rd.util.logging_config import get_logger, log_once
 
 log = get_logger(__name__)
 
+
+def _clamp_stage_x(x: float) -> float:
+    """Keep a directly-written x inside the stage walls."""
+    return max(STAGE_LEFT_BOUND, min(STAGE_RIGHT_BOUND, x))
+
 from .sf3_collision import SF3CollisionSystem, SF3CollisionEvent, SF3CollisionResult
 from .sf3_core import SF3PlayerWork, SF3WorkStructure
 from .sf3_hitboxes import (
@@ -29,8 +34,10 @@ from .sf3_parry import SF3ParrySystem, SF3ParryResult, SF3ParryType
 from .sf3_combo_system import SF3ComboSystem
 from .hitbox_data import HitboxData
 from ..data.enums import CharacterState, HitType, HitEffect
-from ..data.constants import HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE
-from ..data.akuma_hitboxes import get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data
+from ..data.constants import (
+    HITSTUN_BASE, BLOCKSTUN_MULTIPLIER, DEBUG_MODE, STAGE_LEFT_BOUND, STAGE_RIGHT_BOUND)
+from ..data.akuma_hitboxes import (
+    get_akuma_hitboxes, get_akuma_hurtboxes, get_move_frame_data, variant_of)
 from ..data.hitbox_repository import HitboxRepository
 from ..characters.character import (
     apply_reaction, JUGGLE_LIMIT,
@@ -66,6 +73,27 @@ def _knockback_for(hit_effect: HitEffect, damage: int) -> float:
                       HitEffect.GROUND_BOUNCE, HitEffect.WALL_BOUNCE):
         base = 5.0
     return base + min(2.0, damage / 80.0)
+
+
+def _hit_window_index(move, frame_1indexed: int) -> int:
+    """Index of the move's ROM hit window containing this frame.
+
+    -1 for a frame BETWEEN two windows (boxes may be drawn there, but the ROM
+    registers no hit -- HP Goshoryuken frames 3 and 5). Frames before the
+    first / after the last window map to that window, and a move with no data
+    is window 0: the collision system only calls the applier while a box
+    overlaps, so those cases are the direct-call/test path, not real gaps."""
+    windows = getattr(move, "hit_windows", None) if move is not None else None
+    if not windows:
+        return 0
+    for i, (start, end) in enumerate(windows):
+        if start <= frame_1indexed <= end:
+            return i
+    if frame_1indexed < windows[0][0]:
+        return 0
+    if frame_1indexed > windows[-1][1]:
+        return len(windows) - 1
+    return -1
 
 
 def _spark_for_state(state) -> str:
@@ -270,14 +298,15 @@ class SF3CollisionAdapter:
         # Get current frame number (1-indexed for frame data)
         frame_number = (character.state_frame if hasattr(character, 'state_frame') else 0) + 1
 
-        # Try to get hitboxes from akuma_hitboxes.py
-        akuma_attack_hitboxes = get_akuma_hitboxes(character.state, frame_number)
-        akuma_hurtboxes = get_akuma_hurtboxes(character.state, frame_number)
+        # Try to get hitboxes from akuma_hitboxes.py (strength variant for specials)
+        variant = variant_of(character)
+        akuma_attack_hitboxes = get_akuma_hitboxes(character.state, frame_number, variant)
+        akuma_hurtboxes = get_akuma_hurtboxes(character.state, frame_number, variant)
 
         # Attack-box provenance: geometry is ROM-verified, but if the move's
         # NAME is only inferred, surface that as the box status so the debug
         # viewer can flag it (PENDING/INFERRED). Hurtboxes are always verified.
-        repo_move = HitboxRepository.instance().get_move_by_state(character.state.name)
+        repo_move = HitboxRepository.instance().get_move_by_state(character.state.name, variant)
         attack_status = "verified"
         if repo_move is not None and repo_move.name_status == "inferred":
             attack_status = "inferred"
@@ -349,7 +378,7 @@ class SF3CollisionAdapter:
         frame_number = (character.state_frame if hasattr(character, 'state_frame') else 0) + 1
 
         # Try to get hitboxes from akuma_hitboxes.py
-        akuma_hitboxes = get_akuma_hitboxes(character.state, frame_number)
+        akuma_hitboxes = get_akuma_hitboxes(character.state, frame_number, variant_of(character))
         if akuma_hitboxes:
             for hitbox_frame in akuma_hitboxes:
                 # Convert HitboxFrame to HitboxData and pygame.Rect
@@ -551,8 +580,17 @@ class SF3CollisionAdapter:
         """Apply hit effects to defender character with parry checking"""
         from ..data.enums import CharacterState
 
-        # One connect per attack: an active hitbox must not re-hit every frame.
-        if getattr(attacker, "attack_connected", False):
+        # One connect per ROM hit window: an active hitbox must not re-hit
+        # every frame, but each distinct hit of a multi-hit move (cl.HK's two
+        # windows, the tatsu's spin, the HP DP's three hits) may connect once.
+        move = get_move_frame_data(getattr(attacker, 'state', None), variant_of(attacker))
+        window = _hit_window_index(move, getattr(attacker, "state_frame", 0) + 1)
+        if window < 0:
+            # Boxes are drawn but the ROM registers no hit on this frame (HP
+            # Goshoryuken: boxes 2-24, hits only 2, 4, 6-23).
+            return
+        if (getattr(attacker, "attack_connected", False)
+                and getattr(attacker, "_connected_window", None) == window):
             return
 
         # Invulnerable defender (teleport / DP startup / wake-up i-frames) -> the
@@ -591,6 +629,8 @@ class SF3CollisionAdapter:
         # defender's own guard signal (holding back, see _check_movement).
         if defense == SF3ParryResult.GUARD_SUCCESS or getattr(defender, 'is_blocking', False):
             self._apply_block_effects(attacker, defender, hit_status, vfx_manager)
+            attacker.attack_connected = True
+            attacker._connected_window = window
             return
 
         # Juggle limit: a launched (airborne) opponent can only be hit so many
@@ -617,7 +657,6 @@ class SF3CollisionAdapter:
         # Apply clamped damage and the reaction the attacking move causes
         # (knockdown / launch / normal), selected from the attacker's move data.
         defender.health = max(0, defender.health - scaled_damage)
-        move = get_move_frame_data(getattr(attacker, 'state', None))
         hit_effect = move.hit_effect if move else HitEffect.NORMAL
         # Knockback: shove the defender away from the attacker. Magnitude is
         # provisional (calibrate vs ROM/decomp golden); direction is away from the
@@ -626,6 +665,7 @@ class SF3CollisionAdapter:
         kb_dir = 1.0 if attacker.x <= defender.x else -1.0
         apply_reaction(defender, hit_effect, hit_status.hitstun, knockback_vx=kb * kb_dir)
         attacker.attack_connected = True  # this attack has now connected
+        attacker._connected_window = window
 
         # Super-meter gain: the attacker builds more than the defender on a clean hit.
         if hasattr(attacker, "gain_super_meter"):
@@ -718,7 +758,11 @@ class SF3CollisionAdapter:
         defender._transition_to_state(
             CharacterState.BLOCKSTUN_LOW if crouching else CharacterState.BLOCKSTUN_HIGH)
         push = 3.0 if attacker.x < defender.x else -3.0
-        defender.x += push
+        # Clamp here: the defender enters hitfreeze right below, and
+        # Character.update() early-returns during hitfreeze without running
+        # _clamp_to_stage, so a cornered defender sat past the wall for the
+        # whole freeze.
+        defender.x = _clamp_stage_x(defender.x + push)
 
         # Both characters get hitfreeze
         attacker.hitfreeze_frames = 6
@@ -766,9 +810,9 @@ class SF3CollisionAdapter:
         
         # Position adjustment (basic throw positioning)
         if attacker.is_facing_right():
-            defender.x = attacker.x + 100
+            defender.x = _clamp_stage_x(attacker.x + 100)
         else:
-            defender.x = attacker.x - 100
+            defender.x = _clamp_stage_x(attacker.x - 100)
 
         if DEBUG_MODE:
             log.debug("SF3 Throw Applied: %s damage", hit_status.damage)

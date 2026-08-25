@@ -11,6 +11,18 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **Specials are ROM-driven.** The converter now exports each ROM script's
+  per-frame `movement` table and its `hit_frames` as `hit_windows`, and the
+  Goshoryuken / Tatsumaki pointers are mapped (Baston startup/active
+  cross-match, frame-exact): `84f8/85c8/8658` LP/MP/HP DP, `86e8/87f8/8968`
+  LK/MK/HK Tatsu, `9618/9738/9818` the air versions. The engine moves these
+  states from the ROM table (physics resumes when it ends; the DP then holds
+  a landing recovery so the move lasts the Baston total 43/50/59) and looks
+  boxes up per strength via `Character.move_variant`.
+- **P2 palette**: Player 2's Akuma gets a blue gi (`graphics/palette.py`,
+  applied once per cel at sprite load, <1ms). Both fighters used to share the
+  identical P1 palette, so a side switch was indistinguishable from a control
+  swap. The colour is a PyKuma choice, not a ROM palette dump (**provisional**).
 - **F2 world-coordinate grid**: labeled 50/100-px grid drawn into the world
   buffer (zooms with the camera), gold floor/stage-center axes. Gives humans
   a shared address space for positions — "the spark should spawn at x=560,
@@ -26,6 +38,42 @@ ROM-accurate.
   `move_frame` (which active window a hit landed on).
 
 ### Fixed
+- **Goshoryuken and Tatsumaki did no damage** — they had no ROM pointer
+  mapping, so no hitboxes at all (every CPU anti-air DP was a whiff). Now
+  1/2/3-hit DPs and multi-hit Tatsus with ROM boxes; damage is the community
+  move total split per ROM hit window (**provisional** scale, Baston x7.5).
+- **UOH did 0 damage and locked the defender for 61 frames**: it had ROM boxes
+  but no combat row, and a 0-hitstun hit never counted down. Added its Baston
+  combat row and floored hitstun at 1 frame in `apply_reaction`.
+- **Multi-hit moves connected once.** A hit now registers once per ROM hit
+  window (cl.HK's two windows, the HP DP's three hits), and frames the ROM
+  draws boxes on but registers no hit for (between windows) no longer connect.
+- **Hit levels reconciled.** `HitType.HIGH` meant "can be blocked standing" in
+  one enum and "must be blocked standing" in the one it maps onto; grounded
+  normals were tagged HIGH. All grounded normals are now `MID`, jump-ins and
+  the UOH `HIGH` (overhead class), crouching kicks `LOW`. Blocking itself still
+  ignores level (holding back blocks everything) — only parry direction reads it.
+- **st.HP no longer launches.** Standing heavy punch was tagged `JUGGLE` by
+  old gameplay tuning (`tools/framedata/convert_3rd_training.py` COMBAT_MAP);
+  in 3S it is a plain hit. Mashing HP produced a launch -> juggle -> knockdown
+  -> relaunch loop. Now `NORMAL` (hitboxes.yaml regenerated from the converter).
+- **Goshoryuken moon launch.** The DP still launched at the pre-rescale
+  vy=-18 after gravity went 0.8 -> 0.34: 467px apex (off-screen), 104 airborne
+  frames, then JUMPING's 60-frame safety cap forced STANDING mid-air (floating
+  down in the idle pose, able to "walk" in the air), and it inherited walk/dash
+  momentum (a dash-cancelled DP crossed the whole stage). The arc is now sized
+  to the move's total (**provisional**: 37/42/47 airborne frames from the
+  Baston LP/MP/HP totals; forward hop not yet ROM-captured), horizontal
+  velocity is zeroed, the DP holds its own state until touchdown, and the clip
+  is re-fit to the arc so the Frame Lab doesn't flag it.
+- **Jumping over a cornered opponent stole the corner.** The jumper, clamped
+  to the wall mid-air (x == wall == defender.x), won the pushbox tie-break on
+  landing: the defender was shoved inward and both facings flipped -- with two
+  identical Akuma sprites that read as "P1 froze and my controls moved to P2".
+  A defender grounded AT the wall now keeps it; the lander is placed on the
+  open side (no corner crossup, as in 3S). Off-the-wall crossups still work.
+- Block pushback / throw placement write `x` directly while the defender is
+  in hitfreeze (no stage clamp runs) -- now clamped to the walls immediately.
 - **Frame advantage now measures the community values.** Declared
   hitstun/blockstun were estimates, mutually inconsistent with the ROM
   timeline (s.MK: 16 hitstun in a 23-frame move can only ever yield -3 on
@@ -99,6 +147,9 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
+- **Main menu trimmed**: MODE SELECT and MOVES LIST are gone (each entry
+  already starts its own mode; the special-move inputs live on CONTROLS), and
+  the "Current Mode" indicator with them.
 - **Damage/frame-data panel moved to the top of the background** (under the
   health bars), per user request; combo counters flank it. The fight area and
   F4 frame meter keep the bottom.

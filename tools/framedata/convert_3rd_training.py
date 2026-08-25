@@ -47,17 +47,34 @@ SCALE_REFERENCE_HEIGHT = 107  # native character height in px; NO scale factor a
 # Box types that use a CENTER-based offset_x in PyKuma.
 _CENTERED_TYPES = {"vulnerability", "push", "throwable"}
 
-# Combat values carried from the previous hand-tuned akuma_hitboxes.py literals.
-# Damage/stun/advantage come from the --combat yaml; hit_type/hit_effect and the
-# hitstun/blockstun are preserved here to keep existing gameplay behavior.
-# Keyed by CharacterState name -> (yaml_key, hit_type, hit_effect, hitstun, blockstun)
+# Combat values: damage/stun/advantage come from the --combat yaml; hit_type,
+# hit_effect and the fallback hitstun/blockstun are declared here.
+#
+# hit_type is the BLOCK level (systems/sf3_hitboxes.SF3HitLevel):
+#   MID  = blockable standing or crouching  (every grounded normal)
+#   HIGH = must be blocked standing         (jump-ins, UOH: overhead class)
+#   LOW  = must be blocked crouching        (crouching kicks)
+# Parry direction follows from it (HIGH/MID -> forward parry, LOW -> down).
+# Standing normals used to be tagged HIGH ("can be blocked standing" in the
+# old enum docstring) -- under the level semantics that would have made every
+# standing normal an overhead the moment blocking honours hit levels.
+#
+# hitstun/blockstun here are FALLBACKS: grounded normals get theirs back-solved
+# from the community on_hit/on_block against the ROM timeline
+# (data/akuma_hitboxes._calibrated_stun); air normals and launchers use these.
+#
+# Keys are "STATE" or "STATE:variant" (specials keep one CharacterState per
+# move family; the character sets `move_variant` = light/medium/heavy/air_*).
+# -> (yaml_key, hit_type, hit_effect, hitstun, blockstun)
 COMBAT_MAP = {
-    "LIGHT_PUNCH":         ("standing_light_punch",   "HIGH", "NORMAL",    12, 10),
+    "LIGHT_PUNCH":         ("standing_light_punch",   "MID",  "NORMAL",    12, 10),
     "MEDIUM_PUNCH":        ("standing_medium_punch",  "MID",  "NORMAL",    15, 12),
-    "HEAVY_PUNCH":         ("standing_heavy_punch",   "HIGH", "JUGGLE",    18, 14),
-    "LIGHT_KICK":          ("standing_light_kick",    "HIGH", "NORMAL",    13, 11),
-    "MEDIUM_KICK":         ("standing_medium_kick",   "HIGH", "NORMAL",    16, 13),
-    "HEAVY_KICK":          ("standing_heavy_kick",    "HIGH", "NORMAL",    20, 15),
+    # st.HP is a plain hit in 3S (no launch); the old JUGGLE tag came from
+    # gameplay tuning and made mashed HP an infinite launch loop.
+    "HEAVY_PUNCH":         ("standing_heavy_punch",   "MID",  "NORMAL",    18, 14),
+    "LIGHT_KICK":          ("standing_light_kick",    "MID",  "NORMAL",    13, 11),
+    "MEDIUM_KICK":         ("standing_medium_kick",   "MID",  "NORMAL",    16, 13),
+    "HEAVY_KICK":          ("standing_heavy_kick",    "MID",  "NORMAL",    20, 15),
     "CROUCH_LIGHT_PUNCH":  ("crouching_light_punch",  "MID",  "NORMAL",    12, 10),
     "CROUCH_MEDIUM_PUNCH": ("crouching_medium_punch", "MID",  "NORMAL",    15, 12),
     "CROUCH_HEAVY_PUNCH":  ("crouching_heavy_punch",  "MID",  "NORMAL",    18, 14),
@@ -70,7 +87,41 @@ COMBAT_MAP = {
     "JUMP_LIGHT_KICK":     ("jump_light_kick",        "HIGH", "NORMAL",    13, 11),
     "JUMP_MEDIUM_KICK":    ("jump_medium_kick",       "HIGH", "NORMAL",    16, 13),
     "JUMP_HEAVY_KICK":     ("jump_heavy_kick",        "HIGH", "NORMAL",    20, 15),
+    # Universal overhead (MP+MK): overhead class. Baston lists '-' for its
+    # advantage (it varies with landing timing); 0/0 is the neutral estimate.
+    "OVERHEAD":            ("universal_overhead",     "HIGH", "NORMAL",    10, 10),
+    # Specials. The ROM script for each covers the rise / spin only (the fall
+    # and landing are separate scripts), so their yaml `total` is the Baston
+    # total and the record is flagged timing_scope=segment. Launchers (JUGGLE)
+    # ignore hitstun; blockstun below is back-solved from the Baston block
+    # advantage against the Baston total (see akuma_hitboxes._calibrated_stun).
+    "GOSHORYUKEN:light":   ("goshoryuken_light",      "MID",  "JUGGLE",    20, 16),
+    "GOSHORYUKEN:medium":  ("goshoryuken_medium",     "MID",  "JUGGLE",    20, 18),
+    "GOSHORYUKEN:heavy":   ("goshoryuken_heavy",      "MID",  "JUGGLE",    20, 24),
+    "TATSUMAKI:light":     ("tatsumaki_light",        "MID",  "JUGGLE",    20, 9),
+    "TATSUMAKI:medium":    ("tatsumaki_medium",       "MID",  "JUGGLE",    20, 8),
+    "TATSUMAKI:heavy":     ("tatsumaki_heavy",        "MID",  "JUGGLE",    20, 8),
+    "TATSUMAKI:air_light": ("air_tatsumaki_light",    "HIGH", "NORMAL",    12, 8),
+    "TATSUMAKI:air_medium":("air_tatsumaki_medium",   "HIGH", "NORMAL",    12, 8),
+    "TATSUMAKI:air_heavy": ("air_tatsumaki_heavy",    "HIGH", "NORMAL",    12, 8),
 }
+
+# States whose ROM script is only a SEGMENT of the move (rise/spin; the fall
+# and landing live in separate scripts the dump does not chain). Their timing
+# `total`/`recovery` must not be read as the move's duration.
+SEGMENT_STATES = {"GOSHORYUKEN", "TATSUMAKI"}
+
+# Multi-hit specials whose community damage is the move TOTAL: the per-box
+# damage is split evenly across the ROM hit windows.
+TOTAL_DAMAGE_STATES = {"GOSHORYUKEN", "TATSUMAKI"}
+
+
+def split_state_key(key):
+    """'STATE:variant' -> (STATE, variant); 'STATE' -> (STATE, None)."""
+    if ":" in key:
+        state, variant = key.split(":", 1)
+        return state, variant
+    return key, None
 
 COMBAT_SOURCE = ("Baston ESN3S frame data + existing gameplay tuning; "
                  "NOT ROM-verified")
@@ -186,8 +237,10 @@ def load_names(names_path):
     for state, info in data.items():
         if state.startswith("_"):
             continue
+        state, variant = split_state_key(state)
         out[info["rom_id"]] = {
             "state": state,
+            "variant": variant,
             "name_source": info.get("name_source", "inferred"),
             "confidence": info.get("confidence"),
             "rationale": info.get("rationale", ""),
@@ -200,13 +253,14 @@ def load_combat(combat_path):
     if not combat_path or not Path(combat_path).exists():
         return {}
     raw = yaml.safe_load(Path(combat_path).read_text())
-    normals = (raw or {}).get("normal_attacks", {})
+    table = dict((raw or {}).get("normal_attacks", {}))
+    table.update((raw or {}).get("special_moves", {}))
     out = {}
-    for state, (yaml_key, hit_type, hit_effect, hitstun, blockstun) in COMBAT_MAP.items():
-        entry = normals.get(yaml_key)
+    for key, (yaml_key, hit_type, hit_effect, hitstun, blockstun) in COMBAT_MAP.items():
+        entry = table.get(yaml_key)
         if not entry:
             continue
-        out[state] = {
+        block = {
             "damage": int(entry.get("damage", 0)),
             "stun": int(entry.get("stun", 0)),
             "on_hit": int(entry.get("hit_advantage", 0)),
@@ -218,7 +272,37 @@ def load_combat(combat_path):
             "status": "community",
             "source": COMBAT_SOURCE,
         }
+        if entry.get("total") is not None:
+            block["total"] = int(entry["total"])
+        out[key] = block
     return out
+
+
+def hit_windows_from_dump(entry, active):
+    """1-indexed [start, end] hit windows from the dump's `hit_frames`
+    (the ROM's distinct hit registrations; 0-indexed inclusive), falling back
+    to contiguous runs of attack-box frames."""
+    hf = entry.get("hit_frames") or []
+    if hf:
+        return [[int(h["min"]) + 1, int(h["max"]) + 1] for h in hf]
+    wins = []
+    for idx in active:
+        f = idx + 1
+        if wins and f == wins[-1][1] + 1:
+            wins[-1][1] = f
+        else:
+            wins.append([f, f])
+    return wins
+
+
+def movement_from_dump(frames):
+    """Per-frame [dx, dy] in PyKuma world units (forward-positive x, y grows
+    DOWN), from the dump's per-frame `movement` (ROM: forward is -x, up is +y).
+    Returns [] when the script never moves the character."""
+    mv = [f.get("movement") or [0, 0] for f in frames]
+    if not any(dx or dy for dx, dy in mv):
+        return []
+    return [[-int(dx), -int(dy)] for dx, dy in mv]
 
 
 def load_vhb_supplement(path):
@@ -247,6 +331,7 @@ def build_move(rom_id, entry, names, combat, vhb=None):
     active = _active_indices(frames)
     name_info = names.get(rom_id)
     state = name_info["state"] if name_info else None
+    variant = name_info.get("variant") if name_info else None
 
     # Per-move vulnerability extension boxes (centered), applied to every active
     # frame: from the ROM JSON if present, else from the Baston supplement.
@@ -292,9 +377,19 @@ def build_move(rom_id, entry, names, combat, vhb=None):
         },
         "frames": out_frames,
     }
+    hit_windows = hit_windows_from_dump(entry, active)
+    if hit_windows:
+        record["hit_windows"] = hit_windows
+    movement = movement_from_dump(frames)
+    if movement:
+        record["movement"] = movement
 
     if name_info:
         record["state"] = name_info["state"]
+        if variant:
+            record["variant"] = variant
+        if name_info["state"] in SEGMENT_STATES:
+            record["timing_scope"] = "segment"
         # metadata = name verbatim from framedata_meta.lua (authoritative);
         # baston   = active-box geometry cross-match to a unique pointer (authoritative);
         # inferred = name guessed from timing/geometry.
@@ -302,8 +397,14 @@ def build_move(rom_id, entry, names, combat, vhb=None):
         record["name_status"] = src if src in ("metadata", "baston") else "inferred"
         if name_info.get("confidence"):
             record["confidence"] = name_info["confidence"]
-        combat_block = combat.get(name_info["state"])
+        combat_key = f"{name_info['state']}:{variant}" if variant else name_info["state"]
+        combat_block = combat.get(combat_key)
         if combat_block:
+            combat_block = dict(combat_block)
+            n_hits = max(1, len(hit_windows))
+            if name_info["state"] in TOTAL_DAMAGE_STATES and n_hits > 1:
+                combat_block["damage_total"] = combat_block["damage"]
+                combat_block["damage"] = max(1, combat_block["damage"] // n_hits)
             record["combat"] = combat_block
 
     return record
