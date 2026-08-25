@@ -1453,9 +1453,12 @@ class Game:
             player_input = self.input_system.player2
             direction = player_input.get_direction()
 
-        # Check if direction is forward or down-forward
+        # Forward tap = high parry, down-forward tap = low parry. The two are
+        # exclusive: down-forward used to count as forward as well, which opened
+        # the HIGH window first and made the parry system refuse the LOW window
+        # (one window at a time) -- so a low parry could never happen.
         # Note: InputDirection already accounts for facing direction (handled by PlayerInput.update)
-        forward = direction in [InputDirection.FORWARD, InputDirection.UP_FORWARD, InputDirection.DOWN_FORWARD]
+        forward = direction in [InputDirection.FORWARD, InputDirection.UP_FORWARD]
         down_forward = direction == InputDirection.DOWN_FORWARD
 
         return {

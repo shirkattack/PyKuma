@@ -42,9 +42,22 @@ def test_far_opponent_approaches():
 
 
 def test_blocks_incoming_attack_up_close():
+    # A grounded attack with no move data reads as MID -> crouch-block (the
+    # safe default: covers mids and lows).
     c = AIController()
     d, btns = c.decide(_me(300), _opp(360, attacking=True))
-    assert d == InputDirection.BACK and not btns, "hold back to block a close attack"
+    assert d == InputDirection.DOWN_BACK and not btns, "crouch-block a close mid attack"
+
+
+def test_stand_blocks_a_jump_in():
+    # An airborne attacker is an overhead-class threat -> stand-block. (The
+    # anti-air check comes first, so disable it via a profile without it.)
+    from street_fighter_3rd.systems.ai_profiles import get_profile
+    import dataclasses
+    prof = dataclasses.replace(get_profile("brawler"), anti_air=False, reaction_frames=0)
+    c = AIController(profile=prof)
+    d, _ = c.decide(_me(300), _opp(360, grounded=False, attacking=True))
+    assert d == InputDirection.BACK, "stand-block a jump-in"
 
 
 def test_anti_airs_airborne_opponent():

@@ -108,7 +108,7 @@ def test_reaction_delay_perceives_the_past():
     # Opponent teleports far on frame 1, then we observe what the AI "sees".
     for f in range(5):
         opp = NS(x=(900 if f == 0 else 305), is_grounded=True, is_attacking=lambda: False)
-        x_seen, _, _ = c._perceive(opp)
+        x_seen, *_ = c._perceive(opp)
     # With a 14-frame delay and only 5 frames of history, perception is still the
     # oldest snapshot (the far x=900), not the recent close one.
     assert x_seen == 900, "delayed perception should lag behind current state"

@@ -40,8 +40,32 @@ _BLOCK_RANGE = 120
 _ANTIAIR_RANGE = 150
 _SUPER_RANGE = 320
 
-# Opponent perception snapshot: (x, is_grounded, is_attacking).
-_Snap = Tuple[float, bool, bool]
+# Opponent perception snapshot: (x, is_grounded, is_attacking, attack_level).
+# attack_level is 'high' / 'low' / 'mid' while the opponent attacks, else None.
+_Snap = Tuple[float, bool, bool, object]
+
+
+def _attack_level(opponent):
+    """Block level of the opponent's current attack ('high'/'low'/'mid'), None
+    if not attacking. An airborne attacker is 'high' (jump-in)."""
+    if not (hasattr(opponent, "is_attacking") and opponent.is_attacking()):
+        return None
+    if not getattr(opponent, "is_grounded", True):
+        return "high"
+    try:
+        from street_fighter_3rd.data.akuma_hitboxes import get_move_frame_data
+        from street_fighter_3rd.data.enums import HitType
+        mfd = get_move_frame_data(getattr(opponent, "state", None),
+                                  getattr(opponent, "move_variant", None))
+        if mfd and mfd.hitboxes:
+            t = mfd.hitboxes[0][1].hit_type
+            if t in (HitType.HIGH, HitType.OVERHEAD):
+                return "high"
+            if t == HitType.LOW:
+                return "low"
+    except Exception:  # data unavailable -> treat as mid
+        pass
+    return "mid"
 
 
 class AIController:
@@ -67,6 +91,7 @@ class AIController:
             float(getattr(opponent, "x", 0.0)),
             bool(getattr(opponent, "is_grounded", True)),
             opponent.is_attacking() if hasattr(opponent, "is_attacking") else False,
+            _attack_level(opponent),
         )
         self._perception.append(snap)
         # The opponent as the AI "sees" it `reaction_frames` ago (clamped to history).
@@ -79,7 +104,7 @@ class AIController:
         if self._queue:
             return self._queue.popleft()
 
-        opp_x, opp_grounded, opp_attacking = self._perceive(opponent)
+        opp_x, opp_grounded, opp_attacking, opp_level = self._perceive(opponent)
         if not getattr(me, "is_grounded", True):
             return (_N, [])  # no air logic yet
 
@@ -92,9 +117,12 @@ class AIController:
             self._queue_motion([(_F, []), (_D, []), (_DF, [Button.MEDIUM_PUNCH])])
             return self._queue.popleft()
 
-        # 2) Block an incoming attack at close range (hold back).
+        # 2) Block an incoming attack at close range: stand-block overheads and
+        #    jump-ins, crouch-block everything else (the safe default -- it
+        #    covers mids and lows). Reaction delay applies, so a fast high/low
+        #    mix-up can still land.
         if p.block and opp_attacking and dist < _BLOCK_RANGE * p.spacing_scale:
-            return (_B, [])
+            return ((_B, []) if opp_level == "high" else (_DB, []))
 
         # 3) Spend a full meter on a Super Art when in range (Messatsu Gou Hadou).
         if p.use_super and dist < _SUPER_RANGE * p.spacing_scale and \

@@ -11,7 +11,7 @@ removed (git history has them); `CHANGELOG.md` is the record of what shipped.
   Gohadoken (+air), Goshoryuken, Tatsumaki (+air), teleport, demon flip, SA1–SA3,
   Raging Demon. Specials are driven by the ROM movement scripts and hit per ROM
   hit window (see `docs/AKUMA_MOVE_MAP.md`).
-- **Systems**: parry (7f), blocking (holding back), chip, pushback, hitstop,
+- **Systems**: parry (7f, high/low), level-aware blocking (MID/HIGH/LOW), chip, pushback, hitstop,
   juggle cap, combo scaling, super meter, round flow, CPU opponent with a
   selectable difficulty ladder, P2 palette.
 - **Data**: no invented geometry — ROM dump → converter → `hitboxes.yaml` with
@@ -19,18 +19,14 @@ removed (git history has them); `CHANGELOG.md` is the record of what shipped.
 
 ## Next
 
-1. **Block levels** — `hit_type` is tagged (MID/HIGH/LOW) but blocking still
-   ignores it: holding back blocks overheads and lows alike. Wire
-   `SF3HitLevel` into the guard decision (crouch-block vs jump-ins/UOH,
-   stand-block vs sweeps).
-2. **ROM backfill of provisional values** (`tools/rom_extract/`): special-move
+1. **ROM backfill of provisional values** (`tools/rom_extract/`): special-move
    damage scale (currently Baston ×7.5), DP blockstun columns, knockback
    magnitudes, the P2 palette (a PyKuma colour, not a ROM palette dump).
-3. **Unmapped ROM pointers** — close/far normal variants, Forward MP, the
+2. **Unmapped ROM pointers** — close/far normal variants, Forward MP, the
    neutral-jump normals (`21c8/2388/2448/2558/2628`), the air dive kick (`2aa0`),
    Demon Flip followups (`af08/b118/b218`). Geometry is ROM-verified; they need
    names and states.
-4. **Shin Akuma** final boss + arcade-ladder progression (menu entry is teased).
-5. **Second character + character select** (`GameMode.VERSUS` / `DEMO` exist but
+3. **Shin Akuma** final boss + arcade-ladder progression (menu entry is teased).
+4. **Second character + character select** (`GameMode.VERSUS` / `DEMO` exist but
    are not reachable from the menu).
-6. Sound & music; chip-death KO pose.
+5. Sound & music; chip-death KO pose.

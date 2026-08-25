@@ -21,6 +21,32 @@ from street_fighter_3rd.systems.input_system import PlayerInput
 
 log = get_logger(__name__)
 
+# States in which a held back/down-back direction counts as a guard. Not while
+# attacking, dashing, jumping or in hitstun -- but YES during blockstun, so a
+# defender can switch guard height mid-string (crouch-block a low, then stand
+# to block the overhead), as in 3S.
+_GUARDABLE_STATES = frozenset({
+    CharacterState.STANDING, CharacterState.WALKING_FORWARD, CharacterState.WALKING_BACKWARD,
+    CharacterState.CROUCHING, CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW,
+})
+
+
+def guard_covers(hit_type, posture) -> bool:
+    """Does a guard of this posture ('high' = standing, 'low' = crouching)
+    stop a hit of this level? MID: either; HIGH (overhead class: jump-ins,
+    UOH): standing only; LOW: crouching only. A posture of None means the
+    caller only knows the defender is guarding -- treated as standing."""
+    from street_fighter_3rd.data.enums import HitType
+    posture = posture or "high"
+    if hit_type in (HitType.HIGH, HitType.OVERHEAD):
+        return posture == "high"
+    if hit_type == HitType.LOW:
+        return posture == "low"
+    if hit_type == HitType.THROW:
+        return False
+    return True
+
+
 _ATTACK_STATES = frozenset({
     CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
     CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
@@ -451,6 +477,12 @@ class Character:
         else:
             self.can_act = True
 
+        # Guard is re-evaluated EVERY frame from the held direction (not only
+        # when input is processed): it used to be set inside the input path,
+        # so it went stale while the guarder attacked (still "blocking") and
+        # throughout blockstun (couldn't switch guard height).
+        self._update_guard()
+
         # Process input and update state machine
         if self.can_act and self.input:
             self._process_input()
@@ -719,18 +751,30 @@ class Character:
 
         return False
 
+    def _update_guard(self):
+        """Holding back (standing guard) or down-back (crouching guard) on the
+        ground, in a guardable state and not in hitstun = guarding. The
+        collision adapter checks the hit's level against `guard_posture`
+        (see guard_covers): MID is blocked either way, HIGH only standing,
+        LOW only crouching."""
+        direction = self.input.get_direction() if self.input else InputDirection.NEUTRAL
+        in_hitstun = self.in_hitstun or self.hitstun_frames > 0
+        guardable = (self.is_grounded and not in_hitstun
+                     and self.state in _GUARDABLE_STATES)
+        if guardable and direction == InputDirection.DOWN_BACK:
+            self.guard_posture = "low"
+        elif guardable and direction == InputDirection.BACK:
+            self.guard_posture = "high"
+        else:
+            self.guard_posture = None
+        self.is_blocking = self.guard_posture is not None
+
     def _check_movement(self, direction: InputDirection):
         """Check for movement inputs.
 
         Args:
             direction: Current input direction
         """
-        # Holding back (or down-back) on the ground = guarding. The collision
-        # adapter routes an incoming hit to block effects while this is set.
-        # (Block direction high/low is derived from posture at block time.)
-        self.is_blocking = self.is_grounded and direction in (
-            InputDirection.BACK, InputDirection.DOWN_BACK)
-
         # Check for dashes first (highest priority for movement)
         if self.input.check_double_tap_forward():
             if self.is_grounded and self.state == CharacterState.STANDING:
@@ -1264,6 +1308,8 @@ class Character:
         self.in_hitstun = False
         self.in_blockstun = False
         self.is_blocking = False
+        self.guard_posture = None
+        self.guard_posture = None   # 'high' (standing) / 'low' (crouching) / None
         self.is_invincible = False
         self.invincibility_frames = []
         self.jump_direction = InputDirection.NEUTRAL
