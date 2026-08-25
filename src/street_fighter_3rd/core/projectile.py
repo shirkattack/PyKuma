@@ -114,7 +114,7 @@ class Gohadoken(Projectile):
     """Akuma's fireball projectile."""
 
     def __init__(self, x: float, y: float, velocity_x: float, owner_facing: FacingDirection,
-                 strength: str = "light", velocity_y: float = 0.0, ground_y: float = STAGE_FLOOR):
+                 strength: str = "light", velocity_y: float = 0.0, ground_y: float = STAGE_FLOOR, damage_override: int = None):
         """Initialize a Gohadoken.
 
         Args:
@@ -125,9 +125,13 @@ class Gohadoken(Projectile):
             strength: "light", "medium", or "heavy" (affects speed/damage)
             velocity_y: Vertical velocity (positive = down) for the air fireball.
         """
-        # Damage based on strength
-        damage_values = {"light": 60, "medium": 70, "heavy": 80}
-        damage = damage_values.get(strength, 60)
+        # Damage from the community tier (Gou Hadouken is one Baston row for
+        # all three strengths; the air Zankuu Hadouken is its own row).
+        from street_fighter_3rd.data.community import community_damage
+        key = "air_gohadoken" if velocity_y else f"gohadoken_{strength}"
+        damage = community_damage(key, {"light": 128, "medium": 128, "heavy": 128}.get(strength, 128))
+        if damage_override is not None:
+            damage = int(damage_override)
 
         # Initialize sprite manager for Gohadoken (canonical character asset tree)
         sprite_directory = "assets/characters/akuma/sprite_sheets"

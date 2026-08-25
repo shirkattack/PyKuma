@@ -64,9 +64,11 @@ def run_move(game, state, gap, frames=170):
 # ------------------------------------------------------ calibration unit --
 
 @pytest.mark.parametrize("state,hitstun,blockstun", [
-    (CharacterState.MEDIUM_KICK, 20, 18),
-    (CharacterState.CROUCH_MEDIUM_PUNCH, 18, 17),
-    (CharacterState.HEAVY_KICK, 23, 20),
+    # Back-solved from the Baston revised advantage (community yaml `baston:`
+    # line) against the ROM timeline: stun = adv + (total + 1) - last-window start.
+    (CharacterState.MEDIUM_KICK, 23, 21),          # Forward +4/+2, total 23, hit frame 5
+    (CharacterState.CROUCH_MEDIUM_PUNCH, 21, 20),  # Crouching Strong +4/+3, total 22, frame 6
+    (CharacterState.HEAVY_KICK, 20, 18),           # Roundhouse -4/-6, total 39, last window 16
 ])
 def test_calibrated_stun_values(state, hitstun, blockstun):
     """stun = advantage + (total + 1) - first frame of the LAST active window."""
@@ -121,7 +123,7 @@ def test_declared_blockstun_is_applied(game):
     blocked = [h for h in report.hits if h.blocked]
     assert blocked, "the medium kick must have been blocked"
     expected = get_move_frame_data(CharacterState.MEDIUM_KICK).hitboxes[0][1].blockstun
-    assert blocked[0].blockstun == expected == 18
+    assert blocked[0].blockstun == expected == 21
     assert game.player2.blockstun_frames == 0  # fully served by test end
 
 

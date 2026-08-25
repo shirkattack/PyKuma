@@ -127,7 +127,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 60
+      damage: 38
       stun: 3
       on_hit: 3
       on_block: 3
@@ -137,7 +137,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 15
+      total: 11
   '1438':
     rom_id: '1438'
     timing:
@@ -202,17 +202,17 @@ moves:
     state: LIGHT_PUNCH
     name_status: metadata
     combat:
-      damage: 60
+      damage: 22
       stun: 3
       on_hit: 4
-      on_block: 2
+      on_block: 4
       hitstun: 12
       blockstun: 10
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 11
   14e8:
     rom_id: 14e8
     timing:
@@ -265,7 +265,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 115
+      damage: 150
       stun: 7
       on_hit: 2
       on_block: 1
@@ -275,7 +275,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 18
+      total: 19
   '1598':
     rom_id: '1598'
     timing:
@@ -335,7 +335,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 104
+      damage: 135
       stun: 11
       on_hit: 5
       on_block: 4
@@ -345,7 +345,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 24
+      total: 18
   '1638':
     rom_id: '1638'
     timing:
@@ -478,7 +478,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 42
+      total: 38
       damage_total: 105
   '1728':
     rom_id: '1728'
@@ -567,7 +567,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 34
+      total: 25
   '1818':
     rom_id: '1818'
     timing:
@@ -705,16 +705,16 @@ moves:
     name_status: metadata
     combat:
       damage: 180
-      stun: 12
-      on_hit: 1
-      on_block: -2
+      stun: 13
+      on_hit: -4
+      on_block: -6
       hitstun: 18
       blockstun: 14
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 29
+      total: 35
   '1908':
     rom_id: '1908'
     timing:
@@ -795,9 +795,9 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 70
+      damage: 52
       stun: 3
-      on_hit: 4
+      on_hit: 2
       on_block: 2
       hitstun: 13
       blockstun: 11
@@ -805,7 +805,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 14
+      total: 15
   '1988':
     rom_id: '1988'
     timing:
@@ -960,17 +960,17 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 130
-      stun: 7
-      on_hit: 1
-      on_block: -1
+      damage: 150
+      stun: 9
+      on_hit: 4
+      on_block: 2
       hitstun: 16
       blockstun: 13
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 21
+      total: 20
   1a38:
     rom_id: 1a38
     timing:
@@ -1140,7 +1140,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 104
+      damage: 120
       stun: 7
       on_hit: -6
       on_block: -7
@@ -1150,7 +1150,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 30
+      total: 27
   1b08:
     rom_id: 1b08
     timing:
@@ -1345,17 +1345,18 @@ moves:
     state: HEAVY_KICK
     name_status: metadata
     combat:
-      damage: 200
-      stun: 12
-      on_hit: -1
-      on_block: -4
+      damage: 124
+      stun: 23
+      on_hit: -4
+      on_block: -6
       hitstun: 20
       blockstun: 15
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 35
+      total: 38
+      damage_total: 248
   1bf8:
     rom_id: 1bf8
     timing:
@@ -1558,7 +1559,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 152
+      damage: 188
       stun: 11
       on_hit: -5
       on_block: -7
@@ -1568,7 +1569,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 40
+      total: 34
   1d28:
     rom_id: 1d28
     timing:
@@ -1612,17 +1613,17 @@ moves:
     state: CROUCH_LIGHT_PUNCH
     name_status: metadata
     combat:
-      damage: 60
+      damage: 22
       stun: 3
-      on_hit: 4
-      on_block: 2
+      on_hit: 3
+      on_block: 3
       hitstun: 12
       blockstun: 10
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 13
+      total: 12
   1dd8:
     rom_id: 1dd8
     timing:
@@ -1681,17 +1682,17 @@ moves:
     name_status: inferred
     confidence: medium
     combat:
-      damage: 110
+      damage: 120
       stun: 7
-      on_hit: 1
-      on_block: 0
+      on_hit: 4
+      on_block: 3
       hitstun: 15
       blockstun: 12
       hit_type: MID
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 19
+      total: 16
   1e88:
     rom_id: 1e88
     timing:
@@ -1770,10 +1771,10 @@ moves:
     name_status: inferred
     confidence: medium
     combat:
-      damage: 170
-      stun: 12
-      on_hit: 0
-      on_block: -3
+      damage: 180
+      stun: 11
+      on_hit: -6
+      on_block: -8
       hitstun: 18
       blockstun: 14
       hit_type: MID
@@ -1824,9 +1825,9 @@ moves:
     state: CROUCH_LIGHT_KICK
     name_status: metadata
     combat:
-      damage: 65
+      damage: 22
       stun: 3
-      on_hit: 3
+      on_hit: 1
       on_block: 1
       hitstun: 13
       blockstun: 11
@@ -1834,7 +1835,7 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 14
+      total: 15
   '2008':
     rom_id: '2008'
     timing:
@@ -1963,17 +1964,17 @@ moves:
     state: CROUCH_MEDIUM_KICK
     name_status: metadata
     combat:
-      damage: 125
-      stun: 7
-      on_hit: 0
-      on_block: -2
+      damage: 120
+      stun: 3
+      on_hit: -2
+      on_block: -3
       hitstun: 16
       blockstun: 13
       hit_type: LOW
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 22
+      total: 27
   20d8:
     rom_id: 20d8
     timing:
@@ -2116,17 +2117,17 @@ moves:
     state: CROUCH_HEAVY_KICK
     name_status: metadata
     combat:
-      damage: 190
-      stun: 12
-      on_hit: -2
-      on_block: -5
+      damage: 180
+      stun: 3
+      on_hit: 28
+      on_block: -15
       hitstun: 20
       blockstun: 15
       hit_type: LOW
       hit_effect: KNOCKDOWN
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 31
+      total: 37
   21c8:
     rom_id: 21c8
     timing:
@@ -2416,10 +2417,10 @@ moves:
     variant: neutral
     name_status: metadata
     combat:
-      damage: 70
-      stun: 4
-      on_hit: 8
-      on_block: 3
+      damage: 52
+      stun: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 12
       blockstun: 10
       hit_type: HIGH
@@ -2556,16 +2557,16 @@ moves:
     name_status: metadata
     combat:
       damage: 120
-      stun: 7
-      on_hit: 10
-      on_block: 4
+      stun: 9
+      on_hit: 0
+      on_block: 0
       hitstun: 15
       blockstun: 13
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 11
+      total: 10
   '2388':
     rom_id: '2388'
     timing:
@@ -2695,17 +2696,16 @@ moves:
     variant: neutral
     name_status: metadata
     combat:
-      damage: 180
-      stun: 12
-      on_hit: 12
-      on_block: 5
+      damage: 172
+      stun: 13
+      on_hit: 0
+      on_block: 0
       hitstun: 18
       blockstun: 14
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
   '2448':
     rom_id: '2448'
     timing:
@@ -2949,17 +2949,17 @@ moves:
     variant: neutral
     name_status: metadata
     combat:
-      damage: 75
-      stun: 4
-      on_hit: 9
-      on_block: 4
+      damage: 52
+      stun: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 13
       blockstun: 11
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 14
   '2558':
     rom_id: '2558'
     timing:
@@ -3079,17 +3079,16 @@ moves:
     variant: neutral
     name_status: metadata
     combat:
-      damage: 135
+      damage: 105
       stun: 7
-      on_hit: 11
-      on_block: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 16
       blockstun: 13
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
   '2628':
     rom_id: '2628'
     timing:
@@ -3237,17 +3236,16 @@ moves:
     variant: neutral
     name_status: metadata
     combat:
-      damage: 190
-      stun: 12
-      on_hit: 13
-      on_block: 6
+      damage: 158
+      stun: 11
+      on_hit: 0
+      on_block: 0
       hitstun: 20
       blockstun: 15
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
   '2708':
     rom_id: '2708'
     timing:
@@ -3556,10 +3554,10 @@ moves:
     state: JUMP_LIGHT_PUNCH
     name_status: metadata
     combat:
-      damage: 70
-      stun: 4
-      on_hit: 8
-      on_block: 3
+      damage: 52
+      stun: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 12
       blockstun: 10
       hit_type: HIGH
@@ -3679,17 +3677,17 @@ moves:
     state: JUMP_HEAVY_PUNCH
     name_status: metadata
     combat:
-      damage: 180
-      stun: 12
-      on_hit: 12
-      on_block: 5
+      damage: 172
+      stun: 13
+      on_hit: 0
+      on_block: 0
       hitstun: 18
       blockstun: 14
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 10
   28e0:
     rom_id: 28e0
     timing:
@@ -3826,17 +3824,17 @@ moves:
     state: JUMP_LIGHT_KICK
     name_status: metadata
     combat:
-      damage: 75
-      stun: 4
-      on_hit: 9
-      on_block: 4
+      damage: 52
+      stun: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 13
       blockstun: 11
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 14
   29c0:
     rom_id: 29c0
     timing:
@@ -3989,17 +3987,17 @@ moves:
     state: JUMP_MEDIUM_KICK
     name_status: metadata
     combat:
-      damage: 135
+      damage: 105
       stun: 7
-      on_hit: 11
-      on_block: 5
+      on_hit: 0
+      on_block: 0
       hitstun: 16
       blockstun: 13
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 11
   2aa0:
     rom_id: 2aa0
     timing:
@@ -4366,17 +4364,17 @@ moves:
     state: JUMP_HEAVY_KICK
     name_status: metadata
     combat:
-      damage: 190
-      stun: 12
-      on_hit: 13
-      on_block: 6
+      damage: 158
+      stun: 11
+      on_hit: 0
+      on_block: 0
       hitstun: 20
       blockstun: 15
       hit_type: HIGH
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
-      total: 12
+      total: 10
   84f8:
     rom_id: 84f8
     timing:
@@ -4666,7 +4664,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 180
+      damage: 172
       stun: 11
       on_hit: 0
       on_block: -24
@@ -4838,7 +4836,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 100
+      damage: 94
       stun: 13
       on_hit: 0
       on_block: -30
@@ -4849,7 +4847,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 50
-      damage_total: 200
+      damage_total: 188
   '8658':
     rom_id: '8658'
     timing:
@@ -5247,7 +5245,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 73
+      damage: 72
       stun: 15
       on_hit: 0
       on_block: -34
@@ -5258,7 +5256,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 59
-      damage_total: 220
+      damage_total: 218
   86e8:
     rom_id: 86e8
     timing:
@@ -5376,7 +5374,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 65
+      damage: 64
       stun: 7
       on_hit: 0
       on_block: -12
@@ -5387,7 +5385,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 24
-      damage_total: 130
+      damage_total: 128
   87f8:
     rom_id: 87f8
     timing:
@@ -5595,7 +5593,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 32
+      damage: 31
       stun: 9
       on_hit: 0
       on_block: -8
@@ -5606,7 +5604,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 30
-      damage_total: 160
+      damage_total: 158
   '8968':
     rom_id: '8968'
     timing:
@@ -5926,7 +5924,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 21
+      damage: 20
       stun: 11
       on_hit: 0
       on_block: -5
@@ -5937,7 +5935,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 38
-      damage_total: 190
+      damage_total: 188
   '9618':
     rom_id: '9618'
     timing:
@@ -6184,7 +6182,7 @@ moves:
     name_status: baston
     confidence: verified
     combat:
-      damage: 51
+      damage: 50
       stun: 5
       on_hit: 0
       on_block: -7
@@ -6195,7 +6193,7 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 18
-      damage_total: 205
+      damage_total: 202
   '9818':
     rom_id: '9818'
     timing:
@@ -6535,7 +6533,7 @@ moves:
     state: OVERHEAD
     name_status: metadata
     combat:
-      damage: 50
+      damage: 52
       stun: 3
       on_hit: 0
       on_block: 0
