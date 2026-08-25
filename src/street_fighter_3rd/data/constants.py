@@ -38,9 +38,8 @@ INPUT_BUFFER_SIZE = 60  # Store last 60 frames (1 second at 60 FPS)
 MOTION_INPUT_WINDOW = 16  # Frames to complete a motion input (e.g., 236P) - slightly lenient for pad/keyboard
 NEGATIVE_EDGE_ENABLED = True  # Allow specials on button release
 
-# Parry system (SF3 specific)
-PARRY_WINDOW_GROUND = 10  # Frames to input ground parry
-PARRY_WINDOW_GROUND_HELD = 6  # Frames if direction is held
+# Parry system (SF3 specific). The live ground window is
+# systems/sf3_parry.PARRY_WINDOW_FRAMES (7); these are the remaining tunables.
 PARRY_WINDOW_AIR = 7  # Frames for air parry
 PARRY_FREEZE_FRAMES = 16  # Both characters freeze on successful parry
 PARRY_COOLDOWN_GROUND = 23  # Frames before another parry

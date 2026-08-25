@@ -1,43 +1,35 @@
-# Demo Scripts & Development Tools
+# Developer Scripts
 
-Quick demos showcasing the engine's capabilities.
+Utilities for working on the engine. **To play**, run `uv run sf3-menu`
+(`sf3-training` / `sf3-dev` skip the menu). The old `demo_*.py` scripts were
+removed — they imported modules that no longer exist; git history has them.
 
-## Quick Demos
-
-### `demo_main_game_sprites.py`
-Full game with Akuma sprites and animations.
+### `animation_contact_sheets.py`
+Renders every registered animation as a labeled filmstrip (`docs/animation_audit/`,
+git-ignored) and regenerates the reference table `docs/ANIMATIONS.md`. Red cell =
+size-outlier frame to review; orange `MISSING` = no source art. Also catalogs
+arbitrary sprite sets (`--folder`, `--range`, `--all-effects`; see
+`docs/ASSET_LAYOUT.md`). Needs the (git-ignored) `assets/` tree.
 ```bash
-uv run python scripts/demo_main_game_sprites.py
+SDL_VIDEODRIVER=dummy uv run python scripts/animation_contact_sheets.py
+```
+Not to be confused with `tools/framelab/audit_animations.py`, which is the
+static *timing* audit (animation length vs ROM totals -> `bugs/*.yaml`).
+
+### `hud_visual_preview.py`
+Opens a window and renders the HUD once so custom vs fallback graphics can be
+compared by eye.
+```bash
+uv run python scripts/hud_visual_preview.py
 ```
 
-### `demo_simple_fighting.py`
-Minimal fighting game demo with collision.
+### Joystick probe
+Packaged with the engine (not in this folder): prints axes/buttons/hats of a
+connected stick so bindings can be checked.
 ```bash
-uv run python scripts/demo_simple_fighting.py
+uv run python -m street_fighter_3rd.tools.joystick_probe
 ```
 
-### `demo_enhanced_sf3.py`
-Enhanced demo with SF3-authentic collision and parry.
-```bash
-uv run python scripts/demo_enhanced_sf3.py
-```
-
-## Developer Tools
-
-### `debug_hitbox.py`
-Visual debugging for hitbox/hurtbox collision.
-```bash
-uv run python scripts/debug_hitbox.py
-```
-
-### `joystick_test.py`
-Test joystick/controller input detection.
-```bash
-uv run python scripts/joystick_test.py
-```
-
----
-
-**For actual gameplay**, run: `uv run sf3` (launches full game with menu)
-
-**For testing**, see `tests/` directory
+### Headless diagnostics
+`tools/diagnostics/` — scripted scenarios through the real sim, replays,
+montages (`docs/DIAGNOSTIC_FRAMEWORK.md`).

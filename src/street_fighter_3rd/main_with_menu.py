@@ -281,7 +281,7 @@ def main_training():
 def main_dev():
     """Entry point for dev mode."""
     import sys
-    sys.argv = ['sf3-dev', '--dev', '--no-menu']
+    sys.argv = ['sf3-dev', '--mode', 'dev', '--no-menu']
     main()
 
 

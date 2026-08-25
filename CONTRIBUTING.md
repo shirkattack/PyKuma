@@ -12,8 +12,8 @@ Thank you for your interest in contributing! This is an educational, open-source
 ### Setup
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/street_fighter.git
-cd street_fighter
+git clone https://github.com/shirkattack/PyKuma.git
+cd PyKuma
 
 # Install dependencies with UV
 uv sync
@@ -75,10 +75,10 @@ src/street_fighter_3rd/     # Core engine code
   ├── systems/               # Input, collision, animation
   └── data/                  # Frame data, constants
 
-scripts/                     # Demo scripts
+scripts/                     # Developer scripts (animation contact sheets, HUD preview)
 docs/                        # Technical documentation
 tests/                       # Test suite
-tools/                       # Asset extraction tools
+tools/                       # framedata converter, diagnostics harness, Frame Lab audit, ROM extraction
 ```
 
 ## Areas That Need Help
@@ -104,9 +104,9 @@ If you want to ship a game using this engine, replace all SF3 assets with your o
 ## Questions?
 
 Open a [GitHub Discussion](../../discussions) or check out:
-- `docs/TECHNICAL_NOTES.md` for engine architecture
+- `ARCHITECTURE.md` for engine architecture and the data pipeline
 - `docs/ROADMAP.md` for development priorities
-- `scripts/README.md` for quick demos
+- `scripts/README.md` for the developer scripts
 
 ---
 

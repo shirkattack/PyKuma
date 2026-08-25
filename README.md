@@ -76,7 +76,8 @@ Taunt (HP+HK).
   boss is teased/locked) chosen from the difficulty screen
 - **Training Mode** - Hitbox/frame-data/input overlays, idle health regen, no timer
 - **Development Mode** - Full debug suite with performance metrics
-- **Versus Mode** - Local 2-player battles
+- **Versus Mode** - Local 2-player battles *(planned — `GameMode.VERSUS` exists but is not
+  reachable from the menu yet)*
 - **Hitbox Viewer** - ROM-accurate hitbox/hurtbox inspector (`--hitbox-viewer`)
 
 ### Technical Features
@@ -174,13 +175,14 @@ pykuma/
 │   ├── systems/                # Input, collision, animation, VFX
 │   └── data/                   # Enums, constants, frame data
 ├── assets/                     # Sprites, stages, VFX
-├── scripts/                    # Demo scripts and dev tools
+├── scripts/                    # Developer scripts (animation contact sheets, HUD preview)
 ├── tests/                      # Pytest test suite
 ├── docs/                       # Documentation
-│   ├── ROADMAP.md             # Development roadmap
-│   ├── TESTING_GUIDE.md       # Testing philosophy
-│   
-└── tools/                      # Sprite extraction utilities
+│   ├── ROADMAP.md             # Current status + next steps
+│   ├── FRAME_LAB.md           # Frame-data debugging system
+│   └── DEBUGGING.md           # Hotkeys, snapshots, clips
+├── ARCHITECTURE.md             # Canonical modules, data pipeline, invariants
+└── tools/                      # framedata converter, diagnostics harness, Frame Lab audit, ROM extraction
 ```
 
 ## 🔬 Why Pydantic for Fighting Games?
@@ -282,7 +284,7 @@ This approach makes the engine **robust, maintainable, and faithful to SF3's fra
 - **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
 - **[docs/FRAME_LAB.md](docs/FRAME_LAB.md)** - Frame meter, expected-vs-actual diffing, and the `bugs/` ticket workflow
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development phases and milestones
-- **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing approach and philosophy
+- **[tests/README.md](tests/README.md)** - Test suite layout and how to run it headless
 
 ## 🧪 Testing
 
@@ -302,25 +304,25 @@ uv run pytest tests/test_collision_detection.py
 
 See [tests/README.md](tests/README.md) for more details.
 
-## 🎨 Demo Scripts
+## 🧰 Developer Scripts
 
-The `scripts/` directory contains various demos and developer tools:
+The game itself is `uv run sf3-menu` (or `sf3-training` / `sf3-dev`). `scripts/`
+holds developer utilities only:
 
 ```bash
-# Full game with sprites
-uv run python scripts/demo_main_game_sprites.py
+# Filmstrip contact sheets for every animation -> docs/animation_audit/ + docs/ANIMATIONS.md
+SDL_VIDEODRIVER=dummy uv run python scripts/animation_contact_sheets.py
 
-# Minimal fighting demo
-uv run python scripts/demo_simple_fighting.py
+# Render the HUD once (custom vs fallback graphics) in a window
+uv run python scripts/hud_visual_preview.py
 
-# Enhanced SF3 demo with parry
-uv run python scripts/demo_enhanced_sf3.py
-
-# Hitbox debugging tool
-uv run python scripts/debug_hitbox.py
+# Probe a connected joystick's axes/buttons
+uv run python -m street_fighter_3rd.tools.joystick_probe
 ```
 
-See [scripts/README.md](scripts/README.md) for full list.
+Headless diagnostics live in `tools/diagnostics/` (scripted scenarios, replays,
+montages) — see `docs/DIAGNOSTIC_FRAMEWORK.md`. The old `demo_*.py` scripts were
+removed (they imported modules that no longer exist); git history has them.
 
 ## 🤝 Contributing
 
@@ -366,9 +368,10 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 - ✅ **Difficulty tiers / boss ladder** — selectable Novice → Brawler → Technician →
   Veteran → Master profiles (reaction delay, accuracy, aggression, super usage);
   input-reading **Shin Akuma** final boss + arcade-ladder progression are the next phases
-- Character select + a 2nd character (Ken's class already exists, unwired)
+- Character select + a 2nd character
 - Calibration pass: ROM/decomp-source the provisional damage/knockback/hitstun values
-- Cheap gaps: give UOH real damage, wire the chip-death KO pose
+- Enforce high/low block levels (the data is tagged; blocking still ignores it)
+- Cheap gaps: wire the chip-death KO pose
 - Sound & music
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for detailed milestones.

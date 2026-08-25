@@ -147,6 +147,22 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
+- **Dead code and stale docs removed** (git history keeps them): the four
+  import-broken `scripts/demo_*.py` + two superseded demos, `debug_hitbox.py`,
+  `joystick_test.py`; the never-wired `characters/ken.py` / `shoto_base.py`; the
+  orphaned `graphics/sprite_manager.py` (`SF3SpriteManager`) and its test; the
+  one-shot `tools/sprite_extraction/*.py` scrapers and `tools/extract_*.py`;
+  13 docs that contradicted the code (old roadmaps, PROJECT_STRUCTURE,
+  IMPLEMENTATION_GUIDE, BLOCKING plan, TESTING_GUIDE, AKUMA_FRAME_DATA, phase
+  notes, RUN_DEMOS). `docs/ROADMAP.md` is now a short current-status page.
+- Renamed: `scripts/audit_animations.py` → `animation_contact_sheets.py`
+  (no longer collides with `tools/framelab/audit_animations.py`; stale sprite
+  paths fixed), `scripts/test_hud_visual.py` → `hud_visual_preview.py`,
+  `tools/test_joystick.py` → `joystick_probe.py` (no `test_*.py` outside
+  `tests/`).
+- CI byte-compiles `src scripts tools tests` so broken imports can't rot unnoticed.
+- `uv run sf3-dev` works again (it passed a `--dev` flag that didn't exist).
+- Provenance tier `baston` documented in the yaml banner and ARCHITECTURE.
 - **Main menu trimmed**: MODE SELECT and MOVES LIST are gone (each entry
   already starts its own mode; the special-move inputs live on CONTROLS), and
   the "Current Mode" indicator with them.
