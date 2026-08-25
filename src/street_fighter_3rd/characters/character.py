@@ -55,7 +55,7 @@ _ATTACK_STATES = frozenset({
     CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
     CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
     CharacterState.GOHADOKEN, CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
-    CharacterState.OVERHEAD,
+    CharacterState.OVERHEAD, CharacterState.FORWARD_MP, CharacterState.DIVE_KICK,
 })
 
 _CROUCH_STATES = frozenset({
@@ -355,6 +355,7 @@ class Character:
             # Special moves (generous limits)
             CharacterState.GOHADOKEN: 45,
             CharacterState.GOSHORYUKEN: 80,   # HP DP: 59-frame total + slack
+            CharacterState.DIVE_KICK: 120,    # dive + fall + landing recovery
             CharacterState.TATSUMAKI: 60,
             CharacterState.ASHURA_SENKU: 60,
             CharacterState.DEMON_FLIP: 90,
@@ -412,6 +413,8 @@ class Character:
 
             # Command actions
             CharacterState.OVERHEAD,
+            CharacterState.FORWARD_MP,
+            CharacterState.DIVE_KICK,
             CharacterState.TAUNT,
 
             # Can't cancel hit reactions
@@ -430,6 +433,7 @@ class Character:
             opponent: The opposing character
         """
         self.total_frames += 1
+        self._opponent = opponent  # for proximity (close/far) normal selection
         # Remember where we were before this frame's physics so grounded pushbox
         # resolution can keep left/right order stable (no cross-through on a dash).
         self._prev_x = self.x
@@ -688,23 +692,28 @@ class Character:
         if self.state in (CharacterState.STANDING,
                           CharacterState.WALKING_FORWARD,
                           CharacterState.WALKING_BACKWARD):
+            # Command normal first: forward + MP = Zugai Hasatsu (overhead chop).
+            if (self.input.is_button_just_pressed(Button.MEDIUM_PUNCH)
+                    and self.input.get_direction() == InputDirection.FORWARD):
+                self._start_normal(CharacterState.FORWARD_MP)
+                return True
             if self.input.is_button_just_pressed(Button.LIGHT_PUNCH):
-                self._transition_to_state(CharacterState.LIGHT_PUNCH)
+                self._start_normal(CharacterState.LIGHT_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.MEDIUM_PUNCH):
-                self._transition_to_state(CharacterState.MEDIUM_PUNCH)
+                self._start_normal(CharacterState.MEDIUM_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.HEAVY_PUNCH):
-                self._transition_to_state(CharacterState.HEAVY_PUNCH)
+                self._start_normal(CharacterState.HEAVY_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.LIGHT_KICK):
-                self._transition_to_state(CharacterState.LIGHT_KICK)
+                self._start_normal(CharacterState.LIGHT_KICK)
                 return True
             elif self.input.is_button_just_pressed(Button.MEDIUM_KICK):
-                self._transition_to_state(CharacterState.MEDIUM_KICK)
+                self._start_normal(CharacterState.MEDIUM_KICK)
                 return True
             elif self.input.is_button_just_pressed(Button.HEAVY_KICK):
-                self._transition_to_state(CharacterState.HEAVY_KICK)
+                self._start_normal(CharacterState.HEAVY_KICK)
                 return True
 
         # Crouching attacks
@@ -730,26 +739,46 @@ class Character:
 
         # Jumping attacks (while airborne)
         elif self.state in [CharacterState.JUMPING, CharacterState.JUMPING_FORWARD, CharacterState.JUMPING_BACKWARD]:
+            # Air command normal first: down + MK during a forward jump = dive
+            # kick (Tenma Kujin Kyaku).
+            if (self.input.is_button_just_pressed(Button.MEDIUM_KICK)
+                    and self.jump_direction == InputDirection.UP_FORWARD
+                    and self.input.get_direction() in (InputDirection.DOWN, InputDirection.DOWN_FORWARD,
+                                                       InputDirection.DOWN_BACK)):
+                self._start_normal(CharacterState.DIVE_KICK)
+                return True
             if self.input.is_button_just_pressed(Button.LIGHT_PUNCH):
-                self._transition_to_state(CharacterState.JUMP_LIGHT_PUNCH)
+                self._start_normal(CharacterState.JUMP_LIGHT_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.MEDIUM_PUNCH):
-                self._transition_to_state(CharacterState.JUMP_MEDIUM_PUNCH)
+                self._start_normal(CharacterState.JUMP_MEDIUM_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.HEAVY_PUNCH):
-                self._transition_to_state(CharacterState.JUMP_HEAVY_PUNCH)
+                self._start_normal(CharacterState.JUMP_HEAVY_PUNCH)
                 return True
             elif self.input.is_button_just_pressed(Button.LIGHT_KICK):
-                self._transition_to_state(CharacterState.JUMP_LIGHT_KICK)
+                self._start_normal(CharacterState.JUMP_LIGHT_KICK)
                 return True
             elif self.input.is_button_just_pressed(Button.MEDIUM_KICK):
-                self._transition_to_state(CharacterState.JUMP_MEDIUM_KICK)
+                self._start_normal(CharacterState.JUMP_MEDIUM_KICK)
                 return True
             elif self.input.is_button_just_pressed(Button.HEAVY_KICK):
-                self._transition_to_state(CharacterState.JUMP_HEAVY_KICK)
+                self._start_normal(CharacterState.JUMP_HEAVY_KICK)
                 return True
 
         return False
+
+    def _normal_variant(self, state: CharacterState):
+        """Hook: which variant of a normal to start (close/far by proximity,
+        neutral for a straight-jump normal). None = the base record."""
+        return None
+
+    def _start_normal(self, state: CharacterState):
+        """Start a normal: pick its variant (so the repository resolves the
+        right ROM record and the transition plays the right clip), then
+        transition."""
+        self.move_variant = self._normal_variant(state)
+        self._transition_to_state(state)
 
     def _update_guard(self):
         """Holding back (standing guard) or down-back (crouching guard) on the
@@ -933,8 +962,8 @@ class Character:
             if self.state_frame >= THROW_TOTAL_FRAMES:
                 self._transition_to_state(CharacterState.STANDING)
 
-        elif self.state == CharacterState.OVERHEAD:
-            # Universal Overhead: slow command attack; stationary, then recover.
+        elif self.state in (CharacterState.OVERHEAD, CharacterState.FORWARD_MP):
+            # Command overheads (UOH, f+MP): stationary, ROM-timed, then recover.
             self.velocity_x = 0
             if self.state_frame >= (self._move_total_frames(self.state) or 33):
                 self._transition_to_state(CharacterState.STANDING)
@@ -1146,6 +1175,7 @@ class Character:
             # A new state = a fresh attack window; allow the next attack to connect.
             self.attack_connected = False
             self._connected_window = None
+            self._landed_frame = None
 
             # State entry logic
             if new_state == CharacterState.JUMP_STARTUP:

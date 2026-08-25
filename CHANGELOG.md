@@ -11,6 +11,16 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **Proximity normals, straight-jump normals, f+MP and the dive kick.** The
+  remaining unnamed ROM scripts (bar the Demon Flip followups) are mapped:
+  close Jab `13a8`, far Strong `1598`, close Fierce `1728`, far Forward `1a38`,
+  far Roundhouse `1bf8` (Baston startup/active frame-exact), the five
+  `Straight Air` normals, `Forward MP` `1638` (Zugai Hasatsu, two-hit
+  overhead) and `Air Down MK` `2aa0` (Tenma Kujin Kyaku, ROM-movement dive).
+  Standing normals pick close/far by distance (`CLOSE_NORMAL_RANGE`,
+  **provisional** single threshold) and play the extracted close clips
+  (`akuma-mpc/hpc/mkc/hkc`); a straight jump uses the neutral scripts.
+  Holding forward + MP is now the command normal, as in 3S.
 - **Specials are ROM-driven.** The converter now exports each ROM script's
   per-frame `movement` table and its `hit_frames` as `hit_windows`, and the
   Goshoryuken / Tatsumaki pointers are mapped (Baston startup/active

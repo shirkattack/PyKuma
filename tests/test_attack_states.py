@@ -43,9 +43,20 @@ def test_can_attack_while_walking_forward():
         _set_input(a.input, InputDirection.FORWARD)
         a.update(b)
     assert a.state == CharacterState.WALKING_FORWARD
+    _set_input(a.input, InputDirection.FORWARD, Button.HEAVY_PUNCH)
+    a.update(b)
+    assert a.state == CharacterState.HEAVY_PUNCH
+
+
+def test_forward_plus_mp_is_the_command_overhead():
+    """Holding forward + MP is Zugai Hasatsu (f+MP), not st.MP."""
+    a, b = _pair()
+    for _ in range(8):
+        _set_input(a.input, InputDirection.FORWARD)
+        a.update(b)
     _set_input(a.input, InputDirection.FORWARD, Button.MEDIUM_PUNCH)
     a.update(b)
-    assert a.state == CharacterState.MEDIUM_PUNCH
+    assert a.state == CharacterState.FORWARD_MP
 
 
 def test_crouch_normal_recovers_to_crouch_not_standing():

@@ -53,7 +53,8 @@ This is a **non-commercial educational project** created to study fighting game 
 **Normals (18):** 6 standing, 6 crouching, 6 jumping (LP/MP/HP/LK/MK/HK each).
 
 **Command actions:** Throw (LP+LK, fwd/back), Universal Overhead / UOH (MP+MK),
-Taunt (HP+HK).
+Zugai Hasatsu overhead (forward+MP), Tenma Kujin Kyaku dive kick (down+MK during a
+forward jump), Taunt (HP+HK). Standing normals have close/far versions by distance.
 
 **Special Moves:**
 - **Gohadoken** (fireball): QCF+P — 3 speeds; air version (Zanku Hadou) QCF+P while jumping
@@ -146,6 +147,8 @@ Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 | Dash forward / back | →→ / ←← |
 | Throw (fwd / back) | LP+LK (hold ← for back throw) |
 | Universal Overhead (UOH) | MP+MK |
+| Zugai Hasatsu (overhead chop) | forward + MP |
+| Tenma Kujin Kyaku (dive kick) | down + MK in a forward jump |
 | Taunt | HP+HK |
 | Gohadoken (fireball) | ↓↘→ + P  *(QCF+P; air = Zanku Hadou)* |
 | Goshoryuken (DP) | →↓↘ + P |
