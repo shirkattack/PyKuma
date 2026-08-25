@@ -22,10 +22,10 @@ removed (git history has them); `CHANGELOG.md` is the record of what shipped.
 1. **ROM backfill of provisional values** (`tools/rom_extract/`): special-move
    damage scale (currently Baston ×7.5), DP blockstun columns, knockback
    magnitudes, the P2 palette (a PyKuma colour, not a ROM palette dump).
-2. **Unmapped ROM pointers** — close/far normal variants, Forward MP, the
-   neutral-jump normals (`21c8/2388/2448/2558/2628`), the air dive kick (`2aa0`),
-   Demon Flip followups (`af08/b118/b218`). Geometry is ROM-verified; they need
-   names and states.
+2. **Demon Flip followups** (`af08/b118/b218`) — the last unwired ROM scripts
+   (the flip itself has no hitbox; the dive/throw/palm followups do). Also:
+   per-move proximity ranges for the close/far normals (one provisional
+   threshold today).
 3. **Shin Akuma** final boss + arcade-ladder progression (menu entry is teased).
 4. **Second character + character select** (`GameMode.VERSUS` / `DEMO` exist but
    are not reachable from the menu).

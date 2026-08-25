@@ -42,13 +42,33 @@ _HOLD_STATES = frozenset({
     # JUMPING at clip end used to run into JUMPING's 60-frame safety cap, which
     # forced STANDING while still in the air -- the "frozen in the idle pose,
     # floating down" DP.
-    CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
+    CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI, CharacterState.DIVE_KICK,
 })
 
 # ROM-movement-driven states: their per-frame (dx, dy) comes from the move's
 # ROM script (hitboxes.yaml `movement`, via the repository) instead of engine
 # physics; physics resumes when the table ends (the fall of a DP).
-_ROM_MOVEMENT_STATES = frozenset({CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI})
+_ROM_MOVEMENT_STATES = frozenset({CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
+                                  CharacterState.DIVE_KICK})
+
+# Proximity normals: within this centre-to-centre distance a standing normal is
+# its CLOSE version (st.MP/MK/HK by default map to the close ROM records, st.LP/HP
+# to the far ones; the other half is the variant). 3S switches per move at
+# roughly pushbox contact plus a few px; one threshold for all is PROVISIONAL.
+CLOSE_NORMAL_RANGE = 80
+
+# Dive kick: frames of grounded recovery after touchdown (Baston "recovery 7";
+# the ROM script ends mid-dive so the landing is physics + this hold).
+DIVE_KICK_LANDING_RECOVERY = 7
+
+_STANDING_NORMALS = frozenset({
+    CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
+    CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
+})
+_JUMP_NORMALS = frozenset({
+    CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
+    CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
+})
 
 _STRENGTH_VARIANT = {
     Button.LIGHT_PUNCH: "light", Button.MEDIUM_PUNCH: "medium", Button.HEAVY_PUNCH: "heavy",
@@ -92,22 +112,24 @@ _ROM_TIMED_STATES = frozenset({
     CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH,
     CharacterState.JUMP_HEAVY_PUNCH, CharacterState.JUMP_LIGHT_KICK,
     CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
-    CharacterState.OVERHEAD,
+    CharacterState.OVERHEAD, CharacterState.FORWARD_MP,
 })
 
 _ROM_TOTAL_CACHE: dict = {}
 
 
-def _rom_total_for(state: CharacterState):
-    """ROM-verified total frames for a ROM-timed state, else None (cached)."""
+def _rom_total_for(state: CharacterState, variant=None):
+    """ROM-verified total frames for a ROM-timed state (and variant: close/far
+    proximity normal, neutral-jump normal), else None (cached)."""
     if state not in _ROM_TIMED_STATES:
         return None
-    if state not in _ROM_TOTAL_CACHE:
+    key = (state, variant)
+    if key not in _ROM_TOTAL_CACHE:
         from street_fighter_3rd.data.hitbox_repository import HitboxRepository
-        move = HitboxRepository.instance().get_move_by_state(state.name)
+        move = HitboxRepository.instance().get_move_by_state(state.name, variant)
         total = move.timing.get("total") if move else None
-        _ROM_TOTAL_CACHE[state] = int(total) if total else None
-    return _ROM_TOTAL_CACHE[state]
+        _ROM_TOTAL_CACHE[key] = int(total) if total else None
+    return _ROM_TOTAL_CACHE[key]
 
 # Animations authored on an oversized canvas with the body's horizontal travel
 # baked into the frames (Akuma's forward/back somersault jumps). These are
@@ -172,6 +194,8 @@ class Akuma(Character):
         CharacterState.RAGING_DEMON: "raging_demon",
         # command actions
         CharacterState.OVERHEAD: "overhead",
+        CharacterState.FORWARD_MP: "forward_mp",
+        CharacterState.DIVE_KICK: "dive_kick",
         CharacterState.TAUNT: "taunt",
         # hit / block reactions
         CharacterState.HITSTUN_STANDING: "hit_medium",
@@ -214,6 +238,7 @@ class Akuma(Character):
                                             recolor=player_recolor("akuma", player_number))
         self.animation_controller = AnimationController(self.sprite_manager)
         self._move_total = None  # full length of the current ROM-driven special
+        self._landed_frame = None  # state_frame at touchdown of a ROM-driven air move
 
         # Set ground offset for consistent positioning
         self.ground_offset = 190  # From YAML configuration (base-class fallback)
@@ -309,6 +334,14 @@ class Akuma(Character):
             ("throw_miss",         "akuma-throw-miss",     6, 2, False),
             # command actions
             ("overhead",           "akuma-overhead",      23, 2, False),  # UOH (MP+MK)
+            ("forward_mp",         "akuma-fmp",           13, 2, False),  # f+MP Zugai Hasatsu (overhead)
+            ("dive_kick",          "akuma-airkick",       16, 2, False),  # air d+MK Tenma Kujin Kyaku
+            # close (proximity) versions of the standing normals; the base clips
+            # above are the far versions. st.LP has no separate close clip.
+            ("close_medium_punch", "akuma-mpc",            9, 2, False),
+            ("close_heavy_punch",  "akuma-hpc",           12, 2, False),
+            ("close_medium_kick",  "akuma-mkc",           10, 2, False),
+            ("close_heavy_kick",   "akuma-hkc",           14, 2, False),
             ("taunt",              "akuma-taunt",         39, 2, False),  # personal action (HP+HK)
             # round-flow poses (driven by the round manager, not the state machine)
             ("teleport",           "akuma-teleport",      63, 1, False),  # Ashura Senku
@@ -557,6 +590,7 @@ class Akuma(Character):
         move = self._rom_move()
         if move is not None and move.movement:
             self.velocity_x = 0.0
+            self._landed_frame = self.state_frame
             return
         super()._on_landing()
 
@@ -775,7 +809,7 @@ class Akuma(Character):
         if not frozen:
             self.animation_controller.update()
         if (not frozen
-                and _rom_total_for(self.state) is None
+                and _rom_total_for(self.state, self.move_variant) is None
                 and self.animation_controller.is_animation_complete()
                 and self.state not in _HOLD_STATES):
             # A one-shot move (attack/special/reaction) finished. If we finished
@@ -834,6 +868,14 @@ class Akuma(Character):
         else:
             name = self._STATE_ANIM.get(new_state)
             if name:
+                # A close proximity normal plays its own clip when one exists.
+                if self.move_variant == "close" and f"close_{name}" in self.animation_controller.animations:
+                    name = f"close_{name}"
+                # ROM-timed states: fit the clip to THIS variant's ROM total
+                # (close/far and neutral-jump variants differ in length).
+                total = _rom_total_for(new_state, self.move_variant)
+                if total:
+                    self._fit_animation(name, total)
                 play(name, force_restart=True)
 
     def _on_throw_whiff(self):
@@ -841,9 +883,25 @@ class Akuma(Character):
         self.animation_controller.play_animation("throw_miss", force_restart=True)
 
     def _move_total_frames(self, state: CharacterState):
-        """ROM-verified total for ROM-timed states (see _ROM_TIMED_STATES);
-        None for everything else, which keeps animation-driven recovery."""
-        return _rom_total_for(state)
+        """ROM-verified total for ROM-timed states (see _ROM_TIMED_STATES),
+        for the variant being executed; None for everything else, which keeps
+        animation-driven recovery."""
+        return _rom_total_for(state, self.move_variant)
+
+    def _normal_variant(self, state: CharacterState):
+        """close/far for standing normals by distance to the opponent; neutral
+        for a straight-jump normal (the ROM has separate 'Straight Air' scripts
+        for LP/HP/LK/MK/HK); None otherwise (base record)."""
+        if state in _STANDING_NORMALS:
+            opp = getattr(self, "_opponent", None)
+            if opp is None:
+                return None
+            return "close" if abs(self.x - opp.x) <= CLOSE_NORMAL_RANGE else "far"
+        if state in _JUMP_NORMALS:
+            if self.jump_direction not in (InputDirection.UP_FORWARD, InputDirection.UP_BACK):
+                return "neutral"
+            return None
+        return None
 
     def get_debug_state(self) -> dict:
         """Extend the base debug state with live animation/sprite info."""
@@ -965,6 +1023,15 @@ class Akuma(Character):
             # elapsed -> the landing recovery is over.
             if (self.is_grounded and self._rom_movement_step() is None
                     and self.state_frame >= self._move_total):
+                self.velocity_x = 0.0
+                self._transition_to_state(CharacterState.STANDING)
+            return
+        if self.state == CharacterState.DIVE_KICK:
+            # The ROM script ends mid-dive; physics finishes the fall, then a
+            # short grounded recovery before neutral.
+            if (self.is_grounded and self._rom_movement_step() is None
+                    and self._landed_frame is not None
+                    and self.state_frame >= self._landed_frame + DIVE_KICK_LANDING_RECOVERY):
                 self.velocity_x = 0.0
                 self._transition_to_state(CharacterState.STANDING)
             return

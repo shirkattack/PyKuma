@@ -111,6 +111,8 @@ class CharacterState(Enum):
 
     # Universal moves
     OVERHEAD = auto()  # MP+MK
+    FORWARD_MP = auto()  # f+MP command overhead (Zugai Hasatsu), ROM 1638
+    DIVE_KICK = auto()  # air d+MK (Tenma Kujin Kyaku), ROM 2aa0
     TAUNT = auto()  # Personal action
 
 

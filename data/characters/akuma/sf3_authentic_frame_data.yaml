@@ -382,6 +382,74 @@ normal_attacks:
     hit_advantage: 0
     block_advantage: 0
 
+  # --- Proximity variants (Baston revised; damage relative to the base row by
+  # Baston's own ratio, e.g. Far Strong 18/20 of Strong; stun/advantage verbatim).
+  standing_light_punch_close:      # Baston 'Jab' 3/3/5, dmg 3 stun 3, +3/+3
+    startup: 3
+    active: 3
+    recovery: 5
+    total: 15
+    damage: 60
+    stun: 3
+    hit_advantage: 3
+    block_advantage: 3
+  standing_medium_punch_far:       # Baston 'Far Strong' 5/4/9, dmg 18 stun 11, +5/+4
+    startup: 5
+    active: 4
+    recovery: 9
+    total: 24
+    damage: 104
+    stun: 11
+    hit_advantage: 5
+    block_advantage: 4
+  standing_heavy_punch_close:      # Baston 'Fierce' 4/4/17, dmg 24 stun 15, -2/-4
+    startup: 4
+    active: 4
+    recovery: 17
+    total: 34
+    damage: 180
+    stun: 15
+    hit_advantage: -2
+    block_advantage: -4
+  standing_medium_kick_far:        # Baston 'Far Forward' 5/5/17, dmg 16 stun 7, -6/-7
+    startup: 5
+    active: 5
+    recovery: 17
+    total: 30
+    damage: 104
+    stun: 7
+    hit_advantage: -6
+    block_advantage: -7
+  standing_heavy_kick_far:         # Baston 'Far Roundhouse' 9/5/20, dmg 25 stun 11, -5/-7
+    startup: 9
+    active: 5
+    recovery: 20
+    total: 40
+    damage: 152
+    stun: 11
+    hit_advantage: -5
+    block_advantage: -7
+
+  # --- Command normals
+  forward_medium_punch:            # Baston 'Towards + Strong' 14/2/22, dmg 14 stun 15, +1/-1; overhead; ROM 1638 hits twice (total split per hit)
+    startup: 14
+    active: 2
+    recovery: 22
+    total: 42
+    damage: 105
+    stun: 15
+    hit_advantage: 1
+    block_advantage: -1
+  dive_kick:                       # Baston 'Dive Kick' 8/10/7, dmg 16 stun 11, advantage '-' (varies with height) -> 0/0; ROM 2aa0
+    startup: 8
+    active: 10
+    recovery: 7
+    total: 25
+    damage: 120
+    stun: 11
+    hit_advantage: 0
+    block_advantage: 0
+
 # === SPECIAL MOVES ===
 special_moves:
   

@@ -268,7 +268,13 @@ def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
     mapping = getattr(type(char), "_STATE_ANIM", None) or getattr(char, "_STATE_ANIM", None)
     if not mapping:
         return None
-    return mapping.get(state)
+    name = mapping.get(state)
+    # A close proximity normal plays its own clip (Akuma._transition_to_state).
+    if name and getattr(char, "move_variant", None) == "close":
+        anims = getattr(getattr(char, "animation_controller", None), "animations", {})
+        if f"close_{name}" in anims:
+            return f"close_{name}"
+    return name
 
 
 def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optional[Expected]:
