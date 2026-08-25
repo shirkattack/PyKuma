@@ -367,6 +367,21 @@ normal_attacks:
       hand:
         - { offset_x: 35, offset_y: -55, width: 35, height: 30 }
 
+  # Universal Overhead (MP+MK). Baston ESN3S (revised): startup 15, active 8,
+  # recovery 7, damage 7, stun 3; hit/block advantage listed as '-' (varies
+  # with landing timing) -> 0/0 estimate. Damage converted with the same
+  # ratio the standing normals use (st.HP 24 -> 180, x7.5). ROM timing/boxes
+  # come from pointer 98f8 (hitboxes.yaml); this row is combat only.
+  universal_overhead:
+    startup: 15
+    active: 8
+    recovery: 7
+    total: 30
+    damage: 50
+    stun: 3
+    hit_advantage: 0
+    block_advantage: 0
+
 # === SPECIAL MOVES ===
 special_moves:
   
@@ -428,192 +443,109 @@ special_moves:
       projectile:
         - { offset_x: 0, offset_y: 0, width: 35, height: 25 }
   
-  # Goshoryuken (Dragon Punch)
+  # Goshoryuken (Dragon Punch). Baston ESN3S (revised): startup/active/
+  # recovery 3/14/26, 2/7/41, 1/23/35 (totals 43/50/59); block advantage
+  # -24/-30/-34; stun 11/13/15; hits 1/2/3 (ROM hit_frames agree). The ROM
+  # script (hitboxes.yaml 84f8/85c8/8658) covers the rise only; `total` here
+  # is the full-move length the engine holds the state for. Damage is the
+  # move TOTAL (split per hit at conversion); kept from the prior community
+  # tier (Baston 23/25/29 x7.5 ~= 172/187/217). Launcher: hit advantage n/a.
   goshoryuken_light:
-    startup: 3           # SF3 authentic 3-frame startup
-    active: 12           # Multi-hit active frames
-    recovery: 25
-    total: 40
-    damage: 180
-    stun: 15
-    hit_advantage: 10
-    block_advantage: -15
-    invincibility_frames: [1, 2, 3, 4, 5, 6, 7, 8]  # Full invincibility
-    hitboxes:
-      attack:
-        - { offset_x: 30, offset_y: -60, width: 45, height: 80 }  # Rising hitbox
-        - { offset_x: 25, offset_y: -100, width: 40, height: 60 } # Upper hitbox
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 15, offset_y: -60, width: 25, height: 40 }
-  
-  goshoryuken_medium:
     startup: 3
     active: 14
-    recovery: 28
-    total: 45
+    recovery: 26
+    total: 43
+    damage: 180
+    stun: 11
+    hit_advantage: 0
+    block_advantage: -24
+    invincibility_frames: [1, 2, 3, 4, 5, 6, 7, 8]
+  goshoryuken_medium:
+    startup: 2
+    active: 7
+    recovery: 41
+    total: 50
     damage: 200
-    stun: 18
-    hit_advantage: 12
-    block_advantage: -18
+    stun: 13
+    hit_advantage: 0
+    block_advantage: -30
     invincibility_frames: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    hitboxes:
-      attack:
-        - { offset_x: 30, offset_y: -60, width: 50, height: 85 }
-        - { offset_x: 25, offset_y: -110, width: 45, height: 70 }
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 15, offset_y: -60, width: 30, height: 45 }
-  
   goshoryuken_heavy:
-    startup: 3
-    active: 16
-    recovery: 31
-    total: 50
+    startup: 1
+    active: 23
+    recovery: 35
+    total: 59
     damage: 220
-    stun: 20
-    hit_advantage: 15
-    block_advantage: -20
+    stun: 15
+    hit_advantage: 0
+    block_advantage: -34
     invincibility_frames: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    hitboxes:
-      attack:
-        - { offset_x: 30, offset_y: -60, width: 55, height: 90 }
-        - { offset_x: 25, offset_y: -120, width: 50, height: 80 }
 
-  # Tatsumaki Zankukyaku (Hurricane Kick)
+  # Tatsumaki Zankukyaku (ground). Baston (revised): 11/4/17, 2/10/16, 2/18/10;
+  # block advantage -12/-8/-5; stun 7/9/11; damage 17/21/25 (x7.5 -> 130/160/
+  # 190, move totals split per ROM hit window). ROM scripts 86e8/87f8/8968
+  # (24/30/38 frames) end just before touchdown; the engine ends the state at
+  # the end of the ROM movement table, so `total` = ROM script length.
   tatsumaki_light:
-    startup: 4           # SF3 authentic startup
-    active: 18           # Multi-hit active frames
-    recovery: 12
-    total: 34
-    damage: 120          # Total damage across all hits
-    stun: 12
-    hit_advantage: 5
-    block_advantage: -8
-    horizontal_speed: 5.0   # Moves forward during attack
-    hits: 3              # Number of hits
-    hitboxes:
-      attack:
-        - { offset_x: 40, offset_y: -55, width: 50, height: 45 }  # Spinning kick hitbox
-      body:
-        - { offset_x: 0, offset_y: -60, width: 40, height: 60 }
-
-  tatsumaki_medium:
-    startup: 4
-    active: 22
-    recovery: 14
-    total: 40
-    damage: 140
-    stun: 14
-    hit_advantage: 6
-    block_advantage: -10
-    horizontal_speed: 6.5
-    hits: 4
-    hitboxes:
-      attack:
-        - { offset_x: 45, offset_y: -55, width: 55, height: 45 }
-      body:
-        - { offset_x: 0, offset_y: -60, width: 40, height: 60 }
-
-  tatsumaki_heavy:
-    startup: 4
-    active: 26
-    recovery: 16
-    total: 46
-    damage: 160
-    stun: 16
-    hit_advantage: 8
+    startup: 11
+    active: 4
+    recovery: 9
+    total: 24
+    damage: 130
+    stun: 7
+    hit_advantage: 0
     block_advantage: -12
-    horizontal_speed: 8.0
-    hits: 5
-    knockdown: true      # Last hit knocks down
-    hitboxes:
-      attack:
-        - { offset_x: 50, offset_y: -55, width: 60, height: 45 }
-      body:
-        - { offset_x: 0, offset_y: -60, width: 40, height: 60 }
-
-  # Air Tatsumaki (performed in air)
-  air_tatsumaki_light:
-    startup: 4
-    active: 18
-    recovery: 8
-    total: 30
-    damage: 100
-    stun: 10
-    hit_advantage: 10
-    block_advantage: -5
-    horizontal_speed: 4.0
-    hits: 3
-    hitboxes:
-      attack:
-        - { offset_x: 40, offset_y: -50, width: 50, height: 40 }
-      body:
-        - { offset_x: 0, offset_y: -60, width: 35, height: 60 }
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 15, offset_y: -60, width: 35, height: 50 }
-
-  # Tatsumaki Zankukyaku (Hurricane Kick)
-  tatsumaki_light:
-    startup: 7
-    active: 18           # Multi-hit spinning
-    recovery: 15
-    total: 40
-    damage: 150
-    stun: 12
-    hit_advantage: 5
-    block_advantage: -5
-    movement_distance: 120
-    hitboxes:
-      attack:
-        - { offset_x: 35, offset_y: -50, width: 60, height: 50 }
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 20, offset_y: -50, width: 40, height: 40 }
-  
   tatsumaki_medium:
-    startup: 7
-    active: 20
+    startup: 2
+    active: 10
     recovery: 18
-    total: 45
-    damage: 170
-    stun: 14
-    hit_advantage: 6
-    block_advantage: -4
-    movement_distance: 150
-    hitboxes:
-      attack:
-        - { offset_x: 35, offset_y: -50, width: 65, height: 55 }
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 20, offset_y: -50, width: 45, height: 45 }
-  
+    total: 30
+    damage: 160
+    stun: 9
+    hit_advantage: 0
+    block_advantage: -8
   tatsumaki_heavy:
-    startup: 7
-    active: 22
-    recovery: 21
-    total: 50
+    startup: 2
+    active: 18
+    recovery: 18
+    total: 38
     damage: 190
-    stun: 16
-    hit_advantage: 7
-    block_advantage: -3
-    movement_distance: 180
-    hitboxes:
-      attack:
-        - { offset_x: 35, offset_y: -50, width: 70, height: 60 }
-      body:
-        - { offset_x: 0, offset_y: -80, width: 40, height: 80 }
-      hand:
-        - { offset_x: 20, offset_y: -50, width: 50, height: 50 }
+    stun: 11
+    hit_advantage: 0
+    block_advantage: -5
 
-# === SUPER ARTS ===
-super_arts:
+  # Air Tatsumaki. Baston (revised): startup 5, active 3/6/12, recovery until
+  # landing; block advantage -8/-7/-8; stun 3/5/7; damage 14/27/40 (x7.5 ->
+  # 105/205/300, split per ROM hit window). ROM scripts 9618/9738/9818
+  # (18/18/26 frames); physics lands the character after the table ends.
+  air_tatsumaki_light:
+    startup: 5
+    active: 3
+    recovery: 10
+    total: 18
+    damage: 105
+    stun: 3
+    hit_advantage: 0
+    block_advantage: -8
+  air_tatsumaki_medium:
+    startup: 5
+    active: 6
+    recovery: 7
+    total: 18
+    damage: 205
+    stun: 5
+    hit_advantage: 0
+    block_advantage: -7
+  air_tatsumaki_heavy:
+    startup: 5
+    active: 12
+    recovery: 9
+    total: 26
+    damage: 300
+    stun: 7
+    hit_advantage: 0
+    block_advantage: -8
+
   
   # Messatsu Gou Hadou (Super Fireball)
   messatsu_gou_hadou:

@@ -153,8 +153,9 @@ def jab_knockback() -> Scenario:
 
 
 def launch_recovery() -> Scenario:
-    """P1 heavy punch (JUGGLE) point-blank into P2: P2 should pop up, fall, land,
-    and recover -- without getting stuck airborne / hitting the safety timeout."""
+    """P1 heavy punch point-blank into P2. (Historical name: st.HP was tagged
+    JUGGLE; it is now a NORMAL hit as in 3S, so this is a plain hit-reaction
+    scenario. For a real launch use apply_reaction(HitEffect.JUGGLE).)"""
     return Scenario(
         name="launch_recovery", frames=110,
         p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},

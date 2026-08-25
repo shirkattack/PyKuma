@@ -138,11 +138,16 @@ class Button(Enum):
 
 
 class HitType(Enum):
-    """Type of hit for collision detection."""
-    HIGH = auto()  # Can be blocked standing
+    """Block LEVEL of a hit (maps 1:1 onto systems.sf3_hitboxes.SF3HitLevel).
+
+    HIGH is the overhead class -- it MUST be blocked standing (jump-ins, UOH),
+    not merely "can be". Every grounded normal is MID. Parry direction follows:
+    HIGH/MID are forward-parried, LOW is down-parried.
+    """
+    HIGH = auto()  # Must be blocked standing (overhead class: jump-ins, UOH)
     LOW = auto()  # Must be blocked crouching
-    MID = auto()  # Can be blocked either way
-    OVERHEAD = auto()  # Must be blocked standing
+    MID = auto()  # Can be blocked either way (all grounded normals, specials)
+    OVERHEAD = auto()  # Alias of HIGH for command overheads
     THROW = auto()  # Cannot be blocked
     PROJECTILE = auto()
 

@@ -29,8 +29,6 @@ class MenuState(Enum):
     """Different menu screens."""
     MAIN = auto()
     CONTROLS = auto()
-    MOVES = auto()
-    MODE_SELECT = auto()
     DIFFICULTY_SELECT = auto()
     SETTINGS = auto()
 
@@ -86,24 +84,9 @@ class MainMenu:
                 MenuItem("DEV MODE", self._start_dev_mode),
                 MenuItem("HITBOX VIEWER", self._start_hitbox_viewer_mode),
                 MenuItem("CONTROLS", submenu=MenuState.CONTROLS),
-                MenuItem("MOVES LIST", submenu=MenuState.MOVES),
-                MenuItem("MODE SELECT", submenu=MenuState.MODE_SELECT),
                 MenuItem("EXIT GAME", self._exit_game)
             ],
             MenuState.CONTROLS: [
-                MenuItem("BACK TO MAIN", submenu=MenuState.MAIN)
-            ],
-            MenuState.MOVES: [
-                MenuItem("BACK TO MAIN", submenu=MenuState.MAIN)
-            ],
-            MenuState.MODE_SELECT: [
-                MenuItem("NORMAL MODE", self._select_normal_mode),
-                MenuItem("TRAINING MODE", self._select_training_mode),
-                MenuItem("DEV MODE", self._select_dev_mode),
-                MenuItem("HITBOX VIEWER", self._select_hitbox_viewer_mode),
-                # Not yet distinct from Normal (no CPU AI / no separate versus flow)
-                MenuItem("VERSUS MODE", self._select_versus_mode, available=False),
-                MenuItem("DEMO MODE", self._select_demo_mode, available=False),
                 MenuItem("BACK TO MAIN", submenu=MenuState.MAIN)
             ],
             MenuState.DIFFICULTY_SELECT: self._build_difficulty_menu(),
@@ -201,10 +184,6 @@ class MainMenu:
             self._render_main_menu()
         elif self.current_state == MenuState.CONTROLS:
             self._render_controls_screen()
-        elif self.current_state == MenuState.MOVES:
-            self._render_moves_screen()
-        elif self.current_state == MenuState.MODE_SELECT:
-            self._render_mode_select_screen()
         elif self.current_state == MenuState.DIFFICULTY_SELECT:
             self._render_difficulty_screen()
 
@@ -253,11 +232,6 @@ class MainMenu:
             self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, 140)))
             content_top = 170
 
-        # Current mode indicator
-        mode_text = f"Current Mode: {self.game_mode_manager.current_mode.name}"
-        mode_surface = self.font_small.render(mode_text, True, COLOR_BLUE)
-        mode_rect = mode_surface.get_rect(center=(SCREEN_WIDTH // 2, content_top))
-        self.screen.blit(mode_surface, mode_rect)
 
         # Menu items, reflowed to fit beneath the banner
         menu_items = self.menus[MenuState.MAIN]
@@ -325,97 +299,6 @@ class MainMenu:
         back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30))
         self.screen.blit(back_text, back_rect)
         
-    def _render_moves_screen(self):
-        """Render the moves list screen."""
-        title = self.font_large.render("AKUMA MOVES", True, COLOR_YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        self.screen.blit(title, title_rect)
-        
-        moves_text = [
-            "NORMAL ATTACKS:",
-            "Light Punch (LP) - Fast jab, 12 frames",
-            "Medium Punch (MP) - Balanced attack, 18 frames", 
-            "Heavy Punch (HP) - Strong uppercut, 25 frames",
-            "Light Kick (LK) - Quick kick, 15 frames",
-            "Medium Kick (MK) - Mid-range kick, 27 frames",
-            "Heavy Kick (HK) - Powerful kick, 42 frames",
-            "",
-            "SPECIAL MOVES:",
-            "Gohadoken - ↓↘→ + P",
-            "  Light: Slow fireball (7 px/frame)",
-            "  Medium: Medium fireball (9 px/frame)",
-            "  Heavy: Fast fireball (11 px/frame)",
-            "",
-            "Goshoryuken - →↓↘ + P (Coming Soon)",
-            "  Anti-air dragon punch with invincibility",
-            "",
-            "Tatsumaki Senpukyaku - ↓↙← + K (Coming Soon)",
-            "  Hurricane kick with multiple hits",
-            "",
-            "FRAME DATA:",
-            "Startup: Frames before attack becomes active",
-            "Active: Frames where attack can hit",
-            "Recovery: Frames after attack until neutral",
-            "",
-            "AKUMA STATS:",
-            "Health: 145 HP (Low)",
-            "Walk Speed: 3.2 px/frame (Fast)"
-        ]
-        
-        start_y = 100
-        for i, line in enumerate(moves_text):
-            color = COLOR_YELLOW if line.endswith(":") else COLOR_WHITE
-            if line.startswith("  "):
-                color = COLOR_BLUE
-            if line == "":
-                continue
-            text = self.font_small.render(line, True, color)
-            self.screen.blit(text, (50, start_y + i * 18))
-            
-        # Back instruction
-        back_text = self.font_small.render("ESC: Back to Main Menu", True, COLOR_RED)
-        back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30))
-        self.screen.blit(back_text, back_rect)
-        
-    def _render_mode_select_screen(self):
-        """Render the mode selection screen."""
-        title = self.font_large.render("SELECT GAME MODE", True, COLOR_YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        self.screen.blit(title, title_rect)
-        
-        # Current mode
-        current_text = f"Current: {self.game_mode_manager.current_mode.name}"
-        current_surface = self.font_medium.render(current_text, True, COLOR_BLUE)
-        current_rect = current_surface.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(current_surface, current_rect)
-        
-        # Mode descriptions
-        descriptions = {
-            0: "Standard fighting game experience",
-            1: "Practice with infinite health and debug tools",
-            2: "Full development mode with all debug features",
-            3: "ROM-accurate hitbox visualization viewer",
-            4: "Local 2-player versus matches",
-            5: "AI demonstration mode",
-            6: ""  # Back button
-        }
-        
-        # Menu items
-        menu_items = self.menus[MenuState.MODE_SELECT]
-        start_y = 150
-        
-        for i, item in enumerate(menu_items):
-            label, color = self._item_label_color(item, i)
-            text_surface = self.font_medium.render(label, True, color)
-            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 60))
-            self.screen.blit(text_surface, text_rect)
-
-            # Show description for selected item
-            if i == self.selected_index and i in descriptions and descriptions[i]:
-                desc_surface = self.font_small.render(descriptions[i], True, COLOR_YELLOW)
-                desc_rect = desc_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 60 + 25))
-                self.screen.blit(desc_surface, desc_rect)
-                
     def _build_difficulty_menu(self) -> List[MenuItem]:
         """One entry per selectable AI tier, plus a teased (locked) final boss."""
         items = [MenuItem(p.name.upper(), self._make_start_with_difficulty(p.key))
@@ -457,30 +340,6 @@ class MainMenu:
         self.selected_mode = GameMode.HITBOX_VIEWER
         self.start_game = True
 
-    def _select_normal_mode(self):
-        """Select normal mode."""
-        self.game_mode_manager.set_mode(GameMode.NORMAL)
-        
-    def _select_training_mode(self):
-        """Select training mode."""
-        self.game_mode_manager.set_mode(GameMode.TRAINING)
-        
-    def _select_dev_mode(self):
-        """Select dev mode."""
-        self.game_mode_manager.set_mode(GameMode.DEV)
-
-    def _select_hitbox_viewer_mode(self):
-        """Select the hitbox viewer mode."""
-        self.game_mode_manager.set_mode(GameMode.HITBOX_VIEWER)
-        
-    def _select_versus_mode(self):
-        """Select versus mode."""
-        self.game_mode_manager.set_mode(GameMode.VERSUS)
-        
-    def _select_demo_mode(self):
-        """Select demo mode."""
-        self.game_mode_manager.set_mode(GameMode.DEMO)
-        
     def _exit_game(self):
         """Exit the game."""
         self.quit_game = True

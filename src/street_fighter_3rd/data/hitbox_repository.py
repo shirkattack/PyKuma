@@ -35,6 +35,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _HITBOX_YAML = _REPO_ROOT / "data" / "characters" / "akuma" / "hitboxes.yaml"
 
 _VALID_STATUSES = {"verified", "baston", "inferred", "community", "pending"}
+_VARIANT_ORDER = ("light", "medium", "heavy", "air_light", "air_medium", "air_heavy")
 
 
 class Provenance(BaseModel):
@@ -91,6 +92,12 @@ class CombatData(BaseModel):
     hit_effect: str = "NORMAL"
     status: str = "community"
     source: str = ""
+    # Community full-move length. Meaningful for `timing_scope == "segment"`
+    # records, whose ROM script covers only part of the move.
+    total: Optional[int] = None
+    # For multi-hit specials the community damage is the move total; `damage`
+    # is the per-hit split and this keeps the original figure.
+    damage_total: Optional[int] = None
 
 
 class MoveRecord(BaseModel):
@@ -101,9 +108,42 @@ class MoveRecord(BaseModel):
     source: Provenance
     frames: List[Dict] = Field(default_factory=list)
     state: Optional[str] = None
+    # Strength variant for move families that share one CharacterState
+    # (GOSHORYUKEN light/medium/heavy, TATSUMAKI light/.../air_heavy).
+    variant: Optional[str] = None
     name_status: Optional[str] = None
     confidence: Optional[str] = None
     combat: Optional[CombatData] = None
+    # ROM hit registrations as 1-indexed [start, end] windows (the dump's
+    # `hit_frames`). Distinct hits of a multi-hit move; may be finer than the
+    # attack-box runs (HP Goshoryuken: boxes 2-24 but hits 2, 4, 6-23).
+    hit_windows: List[List[int]] = Field(default_factory=list)
+    # ROM per-frame [dx, dy] in PyKuma units (forward-positive, y grows DOWN),
+    # one entry per script frame; [] when the script never moves the fighter.
+    movement: List[List[int]] = Field(default_factory=list)
+    # "full": the script is the whole move. "segment": the script is only the
+    # rise/spin part (fall + landing are separate scripts the dump does not
+    # chain) -- timing.total/recovery are NOT the move's duration.
+    timing_scope: str = "full"
+
+    def movement_for_frame(self, frame_1indexed: int):
+        """(dx, dy) for a script frame, or None past the end of the table."""
+        if 1 <= frame_1indexed <= len(self.movement):
+            dx, dy = self.movement[frame_1indexed - 1]
+            return int(dx), int(dy)
+        return None
+
+    def hit_windows_or_derived(self) -> List[List[int]]:
+        """ROM hit windows, else contiguous runs of attack-box frames."""
+        if self.hit_windows:
+            return [[int(a), int(b)] for a, b in self.hit_windows]
+        wins: List[List[int]] = []
+        for f in self.active_frames():
+            if wins and f == wins[-1][1] + 1:
+                wins[-1][1] = f
+            else:
+                wins.append([f, f])
+        return wins
 
     def attack_boxes_for_frame(self, frame_1indexed: int) -> List[SourcedBox]:
         boxes: List[SourcedBox] = []
@@ -176,10 +216,24 @@ class HitboxRepository:
 
     # -- queries -----------------------------------------------------------
 
-    def get_move_by_state(self, state_name: str) -> Optional[MoveRecord]:
-        for move in self._moves.values():
-            if move.state == state_name:
-                return move
+    def get_move_by_state(self, state_name: str,
+                          variant: Optional[str] = None) -> Optional[MoveRecord]:
+        """The move for a state, preferring `variant` (light/medium/heavy/
+        air_*). Falls back to the state's un-varianted record, then to the
+        lightest variant, so callers that don't know the strength still get
+        a representative move."""
+        candidates = [m for m in self._moves.values() if m.state == state_name]
+        if candidates:
+            if variant:
+                for m in candidates:
+                    if m.variant == variant:
+                        return m
+            for m in candidates:
+                if m.variant is None:
+                    return m
+            candidates.sort(key=lambda m: (_VARIANT_ORDER.index(m.variant)
+                                           if m.variant in _VARIANT_ORDER else 99))
+            return candidates[0]
         # Most states (STANDING, JUMPING, walking, ...) legitimately have no ROM
         # attack move; this is the common, expected path. Keep it at debug so it
         # doesn't flood the console every frame.
@@ -187,15 +241,17 @@ class HitboxRepository:
                  "No ROM move mapped to state %s; returning None.", state_name)
         return None
 
-    def get_attack_boxes(self, state_name: str, frame_1indexed: int) -> List[SourcedBox]:
-        move = self.get_move_by_state(state_name)
+    def get_attack_boxes(self, state_name: str, frame_1indexed: int,
+                         variant: Optional[str] = None) -> List[SourcedBox]:
+        move = self.get_move_by_state(state_name, variant)
         if not move:
             return []
         return move.attack_boxes_for_frame(frame_1indexed)
 
-    def get_vulnerability_boxes(self, state_name: str, frame_1indexed: int) -> List[SourcedBox]:
+    def get_vulnerability_boxes(self, state_name: str, frame_1indexed: int,
+                                variant: Optional[str] = None) -> List[SourcedBox]:
         """Per-move vulnerability hurtbox extensions for a move's frame (or [])."""
-        move = self.get_move_by_state(state_name)
+        move = self.get_move_by_state(state_name, variant)
         if not move:
             return []
         return move.vulnerability_boxes_for_frame(frame_1indexed)

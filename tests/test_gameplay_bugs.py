@@ -81,7 +81,9 @@ def test_knocked_down_defender_is_invulnerable_to_normals(game):
 def test_mashed_hp_does_not_produce_infinite_juggle(game):
     """The end-to-end scenario the user reported. Approach + mash HP for a
     reasonable window and confirm the defender is not stuck bouncing between
-    HITSTUN_AIRBORNE and hittable-on-landing forever."""
+    HITSTUN_AIRBORNE and hittable-on-landing forever. (st.HP is now a NORMAL
+    hit, as in 3S, so the defender never leaves the ground at all; an idle
+    dummy still takes every hit, so damage is not bounded here.)"""
     p1, p2 = game.player1, game.player2
     p2.x = p1.x + 60
     hp0 = p2.health
@@ -100,11 +102,9 @@ def test_mashed_hp_does_not_produce_infinite_juggle(game):
             airborne_streak = 0
     # An infinite juggle would leave p2 airborne for most of the run; with the
     # fix, the launched state resolves to knockdown quickly.
-    assert max_airborne_streak < 120, \
-        f"defender was airborne for {max_airborne_streak} consecutive frames — juggle loop"
-    # HP should not be able to fall arbitrarily far during this window.
-    damage = hp0 - p2.health
-    assert damage < p2.max_health, "took full-round damage from a single mashed loop"
+    assert max_airborne_streak == 0, \
+        f"defender was airborne for {max_airborne_streak} consecutive frames — st.HP must not launch"
+    assert p2.health < hp0, "the mashed HP must be connecting"
 
 
 # ---------------------------------------------------------------- corner ----
@@ -156,3 +156,103 @@ def test_walking_into_cornered_opponent_does_not_shove_them(game):
     assert max(positions) - min(positions) < 3, \
         f"cornered defender oscillated under walk pressure: {min(positions)}..{max(positions)}"
     assert p2.x >= STAGE_RIGHT_BOUND - 3, "cornered defender must stay at the corner"
+
+
+# ------------------------------------------------- corner crossup / wall ----
+
+def _prime_grounded(*players):
+    """Make the prior-frame signals reflect 'standing here' (as after a frame)."""
+    for p in players:
+        p._prev_x = p.x
+        p._prev_grounded = True
+
+
+def _forward_jump(p, direction):
+    from street_fighter_3rd.data.constants import JUMP_VELOCITY
+    p.velocity_y = JUMP_VELOCITY
+    p.velocity_x = 2.0 * direction
+    p.is_grounded = False
+    p._transition_to_state(CharacterState.JUMPING)
+
+
+@pytest.mark.parametrize("wall,direction", [(STAGE_RIGHT_BOUND, +1), (80, -1)])
+def test_jumping_over_cornered_opponent_lands_in_front(game, wall, direction):
+    """You cannot cross up a cornered opponent: the defender AT the wall keeps
+    the corner and the jumper lands on the open side. Previously the jumper,
+    clamped to the wall mid-air (x == wall == defender.x), won the prev_x
+    tie-break, stole the corner, and both facings flipped -- with two identical
+    Akuma sprites that looked like P1 and P2 swapping controls."""
+    p1, p2 = game.player1, game.player2
+    p2.x = wall
+    p2.facing = FacingDirection.LEFT if direction > 0 else FacingDirection.RIGHT
+    p1.x = wall - 116 * direction
+    p1.facing = FacingDirection.RIGHT if direction > 0 else FacingDirection.LEFT
+    _prime_grounded(p1, p2)
+    _forward_jump(p1, direction)
+
+    for _ in range(120):
+        game.update()
+        if p1.is_grounded:
+            break
+    assert p1.is_grounded, "jumper must land"
+    for _ in range(10):
+        game.update()
+
+    assert p2.x == wall, f"cornered defender lost the wall: {p2.x}"
+    assert (p2.x - p1.x) * direction > 0, "jumper must land on the open side of the defender"
+    assert abs(p2.x - p1.x) >= (p1.pushbox_width + p2.pushbox_width) / 2 - 0.01
+    assert p1.facing == (FacingDirection.RIGHT if direction > 0 else FacingDirection.LEFT)
+    assert p2.facing == (FacingDirection.LEFT if direction > 0 else FacingDirection.RIGHT)
+
+
+def test_block_pushback_keeps_cornered_defender_inside_stage(game):
+    """Block pushback wrote defender.x directly and the defender then sat in
+    hitfreeze, during which Character.update() skips the stage clamp -- so a
+    cornered defender was parked past the wall for the whole freeze."""
+    import sys, os as _os
+    sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    from tools.diagnostics.scenario import ScriptedInputSystem, hold, tap
+    from street_fighter_3rd.data.enums import InputDirection, Button
+
+    p1, p2 = game.player1, game.player2
+    p2.x = STAGE_RIGHT_BOUND
+    p2.facing = FacingDirection.LEFT
+    p1.x = p2.x - 52
+    p1.facing = FacingDirection.RIGHT
+    _prime_grounded(p1, p2)
+    game.input_system = ScriptedInputSystem(
+        hold(None, 2) + tap(Button.LIGHT_PUNCH) + hold(None, 40),
+        hold(InputDirection.BACK, 45))
+    p1.input, p2.input = game.input_system.player1, game.input_system.player2
+
+    blocked = False
+    for _ in range(45):
+        game.update()
+        assert p2.x <= STAGE_RIGHT_BOUND, f"defender pushed through the wall to {p2.x}"
+        if p2.state in (CharacterState.BLOCKSTUN_HIGH, CharacterState.BLOCKSTUN_LOW):
+            blocked = True
+    assert blocked, "scenario must actually produce a blocked hit"
+
+
+def test_mashed_standing_hp_never_launches(game):
+    """st.HP through the real input path: the defender is hit but never leaves
+    the ground (it is a NORMAL hit in 3S, not a launcher)."""
+    import sys, os as _os
+    sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    from tools.diagnostics.scenario import ScriptedInputSystem, hold, tap
+    from street_fighter_3rd.data.enums import Button
+
+    p1, p2 = game.player1, game.player2
+    p2.x = p1.x + 60
+    _prime_grounded(p1, p2)
+    game.input_system = ScriptedInputSystem((tap(Button.HEAVY_PUNCH) + hold(None, 3)) * 100, [])
+    p1.input, p2.input = game.input_system.player1, game.input_system.player2
+    hp_prev, hits = p2.health, 0
+    for _ in range(400):
+        game.update()
+        assert p2.is_grounded, "st.HP must not launch"
+        assert p2.state != CharacterState.HITSTUN_AIRBORNE
+        if p2.health < hp_prev:
+            hits += 1
+        hp_prev = p2.health
+    assert hits >= 3, "the HP must actually be connecting"

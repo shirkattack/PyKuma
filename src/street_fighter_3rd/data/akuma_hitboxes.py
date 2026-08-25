@@ -19,8 +19,8 @@ Position reference (unchanged):
   - Y offset: negative = up from ground, positive = down.
 """
 
-from dataclasses import dataclass
-from typing import List, Tuple
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional
 
 from street_fighter_3rd.data.enums import HitType, CharacterState, HitEffect
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository, MoveRecord, SourcedBox
@@ -80,6 +80,11 @@ class MoveFrameData:
     # multi-hit move has a GAP between active windows (s.HK: active 6-8 and
     # 16-20 inside a 39-frame total). This is the duration the engine runs.
     total: int = 0
+    variant: Optional[str] = None            # light/medium/heavy/air_* for move families
+    hit_windows: List[List[int]] = field(default_factory=list)  # ROM distinct hits, 1-indexed
+    movement: List[List[int]] = field(default_factory=list)     # ROM per-frame [dx, dy]
+    timing_scope: str = "full"               # "segment": ROM script != whole move
+    community_total: Optional[int] = None    # full-move length for segment records
 
 
 def _repo() -> HitboxRepository:
@@ -126,7 +131,7 @@ def _calibrated_stun(move: MoveRecord) -> Tuple[int, int] | None:
     hitstun/knockdown model, where quoted advantage does not apply.
     Returns None (keep the stored estimates) when the record lacks the data.
     """
-    key = move.state or move.rom_id
+    key = (move.state or move.rom_id, move.variant)
     if key in _STUN_CACHE:
         return _STUN_CACHE[key]
     result = None
@@ -134,13 +139,23 @@ def _calibrated_stun(move: MoveRecord) -> Tuple[int, int] | None:
     state_name = move.state or ""
     if (combat is not None
             and combat.on_hit is not None and combat.on_block is not None
-            and not state_name.startswith("JUMP_")):
-        total = int(move.timing.get("total") or 0)
-        active = move.active_frames()
-        if total and active:
-            ref = _active_windows(list(active))[-1][0]
+            and not state_name.startswith("JUMP_")
+            and not (move.variant or "").startswith("air_")):
+        # A segment record's ROM total is only the rise/spin script; the
+        # community full-move total is the timeline the advantage refers to.
+        if move.timing_scope == "segment":
+            total = int(combat.total or 0)
+        else:
+            total = int(move.timing.get("total") or 0)
+        windows = move.hit_windows_or_derived()
+        if total and windows:
+            ref = windows[-1][0]
             hitstun = int(combat.on_hit) + (total + 1) - ref
             blockstun = int(combat.on_block) + (total + 1) - ref
+            if combat.hit_effect == "JUGGLE":
+                # A launcher's hit reaction is the airborne model (hitstun
+                # unused); only the blockstun is back-solved.
+                hitstun = int(combat.hitstun)
             if hitstun > 0 and blockstun > 0:
                 result = (hitstun, blockstun)
     _STUN_CACHE[key] = result
@@ -210,10 +225,21 @@ def _build_move_frame_data(move: MoveRecord) -> MoveFrameData:
         total=int(move.timing.get("total")
                   or (int(move.timing.get("startup", 0)) + len(active)
                       + int(move.timing.get("recovery", 0)))),
+        variant=move.variant,
+        hit_windows=move.hit_windows_or_derived(),
+        movement=[list(m) for m in move.movement],
+        timing_scope=move.timing_scope,
+        community_total=(combat.total if combat else None),
     )
 
 
-def _compose_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[HurtboxFrame]:
+def variant_of(character) -> Optional[str]:
+    """The strength variant a character is currently executing (or None)."""
+    return getattr(character, "move_variant", None)
+
+
+def _compose_hurtboxes(state: CharacterState, frame_number: int = 0,
+                       variant: Optional[str] = None) -> List[HurtboxFrame]:
     """Base (or crouch-scaled) hurtbox stack, plus per-move vulnerability
     extensions for the given 1-indexed active frame (if any)."""
     repo = _repo()
@@ -223,7 +249,7 @@ def _compose_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[Hur
         boxes = repo.get_base_hurtboxes()
     # Layer the move's per-frame vulnerability boxes (extended limb) on top.
     if frame_number > 0:
-        boxes = boxes + repo.get_vulnerability_boxes(state.name, frame_number)
+        boxes = boxes + repo.get_vulnerability_boxes(state.name, frame_number, variant)
     return [
         HurtboxFrame(
             offset_x=int(round(b.offset_x)),
@@ -235,26 +261,30 @@ def _compose_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[Hur
     ]
 
 
-def get_akuma_hitboxes(state: CharacterState, frame_number: int) -> List[HitboxFrame]:
+def get_akuma_hitboxes(state: CharacterState, frame_number: int,
+                       variant: Optional[str] = None) -> List[HitboxFrame]:
     """Active attack hitboxes for Akuma's state on a given 1-indexed frame."""
-    move = _repo().get_move_by_state(state.name)
+    move = _repo().get_move_by_state(state.name, variant)
     if not move:
         return []
     boxes = move.attack_boxes_for_frame(frame_number)
     return [_hitbox_from_box(b, move) for b in boxes]
 
 
-def get_akuma_hurtboxes(state: CharacterState, frame_number: int = 0) -> List[HurtboxFrame]:
+def get_akuma_hurtboxes(state: CharacterState, frame_number: int = 0,
+                        variant: Optional[str] = None) -> List[HurtboxFrame]:
     """Hurtboxes for Akuma's state: base stack + per-move vulnerability boxes for
     the given 1-indexed active frame (frame_number=0 -> base only)."""
-    return _compose_hurtboxes(state, frame_number)
+    return _compose_hurtboxes(state, frame_number, variant)
 
 
-def get_move_frame_data(state: CharacterState) -> MoveFrameData | None:
-    """Complete frame data for a move, or None if the state is unmapped."""
+def get_move_frame_data(state: CharacterState,
+                        variant: Optional[str] = None) -> MoveFrameData | None:
+    """Complete frame data for a move (a strength variant where the family has
+    them), or None if the state is unmapped."""
     if state is None:
         return None
-    move = _repo().get_move_by_state(state.name)
+    move = _repo().get_move_by_state(state.name, variant)
     if not move:
         return None
     return _build_move_frame_data(move)

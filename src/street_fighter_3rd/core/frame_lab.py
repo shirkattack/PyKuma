@@ -179,6 +179,8 @@ class Expected:
     gap: int = 0                       # frames between active windows (s.HK: 7)
     hit_windows: int = 1               # number of distinct active windows (hits)
     active_frames: tuple = ()          # 1-indexed declared active frames
+    segment: bool = False              # ROM script is only part of the move:
+                                       # recovery/gap/total aren't script-measurable
 
 
 @dataclass
@@ -269,9 +271,9 @@ def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
     return mapping.get(state)
 
 
-def _expected_for(state: CharacterState) -> Optional[Expected]:
+def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optional[Expected]:
     """Declared values for a move. Timing = ROM-verified; combat = community."""
-    mfd = get_move_frame_data(state)
+    mfd = get_move_frame_data(state, variant)
     if mfd is None:
         return None
     dmg = hs = bs = 0
@@ -282,7 +284,13 @@ def _expected_for(state: CharacterState) -> Optional[Expected]:
     # ROM total is the ruler; a multi-hit move (s.HK) has a GAP between its
     # active windows, so total > startup + active + recovery.
     total = mfd.total or (mfd.startup + active + mfd.recovery)
-    windows = 1 + sum(1 for a, b in zip(mfd.active, mfd.active[1:]) if b > a + 1)
+    windows = (len(mfd.hit_windows) if mfd.hit_windows
+               else 1 + sum(1 for a, b in zip(mfd.active, mfd.active[1:]) if b > a + 1))
+    segment = getattr(mfd, "timing_scope", "full") == "segment"
+    if segment and getattr(mfd, "community_total", None):
+        # The ROM script is only the rise/spin; the move's length is the
+        # community total (recovery/gap are not measurable from the script).
+        total = int(mfd.community_total)
     return Expected(
         startup=mfd.startup, active=active, recovery=mfd.recovery,
         total=total,
@@ -291,6 +299,7 @@ def _expected_for(state: CharacterState) -> Optional[Expected]:
         gap=max(0, total - (mfd.startup + active + mfd.recovery)),
         hit_windows=windows,
         active_frames=tuple(mfd.active),
+        segment=segment,
     )
 
 
@@ -298,11 +307,11 @@ class MoveCapture:
     """Tracks one execution of one move for one player."""
 
     def __init__(self, player: int, state: CharacterState, start_frame: int,
-                 expected_anim: Optional[str] = None):
+                 expected_anim: Optional[str] = None, variant: Optional[str] = None):
         self.player = player
         self.state = state
         self.report = MoveReport(player=player, move=state.name, start_frame=start_frame)
-        self.report.expected = _expected_for(state)
+        self.report.expected = _expected_for(state, variant)
         self.report.expected_anim = expected_anim
         self.seen_active = False
         self.nonfrozen_index = 0  # position on the declared timeline
@@ -313,7 +322,8 @@ class MoveCapture:
 
     def sample(self, character, frame: int) -> Sample:
         frozen = character.hitfreeze_frames > 0
-        boxes = get_akuma_hitboxes(self.state, character.state_frame + 1)
+        boxes = get_akuma_hitboxes(self.state, character.state_frame + 1,
+                                   getattr(character, "move_variant", None))
         if boxes:
             phase = Phase.ACTIVE
             self.seen_active = True
@@ -430,7 +440,12 @@ class MoveCapture:
         if r.active != e.active:
             self._flag("active", r.active, e.active, rom, "verified")
         # A cancel legitimately truncates recovery/total — don't false-flag.
-        if not r.cancelled:
+        # A segment record (specials) can't declare recovery/gap: its ROM
+        # script stops at the rise/spin; only the community total is checked.
+        if not r.cancelled and e.segment:
+            if r.total != e.total:
+                self._flag("total", r.total, e.total, community, "community")
+        elif not r.cancelled:
             if r.gap != e.gap:
                 self._flag("gap", r.gap, e.gap, rom, "verified",
                            "boxes-off frames between the active windows of a "
@@ -639,7 +654,8 @@ class FrameLab:
                 if cap is not None:
                     self.last_reports[pid] = cap.close(frame, cancelled=True)
                 cap = MoveCapture(pid, char.state, frame,
-                                  expected_anim=_expected_anim_for(char, char.state))
+                                  expected_anim=_expected_anim_for(char, char.state),
+                                  variant=getattr(char, "move_variant", None))
                 self.captures[pid] = cap
             return cap.sample(char, frame)
 

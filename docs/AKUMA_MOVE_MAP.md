@@ -6,7 +6,8 @@ regenerate from the sources below.
 
 **Sources**
 - `framedata_meta.lua` — Grouflon/3rd_training_lua authoritative name table (meta)
-- Baston ESN3S (`ensabahnur.free.fr`, iChar=14) — active-box cross-match for standing normals
+- Baston ESN3S (`baston.esn3s.com`, iChar=14) — active-box cross-match for standing normals;
+  startup/active cross-match (frame-exact) for the specials, plus their combat tier
 - Box geometry/timing — vendored `data/sources/gouki_framedata.json`
 
 Coordinates are PyKuma offsets (origin at feet, +x = forward, -y = up): attack box shown as
@@ -23,6 +24,22 @@ Coordinates are PyKuma offsets (origin at feet, +x = forward, -y = up): attack b
 | MEDIUM_KICK | `1988` | st.MK | Baston | 4/5/23 | (36, -78, 24, 20) |
 | HEAVY_KICK | `1b08` | cl.HK | meta | 5/8/39 | (34, -118, 12, 46) |
 | CROUCH_HEAVY_KICK | `20d8` | cr.HK | meta | 7/5/41 | (22, -12, 68, 12) |
+| OVERHEAD | `98f8` | UOH | meta | 15/8/25 | (26, -46, 44, 18) |
+| GOSHORYUKEN:light | `84f8` | LP Goshoryuken | Baston (3/14 exact; 1 hit) | 3/14/35† | rises 56px, ROM movement |
+| GOSHORYUKEN:medium | `85c8` | MP Goshoryuken | Baston (2/7 exact; 2 hits) | 2/7/19† | rises 87px (script ends mid-rise) |
+| GOSHORYUKEN:heavy | `8658` | HP Goshoryuken | Baston (1/23 exact; 3 hits) | 1/23/24† | rises 124px (script ends mid-rise) |
+| TATSUMAKI:light | `86e8` | LK Tatsumaki | Baston (11/4 exact; 2 windows) | 11/4/24† | spin box −64..+76, 92px travel |
+| TATSUMAKI:medium | `87f8` | MK Tatsumaki | Baston (2/10 exact; 5 windows) | 2/10/30† | 130px travel |
+| TATSUMAKI:heavy | `8968` | HK Tatsumaki | Baston (2/18 exact; 9 windows) | 2/18/38† | 173px travel |
+| TATSUMAKI:air_light | `9618` | air LK Tatsumaki | Baston (5/3 exact) | 5/3/18† | descends |
+| TATSUMAKI:air_medium | `9738` | air MK Tatsumaki | Baston (5/6 exact) | 5/6/18† | descends |
+| TATSUMAKI:air_heavy | `9818` | air HK Tatsumaki | Baston (5/12 exact) | 5/12/26† | descends |
+
+† `timing_scope: segment` — the ROM script covers the rise/spin only (fall and landing
+are separate scripts the dump does not chain). The engine drives these moves from the
+script's per-frame `movement` table (physics resumes when it ends) and holds the DP for
+its landing recovery so the move lasts the Baston total (43/50/59). `hit_windows` come
+from the dump's `hit_frames` (the ROM's distinct hit registrations).
 
 ## All gouki ground/air/special pointers
 
@@ -58,19 +75,20 @@ Coordinates are PyKuma offsets (origin at feet, +x = forward, -y = up): attack b
 | `29c0` | Air MK |  | 5/6/21 | (68, -68, 16, 16) |
 | `2aa0` | Air Down MK |  | 8/12/20 | (42, -34, 12, 10) |
 | `2b30` | Air HK |  | 6/4/22 | (64, -56, 24, 16) |
-| `84f8` | — |  | 3/14/35 | (24, -74, 40, 32) |
-| `85c8` | — |  | 2/7/19 | (24, -74, 40, 32) |
-| `8658` | — |  | 1/23/24 | (22, -54, 38, 32) |
-| `86e8` | — |  | 11/4/24 | (54, -70, 22, 12) |
-| `87f8` | — |  | 2/10/30 | (24, -72, 26, 22) |
-| `8968` | — |  | 2/18/38 | (24, -72, 26, 22) |
-| `9618` | — |  | 5/3/18 | (54, -70, 22, 12) |
-| `9738` | — |  | 5/6/18 | (54, -70, 22, 12) |
-| `9818` | — |  | 5/9/26 | (54, -70, 22, 12) |
-| `98f8` | UOH |  | 15/8/25 | (26, -46, 44, 18) |
+| `84f8` | — | GOSHORYUKEN:light | 3/14/35 | (24, -74, 40, 32) |
+| `85c8` | — | GOSHORYUKEN:medium | 2/7/19 | (24, -74, 40, 32) |
+| `8658` | — | GOSHORYUKEN:heavy | 1/23/24 | (22, -54, 38, 32) |
+| `86e8` | — | TATSUMAKI:light | 11/4/24 | (54, -70, 22, 12) |
+| `87f8` | — | TATSUMAKI:medium | 2/10/30 | (24, -72, 26, 22) |
+| `8968` | — | TATSUMAKI:heavy | 2/18/38 | (24, -72, 26, 22) |
+| `9618` | — | TATSUMAKI:air_light | 5/3/18 | (54, -70, 22, 12) |
+| `9738` | — | TATSUMAKI:air_medium | 5/6/18 | (54, -70, 22, 12) |
+| `9818` | — | TATSUMAKI:air_heavy | 5/9/26 | (54, -70, 22, 12) |
+| `98f8` | UOH | OVERHEAD | 15/8/25 | (26, -46, 44, 18) |
 | `af08` | Demon flip |  | 40/15/71 | (57, -13, 19, 13) |
 | `b118` | Demon flip P cancel |  | 10/3/18 | (42, -47, 24, 17) |
 | `b218` | Demon flip K cancel |  | 9/11/20 | (36, -23, 14, 11) |
 
-> Pointers with no meta name and no PyKuma state are other moves (close variants, command
-> normals, specials) not yet individually identified; geometry/timing are ROM-accurate.
+> Pointers with no meta name and no PyKuma state are other moves (close/far variants, the
+> Forward MP command normal, neutral-jump normals, the air dive kick, Demon Flip followups)
+> not yet wired to a game state; geometry/timing are ROM-accurate.
