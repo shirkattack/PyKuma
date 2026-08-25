@@ -27,8 +27,9 @@ Process each ticket with `status: open`:
    - `provenance: community` (damage/hitstun/blockstun/advantage): the
      expected value is community data. The fix is usually in the declared
      data or in the engine code that ignores/derives it — read the ticket's
-     `note` field (e.g. blockstun is currently derived as
-     `max(4, hitstun // 2)` and never reads the declared value).
+     `note` field (e.g. blockstun is applied from the declared value —
+     back-solved from the community block advantage for grounded normals —
+     and `max(4, hitstun // 2)` is only the fallback for boxes with no data).
    - `provenance: engine-formula` (hitstop): expected comes from the design
      formula in `sf3_collision_adapter.py`. Deviation means the engine
      double-applied or skipped freeze; a "feels wrong" complaint with NO

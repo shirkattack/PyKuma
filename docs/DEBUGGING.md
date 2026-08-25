@@ -9,7 +9,7 @@ kind (wrong sprite, bad position, off frame timing).
 |-----|--------|
 | `F1` | Toggle the live debug overlay (per-player state panels + invariant status) |
 | `F10` | **Build an issue report** — bundle for handing to an assistant (see below) |
-| `F11` | **Save a clip** — the last ~4s of per-frame state as a timeline |
+| `F11` | **Save a clip** — the last ~10s (600 frames) of per-frame state as a timeline |
 | `F12` | Save a debug snapshot (PNG + JSON) to `debug_snapshots/` |
 | `ESC` | Pause / resume (freezes the whole sim, including the timer) |
 
@@ -84,7 +84,7 @@ a fix can target the right data without guessing. Example of what it captures:
 To review every animation's frames and catch mislabeled/missing art:
 
 ```
-SDL_VIDEODRIVER=dummy uv run python scripts/audit_animations.py
+SDL_VIDEODRIVER=dummy uv run python scripts/animation_contact_sheets.py
 ```
 
 Writes labeled filmstrips to `docs/animation_audit/` and a reference table to

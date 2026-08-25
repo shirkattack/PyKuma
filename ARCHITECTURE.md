@@ -73,8 +73,10 @@ keyboard_input, the `SF3AnimationController` stack, the
 alternate visual effects manager. They were kept only for reference and have since been removed; recover them
 from git history if ever needed. Don't reintroduce imports of them in `src/`.
 
-Characters `ken.py` / `shoto_base.py` remain in `src/` but are **experimental**:
-nothing constructs Ken yet; both players are Akuma (`core/game.py`).
+The experimental `ken.py` / `shoto_base.py` (never constructed by the game) and the
+parallel `graphics/sprite_manager.py` (`SF3SpriteManager`) stack were removed the
+same way; both players are Akuma (`core/game.py`). A second character starts from
+`characters/akuma.py`, not from git history.
 
 ## Frame data — canonical source & the no-made-up-data rule
 
@@ -93,8 +95,10 @@ tier so nothing fabricated can pass as real.
 - **Runtime:** `data/hitbox_repository.py:HitboxRepository` loads `hitboxes.yaml`; the
   collision adapter and the hitbox viewer (`core/hitbox_viewer.py`) read it.
 - **Provenance tiers** (each box/move is tagged): `verified` = box geometry + frame
-  timing from the ROM dump; `inferred` = the ROM-pointer→`CharacterState` *name*
-  assignment (geometry is ROM-verified, the name is a guess, see
+  timing from the ROM dump; `baston` = the pointer→name assignment proven by a
+  frame-exact cross-match against Baston ESN3S (authoritative); `inferred` = the
+  ROM-pointer→`CharacterState` *name* assignment guessed from timing/geometry
+  (geometry is ROM-verified, the name is a guess, see
   `data/characters/akuma/move_names.json`); `community` = damage / stun / frame
   advantage from Baston ESN3S tuning in `data/characters/akuma/sf3_authentic_frame_data.yaml`
   (NOT ROM-verified). Enforced by `tests/test_hitbox_provenance.py`.

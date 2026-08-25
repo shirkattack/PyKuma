@@ -137,6 +137,8 @@ BANNER = (
     "# name_status on each move:\n"
     "#   metadata : ROM-pointer -> move name taken verbatim from framedata_meta.lua "
     "(authoritative).\n"
+    "#   baston   : ROM-pointer -> move name by frame-exact cross-match against "
+    "Baston ESN3S (active-box geometry or startup/active; authoritative).\n"
     "#   inferred : ROM-pointer -> move name guessed from timing/geometry "
     "(geometry ROM-verified, NAME is a guess).\n"
     "#   (unnamed): geometry-only ROM animation, not yet mapped to a move.\n"

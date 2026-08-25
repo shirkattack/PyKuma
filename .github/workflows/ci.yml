@@ -20,5 +20,8 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Byte-compile scripts and tools (catches dead imports/syntax rot)
+        run: uv run python -m compileall -q src scripts tools tests
+
       - name: Run tests
         run: uv run pytest -q

@@ -15,10 +15,10 @@
   (a box with no source cannot load). No invented geometry.
 - The conversion math is **cross-validated against a second independent source**
   (Baston / ensabahnur): the **pushbox matches to the pixel**.
-- Two real issues remain (details below): **(A)** the live collision `get_rect` uses a
-  convention inconsistent with the data (wrong for left-facing + centered boxes);
-  **(B)** several move *names* are inferred guesses — geometry is ROM-accurate, the
-  pointer→name assignment is not.
+- **(A)** the live collision `get_rect` convention mismatch is **resolved** (§6,
+  `tests/test_hitbox_geometry.py`). **(B)** a few move *names* are still inferred
+  guesses (cr.MP / cr.HP) — geometry is ROM-accurate, the pointer→name assignment
+  is not; the rest are metadata- or Baston-verified (`docs/AKUMA_MOVE_MAP.md`).
 
 ---
 

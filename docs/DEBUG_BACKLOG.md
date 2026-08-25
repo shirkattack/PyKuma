@@ -1,7 +1,6 @@
 # Debug Backlog
 
-Reported issues, their status, and which phase they belong to. See
-`docs/phases/PHASE_A_INTEGRATION_ROADMAP.md` for the phase definitions.
+Reported issues and their status. See `docs/ROADMAP.md` for what's next.
 
 ## Fixed
 
@@ -18,8 +17,9 @@ Reported issues, their status, and which phase they belong to. See
   consolidation** (the hit-reaction prerequisite).
 - **Menu grey-out mechanism** — `MenuItem(available=…)`; locked items are skipped in
   navigation, no-op on select, and rendered greyed with a `(soon)` suffix
-  (`core/main_menu.py`). Currently locked: **VERSUS** and **DEMO** modes (no CPU AI /
-  no distinct flow yet). Flip `available=True` as each ships.
+  (`core/main_menu.py`). Currently locked: **SHIN AKUMA** on the opponent-select
+  screen. (VERSUS/DEMO were later dropped from the menu entirely; `GameMode`
+  still has them for a future character-select flow.)
 - **Menu didn't launch START/TRAINING/DEV ("nothing happens")** — root cause: the
   menu-flow `run_game_loop(...)` call (`main_with_menu.py:243`) was missing the `clock`
   arg after `window` was added, so every menu selection raised a `TypeError` that

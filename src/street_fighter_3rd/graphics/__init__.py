@@ -1,15 +1,8 @@
+"""Graphics helpers.
+
+The live sprite path is ``systems.animation`` (SpriteManager / AnimationController);
+this package holds per-player palette swaps (``palette.py``). The old parallel
+``SF3SpriteManager`` stack was removed (git history has it).
 """
-SF3:3S Graphics Package
 
-This package provides sprite management and visual rendering
-for the SF3 fighting game engine.
-"""
-
-from .sprite_manager import SF3SpriteManager, SpriteAnimation, SpriteFrame, SpriteCache
-
-__all__ = [
-    "SF3SpriteManager",
-    "SpriteAnimation",
-    "SpriteFrame",
-    "SpriteCache",
-]
+__all__ = []
