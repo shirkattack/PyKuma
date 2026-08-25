@@ -8,6 +8,7 @@ from street_fighter_3rd.characters.character import apply_reaction
 from street_fighter_3rd.systems.sf3_collision_adapter import SF3CollisionAdapter
 from street_fighter_3rd.data.constants import STAGE_FLOOR
 from street_fighter_3rd.data.enums import CharacterState, HitEffect
+from tests.asset_guard import require_assets, ANIMATIONS
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -101,6 +102,7 @@ def test_take_damage_respects_hit_effect():
     assert a.health == a.max_health - 10
 
 
+@require_assets(ANIMATIONS)
 def test_reaction_animations_resolve():
     a = Akuma(200, STAGE_FLOOR, 1)
     for state in (CharacterState.HITSTUN_STANDING, CharacterState.HITSTUN_CROUCHING,

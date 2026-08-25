@@ -13,6 +13,7 @@ import pytest
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.data.constants import STAGE_FLOOR
 from street_fighter_3rd.graphics.palette import akuma_p2, recolor_surface
+from tests.asset_guard import require_assets, STANCE as STANCE_DIR
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -24,7 +25,7 @@ def pygame_headless():
     pygame.quit()
 
 
-STANCE = "assets/characters/akuma/animations/akuma-stance"
+STANCE = STANCE_DIR
 
 
 def test_rule_recolors_gi_but_not_skin_hair_or_outline():
@@ -36,6 +37,7 @@ def test_rule_recolors_gi_but_not_skin_hair_or_outline():
     assert akuma_p2((0, 0, 0, 0)) == (0, 0, 0, 0)                # transparent
 
 
+@require_assets(STANCE)
 def test_recolor_surface_keeps_alpha_and_untouched_pixels():
     p1 = Akuma(200, STAGE_FLOOR, 1)
     src = p1.sprite_manager.load_sprite_from_folder(STANCE, 0)
@@ -54,6 +56,7 @@ def test_recolor_surface_keeps_alpha_and_untouched_pixels():
     assert changed > 500, f"only {changed} gi pixels recoloured"
 
 
+@require_assets(STANCE)
 def test_p2_sprites_differ_from_p1_and_caches_do_not_leak():
     p1 = Akuma(200, STAGE_FLOOR, 1)
     p2 = Akuma(300, STAGE_FLOOR, 2)

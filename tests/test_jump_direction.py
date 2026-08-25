@@ -19,6 +19,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools.diagnostics.harness import new_game
 from tools.diagnostics.scenario import ScriptedInputSystem, hold
 from street_fighter_3rd.data.enums import InputDirection, FacingDirection, CharacterState
+from tests.asset_guard import require_assets, ANIMATIONS
+
+pytestmark = require_assets(ANIMATIONS)
 
 
 @pytest.fixture(scope="module", autouse=True)

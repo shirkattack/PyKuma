@@ -10,6 +10,8 @@ import sys
 import pygame
 import pytest
 
+from tests.asset_guard import require_assets, INPUT_ICONS
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from street_fighter_3rd.core.game import Game
 
@@ -23,6 +25,7 @@ def pygame_headless():
     pygame.quit()
 
 
+@require_assets(INPUT_ICONS)
 def test_all_input_icons_load():
     icons = Game._load_input_icons()
     assert len(icons["dir"]) == 9, "all nine numpad direction arrows must load"

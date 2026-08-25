@@ -3,6 +3,8 @@
 import pygame
 import pytest
 
+from tests.asset_guard import require_assets, HITSPARKS
+
 from street_fighter_3rd.systems.vfx import VFXManager, HitSparkType, SPARK_TABLE
 from street_fighter_3rd.systems.sf3_collision_adapter import (
     _spark_for_state, HITSTOP_BASE, HITSTOP_PER, HITSTOP_MAX,
@@ -22,6 +24,7 @@ def _hitstop(damage):
     return min(HITSTOP_MAX, HITSTOP_BASE + damage // HITSTOP_PER)
 
 
+@require_assets(HITSPARKS)
 def test_block_and_parry_sparks_load_from_cache():
     m = VFXManager()
     for spark_type in (HitSparkType.BLOCK, HitSparkType.PARRY, HitSparkType.HEAVY):
@@ -38,6 +41,7 @@ def test_spark_by_strength():
     assert _spark_for_state(None) == HitSparkType.LIGHT  # unknown -> light
 
 
+@require_assets(HITSPARKS)
 def test_light_and_heavy_spawn_different_effects():
     m = VFXManager()
     m.spawn_hit_spark(0, 0, HitSparkType.LIGHT)
