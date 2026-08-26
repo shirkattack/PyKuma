@@ -125,6 +125,22 @@ class MoveRecord(BaseModel):
     # rise/spin part (fall + landing are separate scripts the dump does not
     # chain) -- timing.total/recovery are NOT the move's duration.
     timing_scope: str = "full"
+    # ROM-exact combat tier captured live from the game (ingest.py combat):
+    # {"status": "verified", "damage_total", "hits": [{"window", "damage",
+    # "stun", "hitstop", "hitstun", "blockstun", "chip", ...}]}. When present
+    # it outranks `combat` (community) for damage/hitstun/blockstun.
+    rom_combat: Optional[Dict] = None
+
+    def rom_hit(self, window_index: int) -> Optional[Dict]:
+        """Captured values for a hit window (falls back to the last captured
+        window for a multi-hit move the capture didn't fully cover)."""
+        if not self.rom_combat or not self.rom_combat.get("hits"):
+            return None
+        hits = self.rom_combat["hits"]
+        for h in hits:
+            if h.get("window") == window_index:
+                return h
+        return hits[-1]
 
     def movement_for_frame(self, frame_1indexed: int):
         """(dx, dy) for a script frame, or None past the end of the table."""
@@ -215,6 +231,19 @@ class HitboxRepository:
             self._moves[rom_id] = MoveRecord(**rec)
 
     # -- queries -----------------------------------------------------------
+
+    def vitality(self) -> Optional[int]:
+        """Life-bar scale of the ROM combat capture (0xA0 = 160), or None when
+        the repository carries only the community tier (1050 scale)."""
+        rc = (self._meta or {}).get("rom_combat") or {}
+        v = rc.get("vitality")
+        return int(v) if v else None
+
+    def community_scale(self) -> float:
+        """Factor that maps community-tier (1050-scale) damage onto the scale the
+        engine runs at: 1.0 without a capture, vitality/1050 with one."""
+        v = self.vitality()
+        return (v / 1050.0) if v else 1.0
 
     def get_move_by_state(self, state_name: str,
                           variant: Optional[str] = None) -> Optional[MoveRecord]:

@@ -341,6 +341,141 @@ def validate_vhb(reconstructed: Dict[str, dict], move_names_path: str,
     return report
 
 
+# ---- combat: ROM-exact damage / stun / hitstop / hitstun -------------------
+
+PARRY_MARKER = 0xFFF1          # received_connection_marker value for a parry
+CONNECT_SETTLE_FRAMES = 12     # window after a connect in which life/stun settle
+MAX_STUN_FRAMES = 240          # safety cap when the defender never goes idle
+
+
+def _idle(c: dict, prev: dict) -> bool:
+    """3rd_training_lua's is_idle, restricted to what the dump carries: not
+    frozen, not busy, recovery not counting down, not in blockstun, can act."""
+    return (c["freeze"] == 0 and (c["busy"] & 0xFF) == 0
+            and c["recovery"] == prev["recovery"]
+            and not (0 < c["blocking_id"] < 5)
+            and c["input_cap"] > 0)
+
+
+def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2") -> dict:
+    """Per attacking animation id: the connects it produced and what the ROM
+    applied for each -- keyed the same way `reconstruct` keys boxes, so the
+    converter can attach them to hitboxes.yaml records.
+
+    A connect is detected on the DEFENDER exactly like 3rd_training_lua:
+      hit    = total_received_hit_count increased
+      block  = received_connection_marker went 0 -> non-0xFFF1 with no hit
+      parry  = marker went 0 -> 0xFFF1
+    For each: damage = life drop within the settle window (chip on block),
+    stun = stun_bar rise, hitstop = the defender's freeze at the connect,
+    stun_frames = frames from the connect until the defender is idle again,
+    minus the hitstop (i.e. hitstun on hit, blockstun on block).
+    """
+    out: Dict[str, dict] = {}
+    meta = {"vitality_max": 0, "vitality_internal_max": 0, "att_bonus": None, "def_bonus": None,
+            "stun_max": None, "connects": 0, "hits": 0, "blocks": 0, "parries": 0}
+    n = len(records)
+    for i in range(1, n):
+        a, d = records[i].get(attacker), records[i].get(defender)
+        pa, pd = records[i - 1].get(attacker), records[i - 1].get(defender)
+        if not (a and d and pa and pd):
+            continue
+        meta["vitality_max"] = max(meta["vitality_max"], d["life"], a["life"])
+        meta["vitality_internal_max"] = max(meta["vitality_internal_max"], d.get("vitality", 0), a.get("vitality", 0))
+        meta["att_bonus"] = a["att_bonus"]; meta["def_bonus"] = d["def_bonus"]; meta["stun_max"] = d["stun_max"]
+        hit = d["hits_received"] > pd["hits_received"]
+        marker_rise = pd["conn_marker"] == 0 and d["conn_marker"] != 0
+        parry = marker_rise and d["conn_marker"] == PARRY_MARKER and not hit
+        block = marker_rise and not parry and not hit
+        if not (hit or block or parry):
+            continue
+        kind = "hit" if hit else ("block" if block else "parry")
+        meta["connects"] += 1; meta[kind + "s" if kind != "parry" else "parries"] += 1
+        # attacker's move + ROM frame (1-indexed) at the connect
+        anim, frame = a["anim"], int(a["anim_frame"]) + 1
+        # settle window: damage/stun applied over the next few frames
+        life_before, stun_before = pd["life"], pd["stun_bar"]
+        life_after, stun_after = life_before, stun_before
+        for j in range(i, min(n, i + CONNECT_SETTLE_FRAMES)):
+            dj = records[j].get(defender)
+            if dj:
+                life_after = min(life_after, dj["life"]); stun_after = max(stun_after, dj["stun_bar"])
+        damage = life_before - life_after
+        stun = stun_after - stun_before
+        hitstop = max((records[j][defender]["freeze"] for j in range(i, min(n, i + 3)) if records[j].get(defender)), default=0)
+        # stun duration: connect -> defender idle again, minus hitstop
+        stun_frames = None
+        for j in range(i + 1, min(n, i + MAX_STUN_FRAMES)):
+            dj, pj = records[j].get(defender), records[j - 1].get(defender)
+            if dj and pj and _idle(dj, pj):
+                stun_frames = (j - i) - hitstop
+                break
+        sample = {"f": records[i]["f"], "frame": frame, "damage": damage, "stun": stun,
+                  "hitstop": hitstop, "stun_frames": stun_frames, "dmg_next": d["dmg_next"],
+                  "dm_vital": max((records[j][defender].get("dm_vital", 0) for j in range(i, min(n, i + 3))
+                                   if records[j].get(defender)), default=0),
+                  "stun_next": d["stun_next"], "posture": d["posture"]}
+        out.setdefault(anim, {"hits": [], "blocks": [], "parries": []})[kind + "s" if kind != "parry" else "parries"].append(sample)
+    return {"_meta": meta, "moves": out}
+
+
+def _median(xs):
+    xs = sorted(x for x in xs if x is not None)
+    return xs[len(xs) // 2] if xs else None
+
+
+def summarize_combat(derived: dict) -> dict:
+    """Collapse samples into one value per (move, hit frame): median damage /
+    stun / hitstop / hitstun (from hits) and blockstun / chip (from blocks)."""
+    moves = {}
+    for anim, rec in derived["moves"].items():
+        by_frame: Dict[int, dict] = {}
+        for s in rec["hits"]:
+            e = by_frame.setdefault(s["frame"], {"frame": s["frame"], "hits": [], "blocks": []})
+            e["hits"].append(s)
+        for s in rec["blocks"]:
+            e = by_frame.setdefault(s["frame"], {"frame": s["frame"], "hits": [], "blocks": []})
+            e["blocks"].append(s)
+        summary = []
+        for frame in sorted(by_frame):
+            e = by_frame[frame]
+            summary.append({
+                "frame": frame,
+                "damage": _median([s["damage"] for s in e["hits"]]),
+                "stun": _median([s["stun"] for s in e["hits"]]),
+                "hitstop": _median([s["hitstop"] for s in e["hits"] + e["blocks"]]),
+                "hitstun": _median([s["stun_frames"] for s in e["hits"]]),
+                "blockstun": _median([s["stun_frames"] for s in e["blocks"]]),
+                "chip": _median([s["damage"] for s in e["blocks"]]),
+                "samples": {"hits": len(e["hits"]), "blocks": len(e["blocks"])},
+            })
+        moves[anim] = {"windows": summary, "parries": len(rec["parries"])}
+    return {"_meta": derived["_meta"], "moves": moves}
+
+
+def _combat_selftest() -> None:
+    """Synthetic: a 3-frame connect on anim 1438 -- hit on frame 2, defender
+    frozen 6 frames then in stun for 8 more, then idle."""
+    def c(life=160, hits=0, marker=0, freeze=0, recovery=0, busy=0, blocking=0, stun_bar=0, anim="1438", af=0):
+        return {"anim": anim, "anim_frame": af, "posture": 0, "pos_x": 0, "life": life, "dmg_next": 0,
+                "stun_next": 0, "freeze": freeze, "recovery": recovery, "busy": busy, "blocking_id": blocking,
+                "hits_received": hits, "conn_marker": marker, "input_cap": 1, "att_bonus": 8, "stun_bonus": 8,
+                "def_bonus": 8, "stun_max": 64, "stun_timer": 0, "stun_bar": stun_bar}
+    recs = [{"f": 1, "c1": c(af=3), "c2": c()}, {"f": 2, "c1": c(af=4, freeze=6), "c2": c(hits=1, freeze=6)}]
+    for k in range(3, 9):   # frozen
+        recs.append({"f": k, "c1": c(af=4, freeze=8 - k), "c2": c(hits=1, life=150, stun_bar=3, freeze=8 - k, recovery=20, busy=1)})
+    for k in range(9, 17):  # hitstun counting down
+        recs.append({"f": k, "c1": c(af=k), "c2": c(hits=1, life=150, stun_bar=3, recovery=20 - (k - 8), busy=1)})
+    recs.append({"f": 17, "c1": c(af=17), "c2": c(hits=1, life=150, stun_bar=3, recovery=12)})
+    recs.append({"f": 18, "c1": c(af=18), "c2": c(hits=1, life=150, stun_bar=3, recovery=12)})
+    d = summarize_combat(derive_combat(recs))
+    w = d["moves"]["1438"]["windows"][0]
+    assert w["frame"] == 5 and w["damage"] == 10 and w["stun"] == 3 and w["hitstop"] == 6, w
+    assert w["hitstun"] == 17 - 2 - 6, w   # idle first seen at f17: 15 frames after connect, minus 6 hitstop
+    assert d["_meta"]["vitality_max"] == 160 and d["_meta"]["hits"] == 1
+    print("combat selftest OK:", json.dumps(w))
+
+
 # ---- CLI --------------------------------------------------------------------
 
 def _selftest() -> None:
@@ -393,10 +528,24 @@ def main(argv=None):
     pv.add_argument("--names", default="data/characters/akuma/move_names.json")
     pv.add_argument("--vhb", default="data/characters/akuma/vhb_supplement.json")
 
+    pc = sub.add_parser("combat", help="JSONL dump -> rom_combat.json (ROM-exact damage/stun/hitstop/hitstun)")
+    pc.add_argument("dump"); pc.add_argument("--out", default="data/characters/akuma/rom_combat.json")
+    pc.add_argument("--raw", default=None, help="also write every connect sample to this path")
     sub.add_parser("selftest", help="run the built-in self-test (no emulator)")
 
     args = p.parse_args(argv)
+    if args.cmd == "combat":
+        derived = derive_combat(load_jsonl(args.dump))
+        summary = summarize_combat(derived)
+        Path(args.out).write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
+        if args.raw:
+            Path(args.raw).write_text(json.dumps(derived, indent=1, sort_keys=True) + "\n")
+        m = summary["_meta"]
+        print(f"wrote {args.out}: {len(summary['moves'])} moves, {m['hits']} hits / {m['blocks']} blocks / "
+              f"{m['parries']} parries; vitality max {m['vitality_max']}, att/def bonus {m['att_bonus']}/{m['def_bonus']}")
+        return
     if args.cmd == "selftest" or args.cmd is None:
+        _combat_selftest()
         _selftest(); return
     if args.cmd == "reconstruct":
         mv = reconstruct_moves(load_jsonl(args.dump))

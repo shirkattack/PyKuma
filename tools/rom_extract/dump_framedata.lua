@@ -5,6 +5,9 @@
   (fba-rr / FBNeo Lua). It records, for Player 1, every frame: world position,
   facing, posture, the current animation id + frame, and ALL box types
   (push / throwable / vulnerability / ext. vulnerability / attack / throw),
+  plus a combat snapshot of BOTH players ("c1"/"c2": life, applied damage
+  and stun, hitstop, recovery, blocking, attack/defense multipliers) so
+  `ingest.py combat` can derive ROM-exact damage / stun / hitstop / hitstun,
   read with the exact addresses + struct the training tool uses.
 
   Output: a JSON-Lines file (one JSON object per emulated frame) at OUT_PATH.
@@ -31,6 +34,33 @@
 local OUT_PATH = "pykuma_dump.jsonl"   -- written in the script's own folder
 local REC_KEY  = "R"                    -- optional: press to PAUSE/resume recording
 local PLAYER_BASE = 0x02068C6C          -- P1 base (P2 is 0x02069104)
+local P2_BASE     = 0x02069104
+
+-- Combat capture (ROM-exact damage / stun / hitstop / hitstun). Every address
+-- below is one 3rd_training_lua reads (src/gamestate.lua); the decomp
+-- (crowded-street/3s-decomp, HITCHECK.c / Pow_Pow.c / VITAL.c) confirms the
+-- semantics: dm_vital is the APPLIED damage after att_plus/def_plus, the life
+-- bar is 0xA0 = 160 for everyone, hitstop is the freeze counter.
+local COMBAT = {
+  -- per-player WORK offsets
+  vitality      = 0x9C,   -- word: internal vitality (the 0xA0 bar at +0x9E is derived from it)
+  life          = 0x9F,   -- byte: remaining life bar (max 0xA0 = 160 px)
+  dm_vital      = 0xA2,   -- word: dm_vital -- applied damage on the internal vitality scale
+  dmg_next      = 0xA3,   -- byte: dm_vital -- damage this player is about to take
+  stun_next     = 0x333,  -- byte: dm_piyo -- stun this player is about to take
+  freeze        = 0x45,   -- byte: remaining freeze (hitstop) frames (>=127 => 256-v)
+  recovery      = 0x187,  -- byte: recovery_time (counts down through stun)
+  busy          = 0x3D1,  -- word: busy_flag (low byte != 0 while not idle)
+  blocking_id   = 0x3D3,  -- byte: 1..4 while in blockstun
+  hits_received = 0x33E,  -- word: total_received_hit_count (increments on HIT only)
+  conn_marker   = 0x32E,  -- word: received_connection_marker (block/parry; 0xFFF1 = parry)
+  input_cap     = 0x46C,  -- word: input_capacity (>0 when the player can act)
+  att_bonus     = 0x43A,  -- word: att_plus (attack multiplier /8)
+  stun_bonus    = 0x43E,  -- word
+  def_bonus     = 0x440,  -- word: def_plus (defense multiplier /8)
+}
+-- stun gauge (global, per side): max / timer / bar (bar is the high byte of a dword)
+local STUN_ADDR = { [1] = 0x020695F7, [2] = 0x0206960B }
 
 -- Box arrays: a POINTER lives at (base+offset); each box is 8 bytes.
 -- (number = max boxes of that type; inactive slots are filtered out below.)
@@ -96,6 +126,43 @@ local function read_boxes(base)
   return out
 end
 
+local function unwrap_freeze(v)
+  if v >= 127 then return 256 - v end   -- 3rd_training_lua: negative = "frozen by own hit"
+  return v
+end
+
+-- One player's combat snapshot (+ its animation, so the defender's reaction
+-- and the attacker's move can both be keyed by ROM animation id).
+local function combat_json(base, side)
+  local stun_base = STUN_ADDR[side]
+  local bar = 0
+  if bit and bit.rshift then bar = bit.rshift(rddword(stun_base + 0x6), 24)
+  else bar = math.floor(rddword(stun_base + 0x6) / 16777216) end
+  return "{" ..
+    '"anim":' .. jstr(string.format("%04x", rdword(base + 0x202))) .. "," ..
+    '"anim_frame":' .. jnum(rdword(base + 0x21A)) .. "," ..
+    '"posture":' .. jnum(rdbyte(base + 0x20E)) .. "," ..
+    '"pos_x":' .. jnum(rdwords(base + 0x64)) .. "," ..
+    '"vitality":' .. jnum(rdwords(base + COMBAT.vitality)) .. "," ..
+    '"life":' .. jnum(rdbyte(base + COMBAT.life)) .. "," ..
+    '"dm_vital":' .. jnum(rdwords(base + COMBAT.dm_vital)) .. "," ..
+    '"dmg_next":' .. jnum(rdbyte(base + COMBAT.dmg_next)) .. "," ..
+    '"stun_next":' .. jnum(rdbyte(base + COMBAT.stun_next)) .. "," ..
+    '"freeze":' .. jnum(unwrap_freeze(rdbyte(base + COMBAT.freeze))) .. "," ..
+    '"recovery":' .. jnum(rdbyte(base + COMBAT.recovery)) .. "," ..
+    '"busy":' .. jnum(rdword(base + COMBAT.busy)) .. "," ..
+    '"blocking_id":' .. jnum(rdbyte(base + COMBAT.blocking_id)) .. "," ..
+    '"hits_received":' .. jnum(rdword(base + COMBAT.hits_received)) .. "," ..
+    '"conn_marker":' .. jnum(rdword(base + COMBAT.conn_marker)) .. "," ..
+    '"input_cap":' .. jnum(rdword(base + COMBAT.input_cap)) .. "," ..
+    '"att_bonus":' .. jnum(rdword(base + COMBAT.att_bonus)) .. "," ..
+    '"stun_bonus":' .. jnum(rdword(base + COMBAT.stun_bonus)) .. "," ..
+    '"def_bonus":' .. jnum(rdword(base + COMBAT.def_bonus)) .. "," ..
+    '"stun_max":' .. jnum(rdbyte(stun_base)) .. "," ..
+    '"stun_timer":' .. jnum(rdbyte(stun_base + 0x2)) .. "," ..
+    '"stun_bar":' .. jnum(bar) .. "}"
+end
+
 local function frame_record(frame_num, base)
   local boxes = read_boxes(base)
   local parts = {}
@@ -108,7 +175,9 @@ local function frame_record(frame_num, base)
     '"posture":' .. jnum(rdbyte(base + 0x20E)) .. "," ..
     '"anim":' .. jstr(string.format("%04x", rdword(base + 0x202))) .. "," ..
     '"anim_frame":' .. jnum(rdword(base + 0x21A)) .. "," ..
-    '"boxes":[' .. table.concat(parts, ",") .. "]}"
+    '"boxes":[' .. table.concat(parts, ",") .. "]," ..
+    '"c1":' .. combat_json(base, 1) .. "," ..
+    '"c2":' .. combat_json(P2_BASE, 2) .. "}"
 end
 
 -- ---- recording loop ---------------------------------------------------------
