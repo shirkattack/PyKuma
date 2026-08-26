@@ -33,7 +33,7 @@ def pygame_headless():
 def _run(script, p2_dist=60, frames=130, p2_script=None):
     g = new_game()
     p1, p2 = g.player1, g.player2
-    p1.x, p2.x = 300, 300 + p2_dist
+    p1.x, p2.x = 620, 620 + p2_dist
     p1._prev_x, p2._prev_x = p1.x, p2.x
     g.input_system = ScriptedInputSystem(script, p2_script or [])
     p1.input, p2.input = g.input_system.player1, g.input_system.player2
@@ -78,7 +78,7 @@ def test_uoh_does_damage_and_does_not_lock_the_defender():
 
 
 def test_zero_hitstun_hit_still_recovers_quickly():
-    a, b = Akuma(200, STAGE_FLOOR, 1), Akuma(300, STAGE_FLOOR, 2)
+    a, b = Akuma(520, STAGE_FLOOR, 1), Akuma(620, STAGE_FLOOR, 2)
     apply_reaction(b, HitEffect.NORMAL, 0)
     n = 0
     while b.state == CharacterState.HITSTUN_STANDING and n < 100:

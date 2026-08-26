@@ -11,6 +11,14 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **New custom HUD + stage.** The owner's HUD art (`assets/ui/hud/`) is wired
+  in: health-bar frames with portrait sockets and inner fill (depleting toward
+  centre), AKUMA nameplates, super-art meters with a MAX flash and I/II/III
+  level numeral, and a big yellow bitmap-digit timer under a TIME label. The
+  classic rectangle HUD stays as the fallback when the art is absent. The
+  izakaya street background ships as `assets/backgrounds/izakaya-stage.png`
+  (the default stage). Characters gained a `super_art` (1/2/3) field for the
+  meter numeral.
 - **Arcade ROM tables read directly** (`tools/rom_extract/cps3_chardata.py`):
   decrypts the sfiii3nr1 program SIMMs in memory (CPS3 cipher + table
   locations from crowded-street/3sx) and vendors Akuma's `atta` attack boxes

@@ -10,7 +10,7 @@ import pytest
 from street_fighter_3rd.core.game import Game
 from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
 from street_fighter_3rd.data.constants import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, CAMERA_MAX_ZOOM, CAMERA_MIN_ZOOM)
+    SCREEN_WIDTH, SCREEN_HEIGHT, CAMERA_MAX_ZOOM, WORLD_WIDTH)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -42,11 +42,13 @@ def test_camera_zoom_stays_within_bounds():
         g.player1.x, g.player2.x = 300, p2
         _, _, cw, ch = g._compute_camera()
         zoom = SCREEN_WIDTH / cw
-        assert CAMERA_MIN_ZOOM - 0.01 <= zoom <= CAMERA_MAX_ZOOM + 0.01
-        # crop must stay inside the world buffer
+        # zoom floor is set by the world width (fully zoomed out shows the world)
+        assert SCREEN_WIDTH / WORLD_WIDTH - 0.01 <= zoom <= CAMERA_MAX_ZOOM + 0.01
+        # crop must stay inside the WORLD buffer (wider than the screen)
+        from street_fighter_3rd.data.constants import WORLD_HEIGHT
         cx, cy, cw, ch = g._compute_camera()
         assert cx >= 0 and cy >= 0
-        assert cx + cw <= SCREEN_WIDTH + 0.5 and cy + ch <= SCREEN_HEIGHT + 0.5
+        assert cx + cw <= WORLD_WIDTH + 0.5 and cy + ch <= WORLD_HEIGHT + 0.5
 
 
 def test_world_to_screen_uses_current_camera():

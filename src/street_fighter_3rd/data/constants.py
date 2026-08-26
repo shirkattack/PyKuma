@@ -1,8 +1,17 @@
 """Game constants and configuration values."""
 
 # Display settings
-SCREEN_WIDTH = 896  # Match stage background width
-SCREEN_HEIGHT = 512  # Match stage background height
+SCREEN_WIDTH = 896   # output/display width
+SCREEN_HEIGHT = 512  # output/display height
+
+# The WORLD is the full stage the camera pans across -- WIDER than the screen so
+# the background SCROLLS as the fighters move (SF3-style). The camera crops a
+# screen-shaped, zoomed window of the world and follows the fighters. Height ==
+# screen height, so the vertical coordinate system (STAGE_FLOOR, hitboxes) is
+# unchanged; only horizontal scrolling is added. Author stage backgrounds at
+# WORLD_WIDTH x WORLD_HEIGHT (or a 2x multiple for crisp downscaling).
+WORLD_WIDTH = 1536   # 400px of scenery beyond each wall for scroll headroom
+WORLD_HEIGHT = 512
 FPS = 60  # Fighting games run at 60 FPS (non-negotiable)
 WINDOW_TITLE = "Street Fighter Third Strike - Python Edition"
 
@@ -16,13 +25,19 @@ SPRITE_SCALE = 1.0
 # Dynamic view camera: zooms in when fighters are close and out when they
 # separate (à la SF3), scaling the native world buffer to the screen.
 CAMERA_MAX_ZOOM = 2.2     # most zoomed-in (fighters close)
-CAMERA_MIN_ZOOM = 1.0     # most zoomed-out (whole field; fighters far apart)
-CAMERA_H_MARGIN = 140     # world px of breathing room kept beyond each fighter
-CAMERA_GROUND_Y = 430     # world-buffer ground line, kept low in the frame
+CAMERA_MIN_ZOOM = 1.5     # most zoomed-out floor -- keep fighters large even far apart
+CAMERA_H_MARGIN = 110     # world px of breathing room kept beyond each fighter
+CAMERA_GROUND_Y = 430     # feet line in world coords (STAGE_FLOOR 344 + Akuma feet_offset 86); camera anchors here
+# Vertical framing: the fighters' feet (STAGE_FLOOR) sit this fraction down the
+# camera crop. High -> feet low in frame, background fills above, and the crop
+# discards the world's bottom edge (crops the stage floor).
+CAMERA_FEET_FRAC = 0.82
 
 # Stage boundaries
-STAGE_LEFT_BOUND = 80
-STAGE_RIGHT_BOUND = SCREEN_WIDTH - 80
+# Walkable playfield, inset from the world edges (same 736px width as before,
+# now centered in the wider world with scroll margin on each side).
+STAGE_LEFT_BOUND = 400
+STAGE_RIGHT_BOUND = WORLD_WIDTH - 400   # = 1136; walkable width 736, as before
 STAGE_FLOOR = 344  # Character Y position (sprite.bottom = 344 + 136 = 480, leaving 32px from screen bottom)
 
 # Physics — ROM-derived (see data/characters/akuma/physics.yaml; captured from

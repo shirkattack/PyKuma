@@ -47,6 +47,16 @@ debug_output/
 # note live in the repo (a bare `assets/` would make the README un-trackable).
 assets/*
 !assets/README.md
+# Owner-created ORIGINAL art (NOT Capcom ROM rips) IS tracked: the custom HUD
+# (assets/ui/hud) and the izakaya stage. Everything else under assets/ (sprites,
+# other stages, the vendored input icons) stays ignored.
+!assets/ui/
+assets/ui/*
+!assets/ui/hud/
+!assets/ui/hud/**
+!assets/backgrounds/
+assets/backgrounds/*
+!assets/backgrounds/izakaya-stage.png
 # Legacy extraction output dirs (kept ignored in case the tools regenerate them)
 tools/sprite_extraction/akuma_gifs/
 tools/sprite_extraction/character_portraits/

@@ -35,7 +35,7 @@ def pygame_headless():
 def _run(script, dist, p2_script=None, frames=90):
     g = new_game()
     p1, p2 = g.player1, g.player2
-    p1.x, p2.x = 300, 300 + dist
+    p1.x, p2.x = 620, 620 + dist
     p1._prev_x, p2._prev_x = p1.x, p2.x
     g.input_system = ScriptedInputSystem(script, p2_script or [])
     p1.input, p2.input = g.input_system.player1, g.input_system.player2

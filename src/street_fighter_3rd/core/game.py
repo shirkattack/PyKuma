@@ -28,6 +28,9 @@ from street_fighter_3rd.data.constants import (
     CAMERA_MIN_ZOOM,
     CAMERA_H_MARGIN,
     CAMERA_GROUND_Y,
+    CAMERA_FEET_FRAC,
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
 )
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.systems.input_system import InputSystem
@@ -36,9 +39,9 @@ from street_fighter_3rd.systems.vfx import VFXManager
 from street_fighter_3rd.core.round_manager import RoundManager
 from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
 
-# Round-start positions
-P1_START_X = 200
-P2_START_X = 440
+# Round-start positions: centered in the walkable area (mid 768), 240px apart.
+P1_START_X = 648
+P2_START_X = 888
 
 # Input-display glyphs. Directions are facing-relative (FORWARD = toward the
 # opponent), keyed by InputDirection numpad value.
@@ -95,7 +98,7 @@ class Game:
         # World buffer: the fight (stage + characters + boxes + vfx) is composed
         # here at NATIVE scale, then the dynamic view camera zoom-scales a crop of
         # it onto the screen. _cam = (crop_x, crop_y, zoom) for world->screen maps.
-        self._world_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._world_buf = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
         self._cam = (0.0, 0.0, 1.0)
 
         # Health-bar animation + training regen state (set up after players exist)
@@ -146,13 +149,13 @@ class Game:
                 # Scale to the native resolution if the file isn't exact, so a
                 # near-miss replacement still fills the frame (a warning nudges
                 # the author toward the native size for crisp pixels).
-                if img.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+                if img.get_size() != (WORLD_WIDTH, WORLD_HEIGHT):
                     log_once(log, ("stage_scale",), logging.WARNING,
                              "Stage background %s is %sx%s; scaling to %sx%s "
                              "(author at native size for best quality)",
                              stage_path.name, img.get_width(), img.get_height(),
-                             SCREEN_WIDTH, SCREEN_HEIGHT)
-                    img = pygame.transform.smoothscale(img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+                             WORLD_WIDTH, WORLD_HEIGHT)
+                    img = pygame.transform.smoothscale(img, (WORLD_WIDTH, WORLD_HEIGHT))
                 self.stage_background = img
                 break
             except (pygame.error, OSError, FileNotFoundError) as e:
@@ -597,7 +600,7 @@ class Game:
                 self.screen,
                 COLOR_WHITE,
                 (0, STAGE_FLOOR),
-                (SCREEN_WIDTH, STAGE_FLOOR),
+                (WORLD_WIDTH, STAGE_FLOOR),
                 2
             )
 
@@ -677,15 +680,22 @@ class Game:
         [MIN, MAX]: close fighters -> small crop -> zoomed in; far apart -> wider
         crop -> zoomed out (SF3-style). Vertically anchored to keep the ground low.
         """
-        W, H = SCREEN_WIDTH, SCREEN_HEIGHT
         midx = (self.player1.x + self.player2.x) / 2.0
         sep = abs(self.player1.x - self.player2.x)
+        # Window width = separation + breathing room, capped so the zoom
+        # (SCREEN_WIDTH / crop_w) never exceeds MAX (too close), and never wider
+        # than the world. No MIN cap: the camera zooms out only as much as the
+        # world allows, so far-apart fighters still fit and the window pans.
         crop_w = sep + 2 * CAMERA_H_MARGIN
-        crop_w = max(W / CAMERA_MAX_ZOOM, min(crop_w, W / CAMERA_MIN_ZOOM))
-        crop_w = min(crop_w, W)
-        crop_h = crop_w * H / W
-        crop_x = max(0.0, min(midx - crop_w / 2.0, W - crop_w))
-        crop_y = max(0.0, min(CAMERA_GROUND_Y - crop_h * 0.86, H - crop_h))
+        crop_w = max(SCREEN_WIDTH / CAMERA_MAX_ZOOM, crop_w)
+        crop_w = min(crop_w, WORLD_WIDTH)
+        crop_h = min(crop_w * SCREEN_HEIGHT / SCREEN_WIDTH, WORLD_HEIGHT)
+        # Pan horizontally to keep the fighters centered; clamp to the world.
+        crop_x = max(0.0, min(midx - crop_w / 2.0, WORLD_WIDTH - crop_w))
+        # Anchor vertically on the FEET line (CAMERA_GROUND_Y = STAGE_FLOOR +
+        # feet_offset), NOT the torso-reference STAGE_FLOOR -- otherwise the
+        # lower body falls past the crop's bottom edge (feet cut off at the knee).
+        crop_y = max(0.0, min(CAMERA_GROUND_Y - CAMERA_FEET_FRAC * crop_h, WORLD_HEIGHT - crop_h))
         return crop_x, crop_y, crop_w, crop_h
 
     def _blit_world_zoomed(self, offset=(0, 0)):
@@ -743,8 +753,8 @@ class Game:
         timer: the colored (remaining) health stays anchored at the inner/center
         end of each bar, so damage eats inward from the outer edges.
         """
-        # Use custom HUD graphics if available
-        if self.hud_assets.get("hud_bar_full"):
+        # Use custom HUD graphics if the frame asset loaded, else classic.
+        if self.hud_assets.get("frame"):
             self._render_ui_custom()
         else:
             self._render_ui_classic()
@@ -802,113 +812,137 @@ class Game:
         self._render_ui_common()
 
     def _render_ui_custom(self):
-        """Custom HUD rendering using loaded graphic assets."""
+        """Frame-based HUD from the custom art: health-bar frames with portrait
+        sockets and inner fill, nameplates, super-art meters (+ MAX / SA level),
+        and a big-digit timer. See _load_hud_assets for the layout constants."""
         from street_fighter_3rd.characters.character import MAX_SUPER_METER
+        A = self.hud_assets
+        frame = A["frame"]
+        fw, fh = frame.get_size()
+        M, TOP = self._HUD_MARGIN_X, self._HUD_TOP_Y
+        cx0, cy0, cx1, cy1 = self._HUD_CH
+        ch_w, ch_h = cx1 - cx0, cy1 - cy0
+        px, py = self._HUD_PORTRAIT_XY
 
-        # Scale the full HUD bar to fit the screen width
-        hud_bar = self.hud_assets["hud_bar_full"]
-        hud_width = SCREEN_WIDTH
-        hud_height = int(hud_bar.get_height() * (hud_width / hud_bar.get_width()))
-        scaled_hud = pygame.transform.smoothscale(hud_bar, (hud_width, hud_height))
+        def draw(surf, x, y, mirror=False):
+            self.screen.blit(pygame.transform.flip(surf, True, False) if mirror else surf, (int(x), int(y)))
 
-        # Position at top of screen
-        hud_y = 0
+        def health_bar(base_x, mirror, cur_pct, ghost_pct):
+            """Fill the frame channel: colored health anchored at the inner
+            (center) end, a lighter ghost/chip layer behind it."""
+            fill = int(ch_w * max(0.0, cur_pct))
+            ghost = int(ch_w * max(0.0, ghost_pct))
+            col = self._health_color(max(0.0, cur_pct))
+            # channel origin in screen space (mirror flips it within the frame)
+            gx = base_x + (fw - cx1 if mirror else cx0)
+            cy = TOP + cy0
+            pygame.draw.rect(self.screen, (24, 22, 28), (gx, cy, ch_w, ch_h))
+            if mirror:   # P2: bars grow from the left (inner) edge
+                if ghost > fill:
+                    pygame.draw.rect(self.screen, (210, 210, 210), (gx, cy, ghost, ch_h))
+                pygame.draw.rect(self.screen, col, (gx, cy, fill, ch_h))
+            else:        # P1: bars grow from the right (inner) edge
+                if ghost > fill:
+                    pygame.draw.rect(self.screen, (210, 210, 210), (gx + ch_w - ghost, cy, ghost, ch_h))
+                pygame.draw.rect(self.screen, col, (gx + ch_w - fill, cy, fill, ch_h))
 
-        # Draw the full HUD background
-        self.screen.blit(scaled_hud, (0, hud_y))
+        def portrait_for(player):
+            return A.get(f"portrait_{getattr(player, 'name', 'akuma').lower()}") or A.get("portrait_akuma")
 
-        # Calculate health bar positions based on the HUD layout
-        # The health bars are in the orange/yellow gradient sections
-        # P1 health bar: approximately 210-420 pixels from left in original
-        # P2 health bar: approximately 1252-1462 pixels from left in original
-        scale_factor = hud_width / hud_bar.get_width()
+        def nameplate_for(player):
+            return A.get(f"nameplate_{getattr(player, 'name', 'akuma').lower()}") or A.get("nameplate_akuma")
 
-        # Health bar dimensions and positions (scaled to screen)
-        p1_health_x = int(210 * scale_factor)
-        p1_health_y = int((300) * scale_factor) + hud_y
-        p2_health_x = int(1252 * scale_factor)
-        p2_health_y = int((300) * scale_factor) + hud_y
-        health_bar_width = int(410 * scale_factor)
-        health_bar_height = int(28 * scale_factor)
+        # ---- health bars (top corners) ----
+        p1x, p2x = M, SCREEN_WIDTH - M - fw
+        for player, base_x, mirror, ghost in (
+                (self.player1, p1x, False, self.p1_ghost_health),
+                (self.player2, p2x, True, self.p2_ghost_health)):
+            draw(frame, base_x, TOP, mirror)
+            health_bar(base_x, mirror, player.health / player.max_health,
+                       ghost / player.max_health)
+            # Portrait size (on-top headshot at the outer corner).
+            portrait = portrait_for(player)
+            pw = 0
+            if portrait:
+                ph = self._HUD_PORTRAIT_H
+                pw = int(portrait.get_width() * ph / portrait.get_height())
+            # Nameplate sits just INSIDE the portrait, over the gauge.
+            plate = nameplate_for(player)
+            if plate:
+                plate_y = TOP + fh - plate.get_height() - 1
+                inset = pw + 2
+                px_plate = base_x + fw - inset - plate.get_width() if mirror else base_x + inset
+                draw(plate, px_plate, plate_y)
+            # Portrait ON TOP of the frame, bottom-aligned and poking above it.
+            if portrait:
+                big = pygame.transform.scale(portrait, (pw, ph))
+                ox = base_x + fw - pw + self._HUD_PORTRAIT_OUT if mirror else base_x - self._HUD_PORTRAIT_OUT
+                oy = TOP + fh - ph + self._HUD_PORTRAIT_DROP
+                draw(big, ox, oy, mirror)
 
-        # Draw P1 health (right-anchored - depletes from left)
-        p1_pct = max(0, self.player1.health / self.player1.max_health)
-        p1_ghost_pct = max(0, self.p1_ghost_health / self.player1.max_health)
-        p1_fill = int(health_bar_width * p1_pct)
-        p1_ghost = int(health_bar_width * p1_ghost_pct)
-
-        # Ghost/chip damage (semi-transparent white)
-        if p1_ghost > p1_fill:
-            chip_rect = pygame.Rect(p1_health_x + health_bar_width - p1_ghost,
-                                   p1_health_y, p1_ghost - p1_fill, health_bar_height)
-            pygame.draw.rect(self.screen, (200, 200, 200, 180), chip_rect)
-
-        # Current health (colored bar)
-        if p1_fill > 0:
-            health_rect = pygame.Rect(p1_health_x + health_bar_width - p1_fill,
-                                     p1_health_y, p1_fill, health_bar_height)
-            pygame.draw.rect(self.screen, self._health_color(p1_pct), health_rect)
-
-        # Draw P2 health (left-anchored - depletes from right)
-        p2_pct = max(0, self.player2.health / self.player2.max_health)
-        p2_ghost_pct = max(0, self.p2_ghost_health / self.player2.max_health)
-        p2_fill = int(health_bar_width * p2_pct)
-        p2_ghost = int(health_bar_width * p2_ghost_pct)
-
-        # Ghost/chip damage
-        if p2_ghost > p2_fill:
-            chip_rect = pygame.Rect(p2_health_x + p2_fill,
-                                   p2_health_y, p2_ghost - p2_fill, health_bar_height)
-            pygame.draw.rect(self.screen, (200, 200, 200, 180), chip_rect)
-
-        # Current health
-        if p2_fill > 0:
-            health_rect = pygame.Rect(p2_health_x, p2_health_y, p2_fill, health_bar_height)
-            pygame.draw.rect(self.screen, self._health_color(p2_pct), health_rect)
-
-        # Draw super meters in the blue "POWER" sections
-        # P1 super meter: approximately 275-415 pixels from left, y ~385
-        # P2 super meter: approximately 1257-1397 pixels from left, y ~385
-        p1_meter_x = int(275 * scale_factor)
-        p1_meter_y = int(385 * scale_factor) + hud_y
-        p2_meter_x = int(1257 * scale_factor)
-        p2_meter_y = int(385 * scale_factor) + hud_y
-        meter_width = int(140 * scale_factor)
-        meter_height = int(14 * scale_factor)
-
-        # P1 super meter
-        p1_meter = getattr(self.player1, "super_meter", 0)
-        p1_meter_pct = max(0.0, min(1.0, p1_meter / MAX_SUPER_METER))
-        p1_meter_full = p1_meter >= MAX_SUPER_METER
-        if p1_meter_pct > 0:
-            meter_rect = pygame.Rect(p1_meter_x, p1_meter_y,
-                                    int(meter_width * p1_meter_pct), meter_height)
-            pygame.draw.rect(self.screen,
-                           (255, 215, 0) if p1_meter_full else (100, 180, 255),
-                           meter_rect)
-
-        # P2 super meter
-        p2_meter = getattr(self.player2, "super_meter", 0)
-        p2_meter_pct = max(0.0, min(1.0, p2_meter / MAX_SUPER_METER))
-        p2_meter_full = p2_meter >= MAX_SUPER_METER
-        if p2_meter_pct > 0:
-            meter_rect = pygame.Rect(p2_meter_x, p2_meter_y,
-                                    int(meter_width * p2_meter_pct), meter_height)
-            pygame.draw.rect(self.screen,
-                           (255, 215, 0) if p2_meter_full else (100, 180, 255),
-                           meter_rect)
+        # ---- super-art meters (bottom corners) ----
+        meter = A.get("meter")
+        if meter:
+            mw, mh = meter.get_size()
+            tick = A.get("meter_tick")
+            for player, mx, mirror in ((self.player1, M, False),
+                                       (self.player2, SCREEN_WIDTH - M - mw, True)):
+                my = SCREEN_HEIGHT - M - mh
+                draw(meter, mx, my, mirror)
+                meter_v = getattr(player, "super_meter", 0)
+                pct = max(0.0, min(1.0, meter_v / MAX_SUPER_METER))
+                full = meter_v >= MAX_SUPER_METER
+                # fill the meter body (frame-local channel ~ x6..34, y3..16)
+                bx0, by0, bw, bh = 6, 3, mw - 12, mh - 6
+                gx = mx + (mw - bx0 - bw if mirror else bx0)
+                pygame.draw.rect(self.screen, (20, 20, 26), (gx, my + by0, bw, bh))
+                fillw = int(bw * pct)
+                fx = gx + (bw - fillw if mirror else 0)
+                pygame.draw.rect(self.screen, (255, 210, 60) if full else (90, 170, 250),
+                                 (fx, my + by0, fillw, bh))
+                # MAX flash when full; else the SA level numeral
+                if full and A.get("max"):
+                    mxl = A["max"]
+                    draw(mxl, mx + (mw - mxl.get_width() if mirror else 0), my - mxl.get_height() - 1)
+                else:
+                    num = A.get("sa_numerals", {}).get(getattr(player, "super_art", 1))
+                    if num:
+                        draw(num, mx + (mw - num.get_width() if mirror else 0), my - num.get_height() - 1)
 
         self._render_ui_common()
+
+    def _render_timer(self, center_x):
+        """The round timer: TIME label + two big yellow digits from the custom
+        font when available, otherwise the plain text timer."""
+        digits = self.hud_assets.get("timer_digits") or {}
+        disp = self.round_manager.get_timer_display()
+        two = "".join(ch for ch in disp if ch.isdigit())[-2:].rjust(2, "0")
+        if digits and all(int(c) in digits for c in two):
+            time_lbl = self.hud_assets.get("time")
+            y = self._HUD_TOP_Y - 2
+            if time_lbl:
+                self.screen.blit(time_lbl, (center_x - time_lbl.get_width() // 2, y))
+                y += time_lbl.get_height() + 1
+            gap = 2
+            glyphs = [digits[int(c)] for c in two]
+            w = sum(gl.get_width() for gl in glyphs) + gap * (len(glyphs) - 1)
+            x = center_x - w // 2
+            for gl in glyphs:
+                self.screen.blit(gl, (x, y))
+                x += gl.get_width() + gap
+        else:
+            timer_text = self._render_text(self.font, disp, self._timer_color())
+            self.screen.blit(timer_text, (center_x - timer_text.get_width() // 2, 10))
 
     def _render_ui_common(self):
         """Render UI elements common to both classic and custom HUD."""
 
         center_x = SCREEN_WIDTH // 2
 
-        # Timer (hidden in no-timer modes like training) — color escalates late
+        # Timer (hidden in no-timer modes like training) — big bitmap digits
+        # under the TIME label when the custom HUD is loaded, else plain text.
         if not self.config.no_timer:
-            timer_text = self._render_text(self.font, self.round_manager.get_timer_display(), self._timer_color())
-            self.screen.blit(timer_text, (center_x - timer_text.get_width() // 2, 10))
+            self._render_timer(center_x)
 
         # Round indicators (win dots + ROUND/FIGHT/result text) only when rounds
         # are enabled — training/quick-play have no round structure.
@@ -1061,50 +1095,69 @@ class Game:
 
     _INPUT_ICON_H = 13  # rendered height of the vendored input icons
 
+    # HUD layout (screen px). The health-bar frame anchors the whole top HUD;
+    # everything else positions relative to it. Frame-local channel/socket rects
+    # were measured off health_bar_frame.png.
+    _HUD_MARGIN_X = 8          # frame inset from the screen edge
+    _HUD_TOP_Y = 8
+    _HUD_CH = (6, 3, 167, 15)  # health channel in frame-local coords (x0,y0,x1,y1)
+    _HUD_PORTRAIT_XY = (2, 5)  # portrait offset within the frame (behind it)
+    _HUD_PORTRAIT_H = 46      # on-top portrait height (pokes above the bar)
+    _HUD_PORTRAIT_OUT = 4     # px it juts past the frame's outer edge
+    _HUD_PORTRAIT_DROP = 6    # px the portrait bottom sits below the frame bottom
+    _SA_NUMERAL = {1: "sa_1", 2: "sa_2", 3: "sa_3"}
+
     @staticmethod
     def _load_hud_assets(repo_root):
-        """Load custom HUD graphics (health bars, portraits, etc.).
+        """Load the custom HUD graphics (frame, portraits, meter, bitmap fonts).
 
-        Returns a dict of loaded surfaces, or empty dict if assets are missing.
-        Falls back to the original rectangle-based rendering if unavailable.
+        Returns a dict of surfaces (plus `timer_digits` and `sa_numerals` maps),
+        or {} if the frame asset is missing -- then the classic rectangle HUD
+        renders instead.
         """
-        from pathlib import Path
-        hud_path = repo_root / "assets" / "ui"
+        hud_path = repo_root / "assets" / "ui" / "hud"
         assets = {}
-
-        # List of HUD components to load
-        component_files = [
-            "hud_bar_full.png",  # Complete HUD bar (simplest integration)
-            "portrait_frame_left.png",
-            "portrait_frame_right.png",
-            "health_bar_left.png",
-            "health_bar_right.png",
-            "timer_center.png",
-            "power_meter_left.png",
-            "power_meter_right.png",
-            "player_badge_1p.png",
-            "player_badge_2p.png",
-        ]
-
-        for filename in component_files:
-            file_path = hud_path / filename
-            if file_path.exists():
+        named = {
+            "frame": "health_bar_frame.png",
+            "meter": "super_meter_frame.png",
+            "meter_tick": "super_meter_tick.png",
+            "max": "max_label.png",
+            "time": "time_label.png",
+            "stun": "stun_label.png",
+            "portrait_akuma": "portrait_akuma.png",
+            "nameplate_akuma": "nameplate_akuma.png",
+        }
+        for key, filename in named.items():
+            fp = hud_path / filename
+            if fp.exists():
                 try:
-                    # Load with alpha transparency
-                    surface = pygame.image.load(str(file_path)).convert_alpha()
-                    # Store without the .png extension as the key
-                    key = filename.replace(".png", "")
-                    assets[key] = surface
+                    assets[key] = pygame.image.load(str(fp)).convert_alpha()
                 except (pygame.error, OSError) as e:
                     log_once(log, (f"hud_{filename}",), logging.WARNING,
-                            f"Could not load HUD asset {filename}: {e}")
-            else:
-                log_once(log, (f"hud_{filename}_missing",), logging.DEBUG,
-                        f"HUD asset not found: {filename}")
+                             "Could not load HUD asset %s: %s", filename, e)
 
-        if assets:
-            log.info(f"Loaded {len(assets)} HUD assets")
+        def _glyphs(mapping):
+            out = {}
+            for k, sprite in mapping.items():
+                fp = hud_path / "font" / f"{sprite}.png"
+                if fp.exists():
+                    try:
+                        out[k] = pygame.image.load(str(fp)).convert_alpha()
+                    except (pygame.error, OSError):
+                        pass
+            return out
 
+        # Big yellow timer digits (0-9). "1" is a narrower 9x26 glyph.
+        assets["timer_digits"] = _glyphs({
+            0: "sprite_107", 1: "sprite_114", 2: "sprite_78", 3: "sprite_79",
+            4: "sprite_80", 5: "sprite_81", 6: "sprite_103", 7: "sprite_104",
+            8: "sprite_105", 9: "sprite_106"})
+        # Super-art level numerals I / II / III.
+        assets["sa_numerals"] = _glyphs({1: "sprite_82", 2: "sprite_83", 3: "sprite_84"})
+
+        if assets.get("frame"):
+            log.info("Loaded custom HUD (%d pieces, %d timer digits)",
+                     len(named), len(assets["timer_digits"]))
         return assets
 
     @classmethod

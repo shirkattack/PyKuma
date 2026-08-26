@@ -242,6 +242,7 @@ class Character:
         self.max_health = MAX_HEALTH
         self.health = self.max_health
         self.super_meter = 0
+        self.super_art = 1  # selected Super Art (1/2/3) -> HUD numeral I/II/III
         self.stun_meter = 0
         self.combo_counter = 0
         self.hitstun_frames = 0

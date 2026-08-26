@@ -22,7 +22,7 @@ def pygame_headless():
 
 
 def _pair():
-    return Akuma(300, STAGE_FLOOR, 1), Akuma(650, STAGE_FLOOR, 2)
+    return Akuma(620, STAGE_FLOOR, 1), Akuma(970, STAGE_FLOOR, 2)
 
 
 def test_jump_apex_and_airtime_match_rom():
@@ -63,8 +63,8 @@ def test_forward_dash_distance_matches_rom():
 
 
 def test_back_dash_distance_matches_rom():
-    a = Akuma(500, STAGE_FLOOR, 1)
-    b = Akuma(150, STAGE_FLOOR, 2)  # opponent to the left so 'back' is to the right edge-free
+    a = Akuma(820, STAGE_FLOOR, 1)
+    b = Akuma(470, STAGE_FLOOR, 2)  # opponent to the left so 'back' is to the right edge-free
     a._transition_to_state(CharacterState.DASH_BACKWARD)
     x0 = a.x
     for _ in range(20):
