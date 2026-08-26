@@ -25,7 +25,7 @@ meta:
     vitality: 160
     community_damage_scale: 7.5
     stun_max: 56
-    moves_captured: 20
+    moves_captured: 31
     source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
       combat): applied damage/stun/hitstop/hitstun read live'
 base_hurtbox:
@@ -153,7 +153,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 4
+        - 21892
         damage: 5
         stun: 3
         hitstop: 6
@@ -246,7 +246,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 5
+        - 21859
         damage: 3
         stun: 3
         hitstop: 6
@@ -327,7 +327,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 21900
         damage: 20
         stun: 7
         hitstop: 8
@@ -415,7 +415,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 21884
         damage: 18
         stun: 11
         hitstop: 8
@@ -655,7 +655,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 5
+        - 21906
         damage: 24
         stun: 15
         hitstop: 11
@@ -820,7 +820,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 9
+        - 21874
         damage: 24
         stun: 13
         hitstop: 13
@@ -929,7 +929,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 5
+        - 21955
         damage: 7
         stun: 3
         hitstop: 6
@@ -1112,7 +1112,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 5
+        - 21964
         damage: 19
         stun: 9
         hitstop: 8
@@ -1310,7 +1310,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 21932
         damage: 14
         stun: 7
         hitstop: 8
@@ -1530,32 +1530,20 @@ moves:
       status: verified
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
         combat): applied damage/stun/hitstop/hitstun read live'
-      damage_total: 33
+      damage_total: 21
       hits:
-      - window: 0
+      - window: 1
         frames:
-        - 6
+        - 22443
+        - 22445
         damage: 21
         stun: 13
         hitstop: 13
-        hitstun: null
+        hitstun: 35
         blockstun: null
         chip: null
         samples:
-          hits: 2
-          blocks: 0
-      - window: 1
-        frames:
-        - 24
-        - 151
-        damage: 12
-        stun: 10
-        hitstop: 11
-        hitstun: 19
-        blockstun: null
-        chip: null
-        samples:
-          hits: 2
+          hits: 4
           blocks: 0
   1bf8:
     rom_id: 1bf8
@@ -1778,7 +1766,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 10
+        - 21944
         damage: 25
         stun: 11
         hitstop: 11
@@ -1850,7 +1838,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 5
+        - 22003
         damage: 3
         stun: 3
         hitstop: 6
@@ -1937,7 +1925,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 22003
         damage: 16
         stun: 7
         hitstop: 8
@@ -2044,7 +2032,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 22015
         damage: 24
         stun: 11
         hitstop: 10
@@ -2116,7 +2104,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 6
+        - 22036
         damage: 3
         stun: 3
         hitstop: 6
@@ -2273,7 +2261,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 7
+        - 22043
         damage: 16
         stun: 3
         hitstop: 8
@@ -2444,7 +2432,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 8
+        - 22047
         damage: 22
         stun: 3
         hitstop: 9
@@ -2754,6 +2742,24 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 9
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 8
+      hits:
+      - window: 0
+        frames:
+        - 5
+        damage: 8
+        stun: 5
+        hitstop: 6
+        hitstun: 11
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   22a8:
     rom_id: 22a8
     timing:
@@ -2897,19 +2903,20 @@ moves:
       status: verified
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
         combat): applied damage/stun/hitstop/hitstun read live'
-      damage_total: 12
+      damage_total: 16
       hits:
       - window: 0
         frames:
-        - 8
-        damage: 12
+        - 6
+        - 22085
+        damage: 16
         stun: 9
         hitstop: 7
         hitstun: 14
         blockstun: null
         chip: null
         samples:
-          hits: 1
+          hits: 2
           blocks: 0
   '2388':
     rom_id: '2388'
@@ -3050,6 +3057,24 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 23
+      hits:
+      - window: 0
+        frames:
+        - 8
+        damage: 23
+        stun: 13
+        hitstop: 8
+        hitstun: 17
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '2448':
     rom_id: '2448'
     timing:
@@ -3304,6 +3329,24 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 14
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 7
+      hits:
+      - window: 0
+        frames:
+        - 5
+        damage: 7
+        stun: 5
+        hitstop: 6
+        hitstun: 11
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '2558':
     rom_id: '2558'
     timing:
@@ -3433,6 +3476,24 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 14
+      hits:
+      - window: 0
+        frames:
+        - 6
+        damage: 14
+        stun: 7
+        hitstop: 7
+        hitstun: 14
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '2628':
     rom_id: '2628'
     timing:
@@ -3590,6 +3651,24 @@ moves:
       hit_effect: NORMAL
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 21
+      hits:
+      - window: 0
+        frames:
+        - 7
+        damage: 21
+        stun: 11
+        hitstop: 8
+        hitstun: 17
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '2708':
     rom_id: '2708'
     timing:
@@ -3917,7 +3996,7 @@ moves:
       hits:
       - window: 0
         frames:
-        - 7
+        - 22068
         damage: 6
         stun: 5
         hitstop: 6
@@ -4054,13 +4133,13 @@ moves:
       status: verified
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
         combat): applied damage/stun/hitstop/hitstun read live'
-      damage_total: 18
+      damage_total: 0
       hits:
       - window: 0
         frames:
-        - 7
-        damage: 18
-        stun: 13
+        - 22085
+        damage: 0
+        stun: 0
         hitstop: 8
         hitstun: null
         blockstun: null
@@ -5055,6 +5134,24 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 43
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 23
+      hits:
+      - window: 0
+        frames:
+        - 4
+        damage: 23
+        stun: 11
+        hitstop: 9
+        hitstun: 115
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   85c8:
     rom_id: 85c8
     timing:
@@ -5228,6 +5325,36 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 50
       damage_total: 188
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 25
+      hits:
+      - window: 0
+        frames:
+        - 3
+        damage: 17
+        stun: 11
+        hitstop: 9
+        hitstun: null
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
+      - window: 1
+        frames:
+        - 14
+        damage: 8
+        stun: 2
+        hitstop: 7
+        hitstun: 115
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '8658':
     rom_id: '8658'
     timing:
@@ -5637,6 +5764,37 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 59
       damage_total: 218
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 19
+      hits:
+      - window: 0
+        frames:
+        - 2
+        damage: 10
+        stun: 11
+        hitstop: 9
+        hitstun: null
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
+      - window: 2
+        frames:
+        - 13
+        - 24
+        damage: 9
+        stun: 2
+        hitstop: 9
+        hitstun: 119
+        blockstun: null
+        chip: null
+        samples:
+          hits: 2
+          blocks: 0
   86e8:
     rom_id: 86e8
     timing:
@@ -5766,6 +5924,24 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 24
       damage_total: 128
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 14
+      hits:
+      - window: 0
+        frames:
+        - 12
+        damage: 14
+        stun: 7
+        hitstop: 7
+        hitstun: 106
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   87f8:
     rom_id: 87f8
     timing:
@@ -5985,6 +6161,36 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 30
       damage_total: 158
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 8
+      hits:
+      - window: 1
+        frames:
+        - 12
+        damage: 4
+        stun: 3
+        hitstop: 3
+        hitstun: null
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
+      - window: 4
+        frames:
+        - 142
+        damage: 4
+        stun: 2
+        hitstop: 0
+        hitstun: null
+        blockstun: null
+        chip: null
+        samples:
+          hits: 1
+          blocks: 0
   '8968':
     rom_id: '8968'
     timing:
@@ -7671,3 +7877,21 @@ moves:
       - 9
     - - 7
       - 10
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      damage_total: 15
+      hits:
+      - window: 0
+        frames:
+        - 10
+        damage: 15
+        stun: 11
+        hitstop: 7
+        hitstun: 17
+        blockstun: null
+        chip: null
+        samples:
+          hits: 2
+          blocks: 0

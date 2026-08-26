@@ -546,7 +546,7 @@ def build_document(source_json, name, names, combat, vhb=None, rom_combat=None, 
         # present, the engine runs on this scale and rescales any move that
         # still only has community damage.
         doc["meta"]["rom_combat"] = {
-            "vitality": int(rom_combat_meta["vitality_max"]),
+            "vitality": min(int(rom_combat_meta["vitality_max"]) or 160, 160),  # 0xA0 bar (VITAL.c)
             "community_damage_scale": COMMUNITY_DAMAGE_SCALE,
             "stun_max": rom_combat_meta.get("stun_max"),
             "moves_captured": sum(1 for m in moves.values() if "rom_combat" in m),

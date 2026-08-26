@@ -1,13 +1,11 @@
 {
  "_meta": {
-  "att_bonus": 0,
   "blocks": 0,
-  "connects": 26,
-  "def_bonus": 0,
-  "hits": 26,
+  "connects": 52,
+  "hits": 52,
   "parries": 0,
+  "sessions": 2,
   "stun_max": 56,
-  "vitality_internal_max": 160,
   "vitality_max": 160
  },
  "moves": {
@@ -18,7 +16,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 5,
-     "frame": 4,
+     "frame": 21892,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -36,7 +34,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 5,
+     "frame": 21859,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -54,7 +52,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 20,
-     "frame": 6,
+     "frame": 21900,
      "hitstop": 8,
      "hitstun": 15,
      "samples": {
@@ -72,7 +70,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 18,
-     "frame": 6,
+     "frame": 21884,
      "hitstop": 8,
      "hitstun": 15,
      "samples": {
@@ -90,7 +88,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 5,
+     "frame": 21906,
      "hitstop": 11,
      "hitstun": 19,
      "samples": {
@@ -108,7 +106,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 9,
+     "frame": 21874,
      "hitstop": 13,
      "hitstun": 19,
      "samples": {
@@ -126,7 +124,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 7,
-     "frame": 5,
+     "frame": 21955,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -144,7 +142,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 19,
-     "frame": 5,
+     "frame": 21964,
      "hitstop": 8,
      "hitstun": 19,
      "samples": {
@@ -162,7 +160,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 14,
-     "frame": 6,
+     "frame": 21932,
      "hitstop": 8,
      "hitstun": 15,
      "samples": {
@@ -180,9 +178,9 @@
      "blockstun": null,
      "chip": null,
      "damage": 21,
-     "frame": 6,
+     "frame": 22443,
      "hitstop": 13,
-     "hitstun": null,
+     "hitstun": 35,
      "samples": {
       "blocks": 0,
       "hits": 2
@@ -193,25 +191,12 @@
      "blockstun": null,
      "chip": null,
      "damage": 12,
-     "frame": 24,
+     "frame": 22445,
      "hitstop": 11,
      "hitstun": 19,
      "samples": {
       "blocks": 0,
-      "hits": 1
-     },
-     "stun": 10
-    },
-    {
-     "blockstun": null,
-     "chip": null,
-     "damage": 9,
-     "frame": 151,
-     "hitstop": 10,
-     "hitstun": null,
-     "samples": {
-      "blocks": 0,
-      "hits": 1
+      "hits": 2
      },
      "stun": 10
     }
@@ -224,7 +209,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 25,
-     "frame": 10,
+     "frame": 21944,
      "hitstop": 11,
      "hitstun": 19,
      "samples": {
@@ -242,7 +227,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 5,
+     "frame": 22003,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -260,7 +245,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 16,
-     "frame": 6,
+     "frame": 22003,
      "hitstop": 8,
      "hitstun": 15,
      "samples": {
@@ -278,7 +263,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 6,
+     "frame": 22015,
      "hitstop": 10,
      "hitstun": 19,
      "samples": {
@@ -296,7 +281,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 6,
+     "frame": 22036,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -314,7 +299,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 16,
-     "frame": 7,
+     "frame": 22043,
      "hitstop": 8,
      "hitstun": 15,
      "samples": {
@@ -332,7 +317,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 22,
-     "frame": 8,
+     "frame": 22047,
      "hitstop": 9,
      "hitstun": 60,
      "samples": {
@@ -343,14 +328,32 @@
     }
    ]
   },
+  "21c8": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 8,
+     "frame": 5,
+     "hitstop": 6,
+     "hitstun": 11,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 5
+    }
+   ]
+  },
   "22a8": {
    "parries": 0,
    "windows": [
     {
      "blockstun": null,
      "chip": null,
-     "damage": 12,
-     "frame": 8,
+     "damage": 16,
+     "frame": 6,
      "hitstop": 7,
      "hitstun": 14,
      "samples": {
@@ -358,6 +361,91 @@
       "hits": 1
      },
      "stun": 9
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 12,
+     "frame": 22085,
+     "hitstop": 7,
+     "hitstun": 14,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 8
+    }
+   ]
+  },
+  "2388": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 23,
+     "frame": 8,
+     "hitstop": 8,
+     "hitstun": 17,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 13
+    }
+   ]
+  },
+  "2448": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "frame": 5,
+     "hitstop": 6,
+     "hitstun": 11,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 5
+    }
+   ]
+  },
+  "2558": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "frame": 6,
+     "hitstop": 7,
+     "hitstun": 14,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 7
+    }
+   ]
+  },
+  "2628": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 21,
+     "frame": 7,
+     "hitstop": 8,
+     "hitstun": 17,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
     }
    ]
   },
@@ -368,7 +456,7 @@
      "blockstun": null,
      "chip": null,
      "damage": 6,
-     "frame": 7,
+     "frame": 22068,
      "hitstop": 6,
      "hitstun": 11,
      "samples": {
@@ -385,15 +473,286 @@
     {
      "blockstun": null,
      "chip": null,
-     "damage": 18,
-     "frame": 7,
+     "damage": 0,
+     "frame": 22085,
      "hitstop": 8,
      "hitstun": null,
      "samples": {
       "blocks": 0,
       "hits": 1
      },
-     "stun": 13
+     "stun": 0
+    }
+   ]
+  },
+  "3768": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 0,
+     "frame": 3,
+     "hitstop": 0,
+     "hitstun": 134,
+     "samples": {
+      "blocks": 0,
+      "hits": 3
+     },
+     "stun": 0
+    }
+   ]
+  },
+  "7684": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 4,
+     "hitstop": 6,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 7,
+     "hitstop": 6,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
+  "8210": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 24,
+     "hitstop": 13,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 27,
+     "hitstop": 13,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 38,
+     "hitstop": 13,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
+  "84f8": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 23,
+     "frame": 4,
+     "hitstop": 9,
+     "hitstun": 115,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
+    }
+   ]
+  },
+  "85c8": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 17,
+     "frame": 3,
+     "hitstop": 9,
+     "hitstun": null,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 8,
+     "frame": 14,
+     "hitstop": 7,
+     "hitstun": 115,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 2
+    }
+   ]
+  },
+  "8658": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 2,
+     "hitstop": 9,
+     "hitstun": null,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "frame": 13,
+     "hitstop": 9,
+     "hitstun": null,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 2
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "frame": 24,
+     "hitstop": 7,
+     "hitstun": 119,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 2
+    }
+   ]
+  },
+  "86e8": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "frame": 12,
+     "hitstop": 7,
+     "hitstun": 106,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 7
+    }
+   ]
+  },
+  "87f8": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 4,
+     "frame": 12,
+     "hitstop": 3,
+     "hitstun": null,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 4,
+     "frame": 142,
+     "hitstop": 0,
+     "hitstun": null,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 2
+    }
+   ]
+  },
+  "a130": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "frame": 11,
+     "hitstop": 6,
+     "hitstun": 15,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
+  "b218": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 15,
+     "frame": 10,
+     "hitstop": 7,
+     "hitstun": 17,
+     "samples": {
+      "blocks": 0,
+      "hits": 2
+     },
+     "stun": 11
     }
    ]
   }

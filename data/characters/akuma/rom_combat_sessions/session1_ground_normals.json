@@ -1,0 +1,447 @@
+{
+ "_meta": {
+  "att_bonus": 0,
+  "blocks": 0,
+  "connects": 26,
+  "def_bonus": 0,
+  "hits": 26,
+  "parries": 0,
+  "stun_max": 56,
+  "vitality_internal_max": 160,
+  "vitality_max": 160
+ },
+ "moves": {
+  "13a8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 5,
+     "dm_vital": 5,
+     "dmg_next": 5,
+     "f": 365,
+     "frame": 21892,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    },
+    {
+     "damage": 5,
+     "dm_vital": 5,
+     "dmg_next": 5,
+     "f": 452,
+     "frame": 21892,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "1438": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 3,
+     "dm_vital": 3,
+     "dmg_next": 3,
+     "f": 1024,
+     "frame": 21859,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    },
+    {
+     "damage": 3,
+     "dm_vital": 3,
+     "dmg_next": 3,
+     "f": 1139,
+     "frame": 21859,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "14e8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 20,
+     "dm_vital": 20,
+     "dmg_next": 20,
+     "f": 1338,
+     "frame": 21900,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 7,
+     "stun_frames": 15,
+     "stun_next": 7
+    }
+   ],
+   "parries": []
+  },
+  "1598": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 18,
+     "dm_vital": 18,
+     "dmg_next": 18,
+     "f": 1434,
+     "frame": 21884,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 11,
+     "stun_frames": 15,
+     "stun_next": 11
+    }
+   ],
+   "parries": []
+  },
+  "1728": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 24,
+     "dm_vital": 24,
+     "dmg_next": 24,
+     "f": 1780,
+     "frame": 21906,
+     "hitstop": 11,
+     "posture": 0,
+     "stun": 15,
+     "stun_frames": 19,
+     "stun_next": 15
+    }
+   ],
+   "parries": []
+  },
+  "1818": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 24,
+     "dm_vital": 24,
+     "dmg_next": 24,
+     "f": 1648,
+     "frame": 21874,
+     "hitstop": 13,
+     "posture": 0,
+     "stun": 13,
+     "stun_frames": 19,
+     "stun_next": 13
+    }
+   ],
+   "parries": []
+  },
+  "1908": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 7,
+     "dm_vital": 7,
+     "dmg_next": 7,
+     "f": 2077,
+     "frame": 21955,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    },
+    {
+     "damage": 7,
+     "dm_vital": 7,
+     "dmg_next": 7,
+     "f": 2123,
+     "frame": 21955,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "1988": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 19,
+     "dm_vital": 19,
+     "dmg_next": 19,
+     "f": 2232,
+     "frame": 21964,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 9,
+     "stun_frames": 19,
+     "stun_next": 9
+    }
+   ],
+   "parries": []
+  },
+  "1a38": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 14,
+     "dm_vital": 14,
+     "dmg_next": 14,
+     "f": 2383,
+     "frame": 21932,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 7,
+     "stun_frames": 15,
+     "stun_next": 7
+    }
+   ],
+   "parries": []
+  },
+  "1b08": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 0,
+     "dm_vital": 17,
+     "dmg_next": 17,
+     "f": 2466,
+     "frame": 22443,
+     "hitstop": 10,
+     "posture": 0,
+     "stun": 0,
+     "stun_frames": null,
+     "stun_next": 13
+    },
+    {
+     "damage": 0,
+     "dm_vital": 9,
+     "dmg_next": 9,
+     "f": 2611,
+     "frame": 22445,
+     "hitstop": 10,
+     "posture": 24,
+     "stun": 0,
+     "stun_frames": null,
+     "stun_next": 10
+    },
+    {
+     "damage": 21,
+     "dm_vital": 21,
+     "dmg_next": 21,
+     "f": 3250,
+     "frame": 22443,
+     "hitstop": 13,
+     "posture": 0,
+     "stun": 13,
+     "stun_frames": 35,
+     "stun_next": 13
+    },
+    {
+     "damage": 12,
+     "dm_vital": 12,
+     "dmg_next": 12,
+     "f": 3268,
+     "frame": 22445,
+     "hitstop": 11,
+     "posture": 0,
+     "stun": 10,
+     "stun_frames": 19,
+     "stun_next": 10
+    }
+   ],
+   "parries": []
+  },
+  "1bf8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 25,
+     "dm_vital": 25,
+     "dmg_next": 25,
+     "f": 3357,
+     "frame": 21944,
+     "hitstop": 11,
+     "posture": 0,
+     "stun": 11,
+     "stun_frames": 19,
+     "stun_next": 11
+    }
+   ],
+   "parries": []
+  },
+  "1d28": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 3,
+     "dm_vital": 3,
+     "dmg_next": 3,
+     "f": 3675,
+     "frame": 22003,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "1dd8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 16,
+     "dm_vital": 16,
+     "dmg_next": 16,
+     "f": 3750,
+     "frame": 22003,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 7,
+     "stun_frames": 15,
+     "stun_next": 7
+    }
+   ],
+   "parries": []
+  },
+  "1e88": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 24,
+     "dm_vital": 24,
+     "dmg_next": 24,
+     "f": 3816,
+     "frame": 22015,
+     "hitstop": 10,
+     "posture": 0,
+     "stun": 11,
+     "stun_frames": 19,
+     "stun_next": 11
+    }
+   ],
+   "parries": []
+  },
+  "1f68": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 3,
+     "dm_vital": 3,
+     "dmg_next": 3,
+     "f": 3907,
+     "frame": 22036,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 11,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "2008": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 16,
+     "dm_vital": 16,
+     "dmg_next": 16,
+     "f": 3943,
+     "frame": 22043,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 15,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "20d8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 22,
+     "dm_vital": 22,
+     "dmg_next": 22,
+     "f": 3982,
+     "frame": 22047,
+     "hitstop": 9,
+     "posture": 0,
+     "stun": 3,
+     "stun_frames": 60,
+     "stun_next": 3
+    }
+   ],
+   "parries": []
+  },
+  "22a8": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 12,
+     "dm_vital": 12,
+     "dmg_next": 12,
+     "f": 4673,
+     "frame": 22085,
+     "hitstop": 7,
+     "posture": 0,
+     "stun": 8,
+     "stun_frames": 14,
+     "stun_next": 9
+    }
+   ],
+   "parries": []
+  },
+  "2708": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 6,
+     "dm_vital": 6,
+     "dmg_next": 6,
+     "f": 4560,
+     "frame": 22068,
+     "hitstop": 6,
+     "posture": 0,
+     "stun": 5,
+     "stun_frames": 11,
+     "stun_next": 5
+    }
+   ],
+   "parries": []
+  },
+  "2800": {
+   "blocks": [],
+   "hits": [
+    {
+     "damage": 0,
+     "dm_vital": 18,
+     "dmg_next": 18,
+     "f": 4779,
+     "frame": 22085,
+     "hitstop": 8,
+     "posture": 0,
+     "stun": 0,
+     "stun_frames": null,
+     "stun_next": 13
+    }
+   ],
+   "parries": []
+  }
+ }
+}

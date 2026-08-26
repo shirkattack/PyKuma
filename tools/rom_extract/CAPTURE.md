@@ -156,3 +156,19 @@ Do **not** hand-edit `rom_combat.json` — re-capture instead.
   (DP / tatsu / fireballs / demon-flip followups), f+MP, UOH, the dive kick,
   the neutral-jump normals, throws and the supers. Samples from a new session
   merge with the old by move, so re-running only the missing moves is enough.
+
+
+### Merging sessions
+
+Save each session's raw samples (`combat ... --raw sessionN.json`), vendor them
+under `data/characters/akuma/rom_combat_sessions/`, and build `rom_combat.json`
+from all of them:
+
+    uv run python tools/rom_extract/ingest.py merge-combat \
+        data/characters/akuma/rom_combat_sessions/*.json \
+        --out data/characters/akuma/rom_combat.json
+
+Sessions capture mostly disjoint moves, so their samples union cleanly; where
+they overlap the extra samples sharpen the median. A capture's raw dump
+(`pykuma_dump.jsonl`) is overwritten by the next run, so the vendored per-session
+raw files are the durable artifact -- keep them.
