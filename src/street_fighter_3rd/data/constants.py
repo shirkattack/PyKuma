@@ -27,7 +27,7 @@ SPRITE_SCALE = 1.0
 CAMERA_MAX_ZOOM = 2.2     # most zoomed-in (fighters close)
 CAMERA_MIN_ZOOM = 1.5     # most zoomed-out floor -- keep fighters large even far apart
 CAMERA_H_MARGIN = 110     # world px of breathing room kept beyond each fighter
-CAMERA_GROUND_Y = 430     # (legacy) world-buffer ground line
+CAMERA_GROUND_Y = 430     # feet line in world coords (STAGE_FLOOR 344 + Akuma feet_offset 86); camera anchors here
 # Vertical framing: the fighters' feet (STAGE_FLOOR) sit this fraction down the
 # camera crop. High -> feet low in frame, background fills above, and the crop
 # discards the world's bottom edge (crops the stage floor).

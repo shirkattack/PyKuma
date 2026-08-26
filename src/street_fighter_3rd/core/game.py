@@ -29,7 +29,6 @@ from street_fighter_3rd.data.constants import (
     CAMERA_H_MARGIN,
     CAMERA_GROUND_Y,
     CAMERA_FEET_FRAC,
-    STAGE_FLOOR as _CAM_STAGE_FLOOR,
     WORLD_WIDTH,
     WORLD_HEIGHT,
 )
@@ -693,8 +692,10 @@ class Game:
         crop_h = min(crop_w * SCREEN_HEIGHT / SCREEN_WIDTH, WORLD_HEIGHT)
         # Pan horizontally to keep the fighters centered; clamp to the world.
         crop_x = max(0.0, min(midx - crop_w / 2.0, WORLD_WIDTH - crop_w))
-        # Anchor vertically so the feet sit CAMERA_FEET_FRAC down the window.
-        crop_y = max(0.0, min(_CAM_STAGE_FLOOR - CAMERA_FEET_FRAC * crop_h, WORLD_HEIGHT - crop_h))
+        # Anchor vertically on the FEET line (CAMERA_GROUND_Y = STAGE_FLOOR +
+        # feet_offset), NOT the torso-reference STAGE_FLOOR -- otherwise the
+        # lower body falls past the crop's bottom edge (feet cut off at the knee).
+        crop_y = max(0.0, min(CAMERA_GROUND_Y - CAMERA_FEET_FRAC * crop_h, WORLD_HEIGHT - crop_h))
         return crop_x, crop_y, crop_w, crop_h
 
     def _blit_world_zoomed(self, offset=(0, 0)):
