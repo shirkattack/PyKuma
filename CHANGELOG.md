@@ -68,6 +68,11 @@ ROM-accurate.
   `move_frame` (which active window a hit landed on).
 
 ### Fixed
+- **Ground normals no longer slide.** A normal started out of a walk kept its
+  walk velocity for the whole move — you could punch while drifting forward or
+  back instead of freezing in place. Grounded attack states now zero horizontal
+  velocity (air normals keep their jump momentum; moves with built-in travel
+  drive velocity from their own ROM table). Regression: `tests/test_movement.py`.
 - **Block levels are enforced.** Holding back used to block everything. Guard
   posture is now re-evaluated every frame from the held direction
   (`Character._update_guard`: back = standing, down-back = crouching; none
