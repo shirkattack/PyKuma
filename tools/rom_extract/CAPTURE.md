@@ -141,3 +141,18 @@ any move that only has community damage. Baston stays as a cross-check
 (`tests/test_rom_combat.py` reports where the two disagree).
 
 Do **not** hand-edit `rom_combat.json` — re-capture instead.
+
+
+### Notes from the first session (2026-08-26)
+
+- A **hit-only** pass gives damage / stun / hitstop / hitstun per move, but NOT
+  blockstun or chip -- for those the dummy must be **guarding** (`blocking_id`
+  becomes 1..4). If a pass reports `0 blocks`, the dummy wasn't set to guard.
+- `att_bonus` / `def_bonus` read 0 outside the exact hit frame, so they are not
+  used; the captured `dm_vital` is already the *applied* damage, which is what
+  we store.
+- The first capture covered the ground normals (close+far) and a few jump
+  normals. A follow-up session should add: the on-block pass, the specials
+  (DP / tatsu / fireballs / demon-flip followups), f+MP, UOH, the dive kick,
+  the neutral-jump normals, throws and the supers. Samples from a new session
+  merge with the old by move, so re-running only the missing moves is enough.

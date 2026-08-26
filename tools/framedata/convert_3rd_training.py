@@ -346,6 +346,11 @@ def load_vhb_supplement(path):
     return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
+# The community yaml stores damage at this multiple of the ROM's applied value
+# (baston_to_community.py DAMAGE_SCALE = 180/24). On the ROM life scale the
+# engine divides community damage by it to recover the raw (== ROM) number.
+COMMUNITY_DAMAGE_SCALE = 7.5
+
 ROM_COMBAT_SOURCE = ("sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> "
                      "ingest.py combat): applied damage/stun/hitstop/hitstun read live")
 
@@ -542,8 +547,7 @@ def build_document(source_json, name, names, combat, vhb=None, rom_combat=None, 
         # still only has community damage.
         doc["meta"]["rom_combat"] = {
             "vitality": int(rom_combat_meta["vitality_max"]),
-            "att_bonus": rom_combat_meta.get("att_bonus"),
-            "def_bonus": rom_combat_meta.get("def_bonus"),
+            "community_damage_scale": COMMUNITY_DAMAGE_SCALE,
             "stun_max": rom_combat_meta.get("stun_max"),
             "moves_captured": sum(1 for m in moves.values() if "rom_combat" in m),
             "source": ROM_COMBAT_SOURCE,

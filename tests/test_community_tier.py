@@ -43,12 +43,14 @@ def test_engine_damage_reads_the_community_tier():
     import pygame
     pygame.init(); pygame.display.set_mode((1, 1))
     from street_fighter_3rd.data.community import community_damage, community_move
-    assert community_damage("forward_throw", 0) == 142
-    assert community_damage("gohadoken_light", 0) == 128 and community_damage("air_gohadoken", 0) == 75
-    assert community_damage("shun_goku_satsu", 0) == 652
+    # On the ROM life scale community damage is divided by the 7.5 anchor to
+    # recover the raw (== ROM applied) value.
+    assert community_damage("forward_throw", 0) == 19
+    assert community_damage("gohadoken_light", 0) == 17 and community_damage("air_gohadoken", 0) == 10
+    assert community_damage("shun_goku_satsu", 0) == 87
     assert community_move("nope") is None and community_damage("nope", 7) == 7
     from street_fighter_3rd.core.projectile import Gohadoken
     from street_fighter_3rd.data.enums import FacingDirection
     p = Gohadoken(0, 0, 5.0, FacingDirection.RIGHT, "light")
-    assert p.damage == 128
+    assert p.damage == 17
     pygame.quit()

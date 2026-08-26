@@ -240,10 +240,16 @@ class HitboxRepository:
         return int(v) if v else None
 
     def community_scale(self) -> float:
-        """Factor that maps community-tier (1050-scale) damage onto the scale the
-        engine runs at: 1.0 without a capture, vitality/1050 with one."""
-        v = self.vitality()
-        return (v / 1050.0) if v else 1.0
+        """Factor mapping community-tier damage onto the scale the engine runs
+        at: 1.0 without a capture; with one, 1/community_damage_scale, which
+        recovers the raw (== ROM applied) value the capture confirmed
+        (community 150 -> ROM 20 on the 160 life bar). Captured moves use their
+        exact ROM value directly; this only rescales uncaptured moves."""
+        rc = (self._meta or {}).get("rom_combat") or {}
+        if not rc.get("vitality"):
+            return 1.0
+        scale = rc.get("community_damage_scale")
+        return (1.0 / scale) if scale else (rc["vitality"] / 1050.0)
 
     def get_move_by_state(self, state_name: str,
                           variant: Optional[str] = None) -> Optional[MoveRecord]:

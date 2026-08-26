@@ -190,6 +190,18 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
+- **Combat runs on the ROM's own scale now.** A live Fightcade capture
+  (Akuma vs Akuma, 20 ground/jump normals) confirmed the arcade life bar is
+  0xA0 = **160** for everyone and that our stored damage was a x7.5 inflation
+  of the real values. Akuma's `max_health` is now 160; the 20 captured moves
+  use their exact ROM damage / stun / hitstun (st.MP 20 dmg / 15 hitstun,
+  cr.HK 22 / 60-frame knockdown, heavies 24); every other move's community
+  damage is divided by the 7.5 anchor to recover the raw (== ROM) value on the
+  same bar (throw 19, fireball 17, SA2 66, KKZ 107, Raging Demon 87). The
+  Frame Lab tags captured moves `verified` and stops diffing their damage /
+  hitstun / advantage against the community tier. Block-pass (blockstun/chip),
+  specials, throws and supers are not captured yet — they stay calibrated
+  community until a second session (`tools/rom_extract/CAPTURE.md`).
 - **Community tier regenerated from Baston (revised) at one scale.** The
   damage/stun/advantage rows were "Baston + tuning" on no fixed scale (st.LP
   was 20x its Baston number, st.HP 7.5x) and many advantages disagreed with

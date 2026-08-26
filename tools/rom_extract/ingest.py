@@ -375,14 +375,23 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
     meta = {"vitality_max": 0, "vitality_internal_max": 0, "att_bonus": None, "def_bonus": None,
             "stun_max": None, "connects": 0, "hits": 0, "blocks": 0, "parries": 0}
     n = len(records)
+    # The dump's anim_frame is a running cel id, not an index into the move:
+    # count the move's frames from the attacker's animation-id change instead.
+    move_start = [0] * n
+    for i in range(n):
+        a, pa = records[i].get(attacker), records[i - 1].get(attacker) if i else None
+        move_start[i] = i if (i == 0 or not pa or a["anim"] != pa["anim"]) else move_start[i - 1]
     for i in range(1, n):
         a, d = records[i].get(attacker), records[i].get(defender)
         pa, pd = records[i - 1].get(attacker), records[i - 1].get(defender)
         if not (a and d and pa and pd):
             continue
-        meta["vitality_max"] = max(meta["vitality_max"], d["life"], a["life"])
-        meta["vitality_internal_max"] = max(meta["vitality_internal_max"], d.get("vitality", 0), a.get("vitality", 0))
-        meta["att_bonus"] = a["att_bonus"]; meta["def_bonus"] = d["def_bonus"]; meta["stun_max"] = d["stun_max"]
+        # life is a byte view of the bar (wraps on KO/refill); the vitality word is the scale
+        meta["vitality_max"] = max(meta["vitality_max"], d.get("vitality", 0), a.get("vitality", 0))
+        meta["vitality_internal_max"] = meta["vitality_max"]
+        meta["att_bonus"] = a["att_bonus"] or meta["att_bonus"]
+        meta["def_bonus"] = d["def_bonus"] or meta["def_bonus"]
+        meta["stun_max"] = d["stun_max"] or meta["stun_max"]
         hit = d["hits_received"] > pd["hits_received"]
         marker_rise = pd["conn_marker"] == 0 and d["conn_marker"] != 0
         parry = marker_rise and d["conn_marker"] == PARRY_MARKER and not hit
@@ -392,22 +401,30 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
         kind = "hit" if hit else ("block" if block else "parry")
         meta["connects"] += 1; meta[kind + "s" if kind != "parry" else "parries"] += 1
         # attacker's move + ROM frame (1-indexed) at the connect
-        anim, frame = a["anim"], int(a["anim_frame"]) + 1
-        # settle window: damage/stun applied over the next few frames
+        anim, frame = a["anim"], i - move_start[i] + 1
+        # Applied damage/stun: the ROM writes dm_vital / dm_piyo on the defender
+        # the frame the hit registers (exactly what it will subtract); the
+        # life/stun-bar deltas over the settle window are the fallback.
         life_before, stun_before = pd["life"], pd["stun_bar"]
         life_after, stun_after = life_before, stun_before
         for j in range(i, min(n, i + CONNECT_SETTLE_FRAMES)):
             dj = records[j].get(defender)
             if dj:
                 life_after = min(life_after, dj["life"]); stun_after = max(stun_after, dj["stun_bar"])
-        damage = life_before - life_after
-        stun = stun_after - stun_before
+        damage = d["dmg_next"] if d["dmg_next"] else max(0, life_before - life_after)
+        stun = d["stun_next"] if d["stun_next"] else max(0, stun_after - stun_before)
         hitstop = max((records[j][defender]["freeze"] for j in range(i, min(n, i + 3)) if records[j].get(defender)), default=0)
-        # stun duration: connect -> defender idle again, minus hitstop
+        # stun duration: connect -> defender idle again, minus hitstop. If the
+        # next connect lands first (a multi-hit string) this sample can't
+        # measure it -> None (the follow-up hit's own sample still can).
         stun_frames = None
         for j in range(i + 1, min(n, i + MAX_STUN_FRAMES)):
             dj, pj = records[j].get(defender), records[j - 1].get(defender)
-            if dj and pj and _idle(dj, pj):
+            if not (dj and pj):
+                continue
+            if dj["hits_received"] > pj["hits_received"] or (pj["conn_marker"] == 0 and dj["conn_marker"] != 0):
+                break
+            if _idle(dj, pj):
                 stun_frames = (j - i) - hitstop
                 break
         sample = {"f": records[i]["f"], "frame": frame, "damage": damage, "stun": stun,
@@ -457,21 +474,27 @@ def _combat_selftest() -> None:
     """Synthetic: a 3-frame connect on anim 1438 -- hit on frame 2, defender
     frozen 6 frames then in stun for 8 more, then idle."""
     def c(life=160, hits=0, marker=0, freeze=0, recovery=0, busy=0, blocking=0, stun_bar=0, anim="1438", af=0):
-        return {"anim": anim, "anim_frame": af, "posture": 0, "pos_x": 0, "life": life, "dmg_next": 0,
-                "stun_next": 0, "freeze": freeze, "recovery": recovery, "busy": busy, "blocking_id": blocking,
-                "hits_received": hits, "conn_marker": marker, "input_cap": 1, "att_bonus": 8, "stun_bonus": 8,
-                "def_bonus": 8, "stun_max": 64, "stun_timer": 0, "stun_bar": stun_bar}
-    recs = [{"f": 1, "c1": c(af=3), "c2": c()}, {"f": 2, "c1": c(af=4, freeze=6), "c2": c(hits=1, freeze=6)}]
-    for k in range(3, 9):   # frozen
-        recs.append({"f": k, "c1": c(af=4, freeze=8 - k), "c2": c(hits=1, life=150, stun_bar=3, freeze=8 - k, recovery=20, busy=1)})
-    for k in range(9, 17):  # hitstun counting down
-        recs.append({"f": k, "c1": c(af=k), "c2": c(hits=1, life=150, stun_bar=3, recovery=20 - (k - 8), busy=1)})
-    recs.append({"f": 17, "c1": c(af=17), "c2": c(hits=1, life=150, stun_bar=3, recovery=12)})
-    recs.append({"f": 18, "c1": c(af=18), "c2": c(hits=1, life=150, stun_bar=3, recovery=12)})
+        return {"anim": anim, "anim_frame": af, "posture": 0, "pos_x": 0, "life": life, "vitality": 160,
+                "dmg_next": 0, "dm_vital": 0, "stun_next": 0, "freeze": freeze, "recovery": recovery,
+                "busy": busy, "blocking_id": blocking, "hits_received": hits, "conn_marker": marker,
+                "input_cap": 1, "att_bonus": 8, "stun_bonus": 8, "def_bonus": 8, "stun_max": 64,
+                "stun_timer": 0, "stun_bar": stun_bar}
+    # move-frame counting starts at the anim-id change: 4 startup frames of the
+    # attack anim, then the hit on move-frame 5.
+    recs = [{"f": 0, "c1": c(anim="0000"), "c2": c()}]
+    recs += [{"f": 1 + k, "c1": c(af=k), "c2": c()} for k in range(4)]   # startup 1..4
+    recs.append({"f": 5, "c1": c(af=5, freeze=6), "c2": c(hits=1, freeze=6)})
+    f = 6
+    for k in range(5):      # remaining freeze (5..1)
+        recs.append({"f": f, "c1": c(af=6, freeze=5 - k), "c2": c(hits=1, life=150, stun_bar=3, freeze=5 - k, recovery=20, busy=1)}); f += 1
+    for k in range(8):      # hitstun counting down (defender busy)
+        recs.append({"f": f, "c1": c(af=6 + k), "c2": c(hits=1, life=150, stun_bar=3, recovery=19 - k, busy=1)}); f += 1
+    for k in range(2):      # idle again
+        recs.append({"f": f, "c1": c(af=20 + k), "c2": c(hits=1, life=150, stun_bar=3, recovery=0)}); f += 1
     d = summarize_combat(derive_combat(recs))
     w = d["moves"]["1438"]["windows"][0]
     assert w["frame"] == 5 and w["damage"] == 10 and w["stun"] == 3 and w["hitstop"] == 6, w
-    assert w["hitstun"] == 17 - 2 - 6, w   # idle first seen at f17: 15 frames after connect, minus 6 hitstop
+    assert w["hitstun"] == 9, w   # frames from connect to idle, minus hitstop
     assert d["_meta"]["vitality_max"] == 160 and d["_meta"]["hits"] == 1
     print("combat selftest OK:", json.dumps(w))
 

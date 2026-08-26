@@ -51,5 +51,7 @@ def community_damage(key: str, default: int, character: str = "akuma") -> int:
     """Damage for a move key on the scale the engine runs at, else `default`
     (also rescaled)."""
     move = community_move(key, character)
-    raw = int(move["damage"]) if (move and move.get("damage") is not None) else int(default)
+    if not (move and move.get("damage") is not None):
+        return int(default)
+    raw = int(move["damage"])
     return max(1, int(round(raw * _engine_scale()))) if raw > 0 else raw
