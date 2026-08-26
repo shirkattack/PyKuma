@@ -28,7 +28,7 @@ def pygame_headless():
     pygame.quit()
 
 
-def _run(motion, p1x=400, p2x=640):
+def _run(motion, p1x=720, p2x=960):
     g = new_game()
     g.player1.x, g.player2.x = p1x, p2x
     g.player1.facing, g.player2.facing = FacingDirection.RIGHT, FacingDirection.LEFT
@@ -73,7 +73,7 @@ def test_invincible_defender_is_not_hit():
     from types import SimpleNamespace
     g = new_game()
     p1, p2 = g.player1, g.player2
-    p1.x, p2.x = 320, 360
+    p1.x, p2.x = 640, 680
     p1._transition_to_state(CharacterState.HEAVY_PUNCH)
     p2.is_invincible = True
     hp0 = p2.health

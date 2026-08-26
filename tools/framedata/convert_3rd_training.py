@@ -346,9 +346,60 @@ def load_vhb_supplement(path):
     return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
-def build_move(rom_id, entry, names, combat, vhb=None):
+# The community yaml stores damage at this multiple of the ROM's applied value
+# (baston_to_community.py DAMAGE_SCALE = 180/24). On the ROM life scale the
+# engine divides community damage by it to recover the raw (== ROM) number.
+COMMUNITY_DAMAGE_SCALE = 7.5
+
+ROM_COMBAT_SOURCE = ("sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> "
+                     "ingest.py combat): applied damage/stun/hitstop/hitstun read live")
+
+
+def load_rom_combat(path):
+    """{rom_id: {"windows": [...], "parries": n}} + meta from ingest.py combat."""
+    if not path or not Path(path).exists():
+        return {}, {}
+    data = json.loads(Path(path).read_text())
+    return data.get("moves", {}), data.get("_meta", {})
+
+
+def rom_combat_block(windows, hit_windows):
+    """Attach captured per-connect values to the move's ROM hit windows.
+    Each captured connect frame is assigned to the window containing it (or
+    the nearest one). Returns the tier block, or None when nothing captured."""
+    if not windows:
+        return None
+    def window_index(frame):
+        for i, (a, b) in enumerate(hit_windows):
+            if a <= frame <= b:
+                return i
+        if not hit_windows:
+            return 0
+        return min(range(len(hit_windows)), key=lambda i: min(abs(frame - hit_windows[i][0]), abs(frame - hit_windows[i][1])))
+    per_window = {}
+    for w in windows:
+        wi = window_index(int(w["frame"]))
+        e = per_window.setdefault(wi, {"window": wi, "frames": [], "damage": None, "stun": None,
+                                       "hitstop": None, "hitstun": None, "blockstun": None, "chip": None,
+                                       "samples": {"hits": 0, "blocks": 0}})
+        e["frames"].append(int(w["frame"]))
+        for k in ("damage", "stun", "hitstop", "hitstun", "blockstun", "chip"):
+            if w.get(k) is not None and e[k] is None:
+                e[k] = int(w[k])
+        e["samples"]["hits"] += int(w["samples"]["hits"]); e["samples"]["blocks"] += int(w["samples"]["blocks"])
+    hits = [per_window[k] for k in sorted(per_window)]
+    return {
+        "status": "verified",
+        "source": ROM_COMBAT_SOURCE,
+        "damage_total": sum(h["damage"] for h in hits if h["damage"] is not None),
+        "hits": hits,
+    }
+
+
+def build_move(rom_id, entry, names, combat, vhb=None, rom_combat=None):
     """Build one move record dict, or None if it has no attack frames."""
     vhb = vhb or {}
+    rom_combat = rom_combat or {}
     frames = entry.get("frames", [])
     timing = compute_timing(frames)
     if timing is None:
@@ -434,11 +485,16 @@ def build_move(rom_id, entry, names, combat, vhb=None):
                 combat_block["damage_total"] = combat_block["damage"]
                 combat_block["damage"] = max(1, combat_block["damage"] // n_hits)
             record["combat"] = combat_block
+    rc = rom_combat.get(rom_id)
+    if rc:
+        block = rom_combat_block(rc.get("windows", []), hit_windows)
+        if block:
+            record["rom_combat"] = block
 
     return record
 
 
-def build_document(source_json, name, names, combat, vhb=None):
+def build_document(source_json, name, names, combat, vhb=None, rom_combat=None, rom_combat_meta=None):
     data = json.loads(Path(source_json).read_text())
 
     pushbox, throwbox, base_hurtbox = extract_base_boxes(data["idle"])
@@ -456,7 +512,7 @@ def build_document(source_json, name, names, combat, vhb=None):
             continue
         if not isinstance(entry, dict) or "frames" not in entry:
             continue
-        rec = build_move(rom_id, entry, names, combat, vhb)
+        rec = build_move(rom_id, entry, names, combat, vhb, rom_combat)
         if rec is not None:
             moves[rom_id] = rec
 
@@ -484,6 +540,18 @@ def build_document(source_json, name, names, combat, vhb=None):
         "throwbox": tag_base(throwbox),
         "moves": moves,
     }
+    if rom_combat_meta and rom_combat_meta.get("vitality_max"):
+        # The captured life-bar scale (0xA0 = 160 in the ROM) and the
+        # attacker/defender multipliers the capture was made with. When
+        # present, the engine runs on this scale and rescales any move that
+        # still only has community damage.
+        doc["meta"]["rom_combat"] = {
+            "vitality": int(rom_combat_meta["vitality_max"]),
+            "community_damage_scale": COMMUNITY_DAMAGE_SCALE,
+            "stun_max": rom_combat_meta.get("stun_max"),
+            "moves_captured": sum(1 for m in moves.values() if "rom_combat" in m),
+            "source": ROM_COMBAT_SOURCE,
+        }
     return doc
 
 
@@ -516,6 +584,9 @@ def main(argv=None):
                              "data/characters/<name>/sf3_authentic_frame_data.yaml)")
     parser.add_argument("--out", default=None,
                         help="output yaml (default: data/characters/<name>/hitboxes.yaml)")
+    parser.add_argument("--rom-combat", default=None,
+                        help="rom_combat.json from `ingest.py combat` (default: "
+                             "data/characters/<name>/rom_combat.json if present)")
     parser.add_argument("--vhb", default=None,
                         help="per-move vulnerability supplement json (default: "
                              "data/characters/<name>/vhb_supplement.json if present)")
@@ -531,7 +602,11 @@ def main(argv=None):
     combat = load_combat(combat_path)
     vhb = load_vhb_supplement(vhb_path)
 
-    doc = build_document(args.source, args.name, names, combat, vhb)
+    rom_combat_path = args.rom_combat or (char_dir / 'rom_combat.json')
+
+    rom_combat, rom_combat_meta = load_rom_combat(rom_combat_path)
+
+    doc = build_document(args.source, args.name, names, combat, vhb, rom_combat=rom_combat, rom_combat_meta=rom_combat_meta)
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     n_moves = len(doc["moves"])
     dump_yaml(doc, out_path)

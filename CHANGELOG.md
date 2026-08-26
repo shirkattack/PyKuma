@@ -19,6 +19,26 @@ ROM-accurate.
   izakaya street background ships as `assets/backgrounds/izakaya-stage.png`
   (the default stage). Characters gained a `super_art` (1/2/3) field for the
   meter numeral.
+- **Arcade ROM tables read directly** (`tools/rom_extract/cps3_chardata.py`):
+  decrypts the sfiii3nr1 program SIMMs in memory (CPS3 cipher + table
+  locations from crowded-street/3sx) and vendors Akuma's `atta` attack boxes
+  and `atit` attack data (`data/sources/cps3_akuma_chardata.json`). Every
+  attack box in the RAM dump is in the ROM table verbatim (test), so the
+  geometry tier is verified against the ROM itself; the attack table gives
+  raw damage (`Power_Data[pow]`), stun index, hitstop, guard bits, reaction
+  and level per cel — linking them to moves is the next step.
+- **ROM-exact combat capture pipeline** (`tools/rom_extract`): the dump script
+  now records both players' applied damage / stun, hitstop (freeze), recovery,
+  blocking and the attack/defense multipliers every frame (all addresses are
+  ones 3rd_training_lua reads; semantics confirmed in the 3s-decomp disc
+  source: `dm_vital` is post-multiplier damage and the life bar is 0xA0 = 160
+  for everyone). `ingest.py combat` turns a session into `rom_combat.json`
+  (per move + hit frame: damage, stun, hitstop, hitstun, blockstun, chip); the
+  converter attaches it per hit window as a `verified` `rom_combat` block and
+  records the life-bar scale; the engine then runs at 160 vitality, prefers
+  captured values, rescales community-only moves, and the Frame Lab reports
+  combat discrepancies as `verified`. Recipe: `tools/rom_extract/CAPTURE.md`.
+  No capture is checked in yet — Baston remains the live tier until then.
 - **Proximity normals, straight-jump normals, f+MP and the dive kick.** The
   remaining unnamed ROM scripts (bar the Demon Flip followups) are mapped:
   close Jab `13a8`, far Strong `1598`, close Fierce `1728`, far Forward `1a38`,
@@ -178,6 +198,18 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
+- **Combat runs on the ROM's own scale now.** A live Fightcade capture
+  (Akuma vs Akuma, 20 ground/jump normals) confirmed the arcade life bar is
+  0xA0 = **160** for everyone and that our stored damage was a x7.5 inflation
+  of the real values. Akuma's `max_health` is now 160; the 20 captured moves
+  use their exact ROM damage / stun / hitstun (st.MP 20 dmg / 15 hitstun,
+  cr.HK 22 / 60-frame knockdown, heavies 24); every other move's community
+  damage is divided by the 7.5 anchor to recover the raw (== ROM) value on the
+  same bar (throw 19, fireball 17, SA2 66, KKZ 107, Raging Demon 87). The
+  Frame Lab tags captured moves `verified` and stops diffing their damage /
+  hitstun / advantage against the community tier. Block-pass (blockstun/chip),
+  specials, throws and supers are not captured yet — they stay calibrated
+  community until a second session (`tools/rom_extract/CAPTURE.md`).
 - **Community tier regenerated from Baston (revised) at one scale.** The
   damage/stun/advantage rows were "Baston + tuning" on no fixed scale (st.LP
   was 20x its Baston number, st.HP 7.5x) and many advantages disagreed with

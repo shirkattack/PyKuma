@@ -181,6 +181,7 @@ class Expected:
     active_frames: tuple = ()          # 1-indexed declared active frames
     segment: bool = False              # ROM script is only part of the move:
                                        # recovery/gap/total aren't script-measurable
+    combat_tier: str = "community"     # 'verified' when damage/stun come from the ROM capture
 
 
 @dataclass
@@ -286,6 +287,9 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
     if mfd.hitboxes:
         hb = mfd.hitboxes[0][1]
         dmg, hs, bs = hb.damage, hb.hitstun, hb.blockstun
+    # Provenance of the combat expectations: the captured ROM tier when the
+    # move has one, else the community tier.
+    combat_tier = "verified" if getattr(mfd, "rom_combat", None) else "community"
     active = len(mfd.active)
     # ROM total is the ruler; a multi-hit move (s.HK) has a GAP between its
     # active windows, so total > startup + active + recovery.
@@ -297,15 +301,20 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
         # The ROM script is only the rise/spin; the move's length is the
         # community total (recovery/gap are not measurable from the script).
         total = int(mfd.community_total)
+    # A verified move's damage/hitstun come from the ROM capture; its advantage
+    # is whatever they imply, so there is no community advantage to diff against.
+    on_hit = None if combat_tier == "verified" else getattr(mfd, "on_hit", None)
+    on_block = None if combat_tier == "verified" else getattr(mfd, "on_block", None)
     return Expected(
         startup=mfd.startup, active=active, recovery=mfd.recovery,
         total=total,
         damage=dmg, hitstun=hs, blockstun=bs,
-        on_hit=getattr(mfd, "on_hit", None), on_block=getattr(mfd, "on_block", None),
+        on_hit=on_hit, on_block=on_block,
         gap=max(0, total - (mfd.startup + active + mfd.recovery)),
         hit_windows=windows,
         active_frames=tuple(mfd.active),
         segment=segment,
+        combat_tier=combat_tier,
     )
 
 
@@ -464,16 +473,16 @@ class MoveCapture:
             if h.blocked:
                 if e.blockstun and h.blockstun != e.blockstun:
                     self._flag("blockstun", h.blockstun, e.blockstun, community,
-                               "community",
+                               e.combat_tier,
                                "declared blockstun is applied directly "
                                "(hitstun//2 is only the no-data fallback)")
             else:
                 if e.damage and h.raw_damage != e.damage:
                     self._flag("damage", h.raw_damage, e.damage, community,
-                               "community",
+                               e.combat_tier,
                                f"raw (pre-scaling); scaled applied={h.scaled_damage}")
                 if e.hitstun and h.hitstun != e.hitstun:
-                    self._flag("hitstun", h.hitstun, e.hitstun, community, "community")
+                    self._flag("hitstun", h.hitstun, e.hitstun, community, e.combat_tier)
             exp_stop = self._expected_hitstop(h.scaled_damage)
             if exp_stop is not None and h.hitstop != exp_stop:
                 self._flag("hitstop", h.hitstop, exp_stop,

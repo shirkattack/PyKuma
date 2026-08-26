@@ -26,7 +26,7 @@ import pygame
 import pytest
 
 from street_fighter_3rd.data.enums import CharacterState, FacingDirection, HitEffect
-from street_fighter_3rd.data.constants import STAGE_RIGHT_BOUND
+from street_fighter_3rd.data.constants import STAGE_RIGHT_BOUND, STAGE_LEFT_BOUND
 from street_fighter_3rd.characters.character import apply_reaction
 
 
@@ -175,7 +175,7 @@ def _forward_jump(p, direction):
     p._transition_to_state(CharacterState.JUMPING)
 
 
-@pytest.mark.parametrize("wall,direction", [(STAGE_RIGHT_BOUND, +1), (80, -1)])
+@pytest.mark.parametrize("wall,direction", [(STAGE_RIGHT_BOUND, +1), (STAGE_LEFT_BOUND, -1)])
 def test_jumping_over_cornered_opponent_lands_in_front(game, wall, direction):
     """You cannot cross up a cornered opponent: the defender AT the wall keeps
     the corner and the jumper lands on the open side. Previously the jumper,

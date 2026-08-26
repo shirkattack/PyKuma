@@ -93,3 +93,66 @@ Or just hand me `pykuma_dump.jsonl` and I'll do the ingest + apply (Phase 5).
   `{left,width,bottom,height}`).
 - `physics.yaml` lists a detected jump (gravity, initial velocity, airborne
   frames, apex), walk speed, and dash runs (distance + per-frame curve).
+
+
+---
+
+## Combat capture — ROM-exact damage / stun / hitstop / hitstun
+
+The same script now also records both players' combat state every frame
+(`c1` / `c2` in each JSONL line: life, applied damage and stun, freeze
+(hitstop), recovery, blocking id, hit counters, attack/defense multipliers,
+stun gauge). Every address is one 3rd_training_lua reads; the disc source
+(crowded-street/3s-decomp `Pow_Pow.c` / `HITCHECK.c` / `VITAL.c`) confirms the
+meaning: `dm_vital` is the damage *after* `att_plus`/`def_plus`, the life bar
+is `0xA0 = 160` for everyone, hitstop is the freeze counter.
+
+**Session (Akuma vs Akuma, training mode, dummy standing):**
+
+1. Run the script as above. Set the dummy to **stand, no guard**.
+2. Land every move **on hit** at least twice: all standing normals close AND
+   far, the crouching normals, every jump normal (forward and neutral jump),
+   f+MP, UOH, the dive kick, LP/MP/HP DP, LK/MK/HK tatsu (ground and air), the
+   fireballs, the demon-flip followups, throws, the supers. Let the dummy
+   recover fully between hits (the ingest measures hitstun by waiting for it
+   to go idle).
+3. Set the dummy to **guard** and repeat everything **on block** (this gives
+   blockstun and chip).
+4. Close the emulator. Then:
+
+```
+uv run python tools/rom_extract/ingest.py combat \
+    ~/.var/app/com.fightcade.Fightcade/data/fbneo-training-mode/pykuma_dump.jsonl \
+    --out data/characters/akuma/rom_combat.json --raw /tmp/rom_combat_raw.json
+uv run python tools/framedata/convert_3rd_training.py data/sources/gouki_framedata.json \
+    --name akuma --names data/characters/akuma/move_names.json \
+    --combat data/characters/akuma/sf3_authentic_frame_data.yaml \
+    --vhb data/characters/akuma/vhb_supplement.json \
+    --out data/characters/akuma/hitboxes.yaml      # picks up rom_combat.json automatically
+uv run pytest -q
+```
+
+`rom_combat.json` holds, per ROM animation id and hit frame, the median of the
+captured samples (damage, stun, hitstop, hitstun on hit; blockstun and chip on
+block). The converter attaches them per hit window as a `rom_combat` block
+(`status: verified`) and records the life-bar scale in `meta.rom_combat`; the
+engine then runs at 160 vitality, prefers the captured values, and rescales
+any move that only has community damage. Baston stays as a cross-check
+(`tests/test_rom_combat.py` reports where the two disagree).
+
+Do **not** hand-edit `rom_combat.json` — re-capture instead.
+
+
+### Notes from the first session (2026-08-26)
+
+- A **hit-only** pass gives damage / stun / hitstop / hitstun per move, but NOT
+  blockstun or chip -- for those the dummy must be **guarding** (`blocking_id`
+  becomes 1..4). If a pass reports `0 blocks`, the dummy wasn't set to guard.
+- `att_bonus` / `def_bonus` read 0 outside the exact hit frame, so they are not
+  used; the captured `dm_vital` is already the *applied* damage, which is what
+  we store.
+- The first capture covered the ground normals (close+far) and a few jump
+  normals. A follow-up session should add: the on-block pass, the specials
+  (DP / tatsu / fireballs / demon-flip followups), f+MP, UOH, the dive kick,
+  the neutral-jump normals, throws and the supers. Samples from a new session
+  merge with the old by move, so re-running only the missing moves is enough.

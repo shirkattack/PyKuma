@@ -35,7 +35,7 @@ def pygame_headless():
 def _run(script, dist, p2_script=None, frames=90):
     g = new_game()
     p1, p2 = g.player1, g.player2
-    p1.x, p2.x = 300, 300 + dist
+    p1.x, p2.x = 620, 620 + dist
     p1._prev_x, p2._prev_x = p1.x, p2.x
     g.input_system = ScriptedInputSystem(script, p2_script or [])
     p1.input, p2.input = g.input_system.player1, g.input_system.player2
@@ -132,8 +132,9 @@ def test_forward_mp_is_a_two_hit_overhead():
     vs_stand = _run(script, 60, p2_script=hold(I.BACK, 90))
     assert {s for s, _ in vs_crouch["seen"]} == {CharacterState.FORWARD_MP}
     assert vs_crouch["hits"] == 2, "f+MP registers two ROM hits"
-    assert vs_crouch["p2"].health < 1050 - 50, "an overhead beats a crouching guard"
-    assert vs_stand["hits"] == 2 and 1050 - vs_stand["p2"].health < 30, "standing guard blocks it (chip only)"
+    full = vs_crouch["p2"].max_health
+    assert vs_crouch["p2"].health < full - 6, "an overhead beats a crouching guard"
+    assert vs_stand["hits"] == 2 and full - vs_stand["p2"].health < 6, "standing guard blocks it (chip only)"
     mfd = get_move_frame_data(CharacterState.FORWARD_MP)
     assert mfd.hitboxes[0][1].hit_type == HitType.HIGH and mfd.total == 42 and mfd.hit_windows == [[15, 15], [16, 16]]
 

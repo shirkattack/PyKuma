@@ -139,7 +139,7 @@ def jump_arc() -> Scenario:
     """P1 forward jump from neutral (verify a clean rising/falling arc)."""
     return Scenario(
         name="jump_arc", frames=60,
-        p1={"x": 300, "facing": "R"}, p2={"x": 560, "facing": "L"},
+        p1={"x": 620, "facing": "R"}, p2={"x": 880, "facing": "L"},
         # tap up-forward (held briefly), then neutral so it jumps once and lands
         p1_inputs=hold(InputDirection.UP_FORWARD, 4) + hold(InputDirection.NEUTRAL, 56))
 
@@ -148,7 +148,7 @@ def jab_knockback() -> Scenario:
     """P1 standing LP point-blank into P2 (verify P2's hit reaction + knockback)."""
     return Scenario(
         name="jab_knockback", frames=40,
-        p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},
+        p1={"x": 620, "facing": "R"}, p2={"x": 680, "facing": "L"},
         p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.LIGHT_PUNCH) + hold(None, 37))
 
 
@@ -158,7 +158,7 @@ def launch_recovery() -> Scenario:
     scenario. For a real launch use apply_reaction(HitEffect.JUGGLE).)"""
     return Scenario(
         name="launch_recovery", frames=110,
-        p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},
+        p1={"x": 620, "facing": "R"}, p2={"x": 680, "facing": "L"},
         p1_inputs=hold(InputDirection.NEUTRAL, 2) + tap(Button.HEAVY_PUNCH) + hold(None, 107))
 
 
@@ -173,7 +173,7 @@ def crouch_hp() -> Scenario:
     because CROUCH_HEAVY_PUNCH had no ROM move mapped)."""
     return Scenario(
         name="crouch_hp", frames=40,
-        p1={"x": 320, "facing": "R"}, p2={"x": 380, "facing": "L"},
+        p1={"x": 640, "facing": "R"}, p2={"x": 700, "facing": "L"},
         p1_inputs=hold(InputDirection.DOWN, 4) + [(InputDirection.DOWN, [Button.HEAVY_PUNCH])]
                   + hold(InputDirection.DOWN, 35))
 
@@ -188,7 +188,7 @@ def mash_jabs() -> Scenario:
     one_jab = tap(Button.LIGHT_PUNCH) + hold(None, 9)   # press, then idle to recover
     return Scenario(
         name="mash_jabs", frames=70,
-        p1={"x": 300, "facing": "R"}, p2={"x": 360, "facing": "L"},
+        p1={"x": 620, "facing": "R"}, p2={"x": 680, "facing": "L"},
         p1_inputs=one_jab * 6)
 
 

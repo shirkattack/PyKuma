@@ -48,3 +48,18 @@ move-name mapping, replacing the prior timing/geometry inference for the moves i
 covers (see data/characters/akuma/move_names.json, name_source=metadata). It does
 not annotate every move; pointers it omits remain inferred or unnamed. Underlying
 data is (c) Capcom; vendored for educational recreation.
+
+
+cps3_akuma_chardata.json
+  Akuma's character data tables read straight out of the arcade ROM
+  (sfiii3nr1 program SIMMs 1.0-1.3, decrypted in memory) by
+  tools/rom_extract/cps3_chardata.py -- CPS3 cipher and per-character table
+  locations from crowded-street/3sx (src/arcade/cps3_decrypt.c,
+  src/arcade/arcade_char_data.c), struct layouts from 3sx
+  tools/compare_char_data.py and the 3s-decomp structs.h.
+  atta = attack boxes (every attack box in gouki_framedata.json is in it,
+  verbatim: tests/test_cps3_chardata.py), atit = per-cel attack data
+  (raw damage via POW_DATA.c Power_Data[pow], stun index, hitstop hs_me/hs_you,
+  guard bits, reaction, level), boda/hana/cata/caua/hosa boxes, hiit cel
+  box indices. Linking atit entries to moves is the next step (animation
+  script parsing, or the capture's applied dm_vital/stun match).

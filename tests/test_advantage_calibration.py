@@ -64,17 +64,28 @@ def run_move(game, state, gap, frames=170):
 # ------------------------------------------------------ calibration unit --
 
 @pytest.mark.parametrize("state,hitstun,blockstun", [
-    # Back-solved from the Baston revised advantage (community yaml `baston:`
-    # line) against the ROM timeline: stun = adv + (total + 1) - last-window start.
-    (CharacterState.MEDIUM_KICK, 23, 21),          # Forward +4/+2, total 23, hit frame 5
-    (CharacterState.CROUCH_MEDIUM_PUNCH, 21, 20),  # Crouching Strong +4/+3, total 22, frame 6
-    (CharacterState.HEAVY_KICK, 20, 18),           # Roundhouse -4/-6, total 39, last window 16
+    # These moves are ROM-captured: hitstun is the value read live from the
+    # game (tools/rom_extract), blockstun is still the calibrated community
+    # estimate until the on-block capture pass lands.
+    (CharacterState.MEDIUM_KICK, 19, 21),          # ROM hitstun 19; calibrated blockstun 21
+    (CharacterState.CROUCH_MEDIUM_PUNCH, 15, 20),  # ROM hitstun 15; calibrated blockstun 20
+    (CharacterState.HEAVY_KICK, 20, 18),           # ROM hitstun 20; calibrated blockstun 18
 ])
-def test_calibrated_stun_values(state, hitstun, blockstun):
-    """stun = advantage + (total + 1) - first frame of the LAST active window."""
+def test_captured_hitstun_with_calibrated_blockstun(state, hitstun, blockstun):
     mfd = get_move_frame_data(state)
     hb = mfd.hitboxes[0][1]
+    assert getattr(mfd, "rom_combat", None), f"{state.name} should be ROM-captured"
     assert (hb.hitstun, hb.blockstun) == (hitstun, blockstun)
+
+
+def test_calibrated_stun_for_an_uncaptured_move():
+    """The community calibration still drives an UNcaptured move: f+MP's
+    stun is back-solved from Baston advantage (+1/-1) against the ROM total."""
+    from street_fighter_3rd.data.enums import CharacterState as C
+    mfd = get_move_frame_data(C.FORWARD_MP)
+    assert not getattr(mfd, "rom_combat", None)
+    hb = mfd.hitboxes[0][1]
+    assert hb.hitstun == 28 and hb.blockstun == 26
 
 
 def test_jump_normals_keep_stored_stun():
@@ -92,14 +103,16 @@ def test_jump_normals_keep_stored_stun():
     CharacterState.MEDIUM_KICK,
     CharacterState.CROUCH_MEDIUM_PUNCH,
 ], ids=lambda s: s.name)
-def test_emergent_advantage_matches_community_on_hit(game, state):
+def test_rom_captured_move_raises_no_mechanical_discrepancy(game, state):
+    """A ROM-captured move's damage/hitstun come from the capture, so the
+    Frame Lab must not flag them (or the emergent advantage) against the
+    community tier -- there is nothing to diff against."""
     report = run_move(game, state, gap=80)
     assert report.move == state.name
     assert report.hits and not report.hits[0].blocked
-    assert report.advantage == get_move_frame_data(state).on_hit
     mech = [d for d in report.discrepancies
             if d["channel"] in ("startup", "active", "gap", "recovery",
-                                "total", "hitstun", "advantage_on_hit")]
+                                "total", "hitstun", "damage", "advantage_on_hit")]
     assert mech == [], mech
 
 
@@ -123,7 +136,7 @@ def test_declared_blockstun_is_applied(game):
     blocked = [h for h in report.hits if h.blocked]
     assert blocked, "the medium kick must have been blocked"
     expected = get_move_frame_data(CharacterState.MEDIUM_KICK).hitboxes[0][1].blockstun
-    assert blocked[0].blockstun == expected == 21
+    assert blocked[0].blockstun == expected == 21   # calibrated (on-block not captured yet)
     assert game.player2.blockstun_frames == 0  # fully served by test end
 
 
@@ -143,14 +156,9 @@ def test_heavy_kick_measures_gap_not_recovery(game):
 
 
 def test_heavy_kick_partial_connect_does_not_false_flag_advantage(game):
-    """When only ONE window of the two-hit s.HK connects, the community
-    advantage (quoted for the final hit) must not be diffed against."""
+    """s.HK is ROM-captured: its advantage emerges from ROM hitstun and is
+    never diffed against the community tier, whichever window connects."""
     report = run_move(game, CharacterState.HEAVY_KICK, gap=80)
     assert report.hits, "some window must have connected at this range"
     adv = [d for d in report.discrepancies if d["channel"] == "advantage_on_hit"]
-    if len(report.hits) == 1 and report.hits[0].move_frame < 16:
-        assert adv == [], adv  # first window only: suppressed
-    else:
-        # final window connected on its first frame: emergent == community
-        assert report.advantage == get_move_frame_data(
-            CharacterState.HEAVY_KICK).on_hit
+    assert adv == [], adv

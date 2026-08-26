@@ -47,10 +47,10 @@ def _dp_script(button):
     return hold(I.NEUTRAL, 2) + hold(I.FORWARD, 2) + hold(I.DOWN, 2) + [(I.DOWN_FORWARD, [button])] + hold(None, 150)
 
 
-def _run_dp(button, p2_x=700):
+def _run_dp(button, p2_x=1020):
     g = new_game()
     p1, p2 = g.player1, g.player2
-    p1.x, p2.x = 300, p2_x
+    p1.x, p2.x = 620, p2_x
     g.input_system = ScriptedInputSystem(_dp_script(button), [])
     p1.input, p2.input = g.input_system.player1, g.input_system.player2
     timeline = []
@@ -87,7 +87,7 @@ def test_dp_follows_rom_arc_and_lasts_baston_total(button):
 @pytest.mark.parametrize("button,hits", [(Button.LIGHT_PUNCH, 1), (Button.MEDIUM_PUNCH, 2), (Button.HEAVY_PUNCH, 3)])
 def test_dp_connects_with_rom_hit_count(button, hits):
     """LP/MP/HP Goshoryuken hit 1/2/3 times (ROM hit_frames), point-blank."""
-    tl = _run_dp(button, p2_x=360)
+    tl = _run_dp(button, p2_x=680)
     drops = sum(1 for a, b in zip(tl, tl[1:]) if b[5] < a[5])
     assert drops == hits, f"{button.name}: {drops} hits, ROM says {hits}"
 
@@ -95,7 +95,7 @@ def test_dp_connects_with_rom_hit_count(button, hits):
 def test_dp_does_not_inherit_dash_momentum():
     g = new_game()
     p1 = g.player1
-    p1.x, g.player2.x = 300, 700
+    p1.x, g.player2.x = 620, 1020
     p1._transition_to_state(CharacterState.DASH_FORWARD)
     p1.velocity_x = 6.8
     p1._execute_goshoryuken(Button.MEDIUM_PUNCH)

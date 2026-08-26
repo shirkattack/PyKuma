@@ -28,6 +28,10 @@ from street_fighter_3rd.data.constants import (
     CAMERA_MIN_ZOOM,
     CAMERA_H_MARGIN,
     CAMERA_GROUND_Y,
+    CAMERA_FEET_FRAC,
+    STAGE_FLOOR as _CAM_STAGE_FLOOR,
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
 )
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.systems.input_system import InputSystem
@@ -36,9 +40,9 @@ from street_fighter_3rd.systems.vfx import VFXManager
 from street_fighter_3rd.core.round_manager import RoundManager
 from street_fighter_3rd.core.game_modes import GameModeManager, GameMode
 
-# Round-start positions
-P1_START_X = 200
-P2_START_X = 440
+# Round-start positions: centered in the walkable area (mid 768), 240px apart.
+P1_START_X = 648
+P2_START_X = 888
 
 # Input-display glyphs. Directions are facing-relative (FORWARD = toward the
 # opponent), keyed by InputDirection numpad value.
@@ -95,7 +99,7 @@ class Game:
         # World buffer: the fight (stage + characters + boxes + vfx) is composed
         # here at NATIVE scale, then the dynamic view camera zoom-scales a crop of
         # it onto the screen. _cam = (crop_x, crop_y, zoom) for world->screen maps.
-        self._world_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._world_buf = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
         self._cam = (0.0, 0.0, 1.0)
 
         # Health-bar animation + training regen state (set up after players exist)
@@ -146,13 +150,13 @@ class Game:
                 # Scale to the native resolution if the file isn't exact, so a
                 # near-miss replacement still fills the frame (a warning nudges
                 # the author toward the native size for crisp pixels).
-                if img.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+                if img.get_size() != (WORLD_WIDTH, WORLD_HEIGHT):
                     log_once(log, ("stage_scale",), logging.WARNING,
                              "Stage background %s is %sx%s; scaling to %sx%s "
                              "(author at native size for best quality)",
                              stage_path.name, img.get_width(), img.get_height(),
-                             SCREEN_WIDTH, SCREEN_HEIGHT)
-                    img = pygame.transform.smoothscale(img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+                             WORLD_WIDTH, WORLD_HEIGHT)
+                    img = pygame.transform.smoothscale(img, (WORLD_WIDTH, WORLD_HEIGHT))
                 self.stage_background = img
                 break
             except (pygame.error, OSError, FileNotFoundError) as e:
@@ -597,7 +601,7 @@ class Game:
                 self.screen,
                 COLOR_WHITE,
                 (0, STAGE_FLOOR),
-                (SCREEN_WIDTH, STAGE_FLOOR),
+                (WORLD_WIDTH, STAGE_FLOOR),
                 2
             )
 
@@ -677,15 +681,20 @@ class Game:
         [MIN, MAX]: close fighters -> small crop -> zoomed in; far apart -> wider
         crop -> zoomed out (SF3-style). Vertically anchored to keep the ground low.
         """
-        W, H = SCREEN_WIDTH, SCREEN_HEIGHT
         midx = (self.player1.x + self.player2.x) / 2.0
         sep = abs(self.player1.x - self.player2.x)
+        # Window width = separation + breathing room, capped so the zoom
+        # (SCREEN_WIDTH / crop_w) never exceeds MAX (too close), and never wider
+        # than the world. No MIN cap: the camera zooms out only as much as the
+        # world allows, so far-apart fighters still fit and the window pans.
         crop_w = sep + 2 * CAMERA_H_MARGIN
-        crop_w = max(W / CAMERA_MAX_ZOOM, min(crop_w, W / CAMERA_MIN_ZOOM))
-        crop_w = min(crop_w, W)
-        crop_h = crop_w * H / W
-        crop_x = max(0.0, min(midx - crop_w / 2.0, W - crop_w))
-        crop_y = max(0.0, min(CAMERA_GROUND_Y - crop_h * 0.86, H - crop_h))
+        crop_w = max(SCREEN_WIDTH / CAMERA_MAX_ZOOM, crop_w)
+        crop_w = min(crop_w, WORLD_WIDTH)
+        crop_h = min(crop_w * SCREEN_HEIGHT / SCREEN_WIDTH, WORLD_HEIGHT)
+        # Pan horizontally to keep the fighters centered; clamp to the world.
+        crop_x = max(0.0, min(midx - crop_w / 2.0, WORLD_WIDTH - crop_w))
+        # Anchor vertically so the feet sit CAMERA_FEET_FRAC down the window.
+        crop_y = max(0.0, min(_CAM_STAGE_FLOOR - CAMERA_FEET_FRAC * crop_h, WORLD_HEIGHT - crop_h))
         return crop_x, crop_y, crop_w, crop_h
 
     def _blit_world_zoomed(self, offset=(0, 0)):
@@ -847,17 +856,28 @@ class Game:
         for player, base_x, mirror, ghost in (
                 (self.player1, p1x, False, self.p1_ghost_health),
                 (self.player2, p2x, True, self.p2_ghost_health)):
-            portrait = portrait_for(player)
-            if portrait:  # behind the frame; the socket hole reveals the face
-                pxs = base_x + (fw - px - portrait.get_width() if mirror else px)
-                draw(portrait, pxs, TOP + py, mirror)
             draw(frame, base_x, TOP, mirror)
             health_bar(base_x, mirror, player.health / player.max_health,
                        ghost / player.max_health)
+            # Portrait size (on-top headshot at the outer corner).
+            portrait = portrait_for(player)
+            pw = 0
+            if portrait:
+                ph = self._HUD_PORTRAIT_H
+                pw = int(portrait.get_width() * ph / portrait.get_height())
+            # Nameplate sits just INSIDE the portrait, over the gauge.
             plate = nameplate_for(player)
             if plate:
                 plate_y = TOP + fh - plate.get_height() - 1
-                draw(plate, base_x + fw - plate.get_width() - 8 if mirror else base_x + 40, plate_y)
+                inset = pw + 2
+                px_plate = base_x + fw - inset - plate.get_width() if mirror else base_x + inset
+                draw(plate, px_plate, plate_y)
+            # Portrait ON TOP of the frame, bottom-aligned and poking above it.
+            if portrait:
+                big = pygame.transform.scale(portrait, (pw, ph))
+                ox = base_x + fw - pw + self._HUD_PORTRAIT_OUT if mirror else base_x - self._HUD_PORTRAIT_OUT
+                oy = TOP + fh - ph + self._HUD_PORTRAIT_DROP
+                draw(big, ox, oy, mirror)
 
         # ---- super-art meters (bottom corners) ----
         meter = A.get("meter")
@@ -1081,6 +1101,9 @@ class Game:
     _HUD_TOP_Y = 8
     _HUD_CH = (6, 3, 167, 15)  # health channel in frame-local coords (x0,y0,x1,y1)
     _HUD_PORTRAIT_XY = (2, 5)  # portrait offset within the frame (behind it)
+    _HUD_PORTRAIT_H = 46      # on-top portrait height (pokes above the bar)
+    _HUD_PORTRAIT_OUT = 4     # px it juts past the frame's outer edge
+    _HUD_PORTRAIT_DROP = 6    # px the portrait bottom sits below the frame bottom
     _SA_NUMERAL = {1: "sa_1", 2: "sa_2", 3: "sa_3"}
 
     @staticmethod
