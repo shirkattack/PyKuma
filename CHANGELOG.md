@@ -11,6 +11,14 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **New custom HUD + stage.** The owner's HUD art (`assets/ui/hud/`) is wired
+  in: health-bar frames with portrait sockets and inner fill (depleting toward
+  centre), AKUMA nameplates, super-art meters with a MAX flash and I/II/III
+  level numeral, and a big yellow bitmap-digit timer under a TIME label. The
+  classic rectangle HUD stays as the fallback when the art is absent. The
+  izakaya street background ships as `assets/backgrounds/izakaya-stage.png`
+  (the default stage). Characters gained a `super_art` (1/2/3) field for the
+  meter numeral.
 - **Proximity normals, straight-jump normals, f+MP and the dive kick.** The
   remaining unnamed ROM scripts (bar the Demon Flip followups) are mapped:
   close Jab `13a8`, far Strong `1598`, close Fierce `1728`, far Forward `1a38`,
