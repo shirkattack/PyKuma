@@ -386,8 +386,10 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
         pa, pd = records[i - 1].get(attacker), records[i - 1].get(defender)
         if not (a and d and pa and pd):
             continue
-        # life is a byte view of the bar (wraps on KO/refill); the vitality word is the scale
-        meta["vitality_max"] = max(meta["vitality_max"], d.get("vitality", 0), a.get("vitality", 0))
+        # life is a byte view of the bar (wraps to 255 on KO/refill); the
+        # vitality word is the real scale, capped at the 0xA0 = 160 bar.
+        meta["vitality_max"] = min(160, max(meta["vitality_max"], d.get("vitality", d["life"]),
+                                            a.get("vitality", a["life"])))
         meta["vitality_internal_max"] = meta["vitality_max"]
         meta["att_bonus"] = a["att_bonus"] or meta["att_bonus"]
         meta["def_bonus"] = d["def_bonus"] or meta["def_bonus"]
@@ -441,6 +443,26 @@ def _median(xs):
     return xs[len(xs) // 2] if xs else None
 
 
+def merge_raw(deriveds: List[dict]) -> dict:
+    """Union several `derive_combat` outputs (per-session raw samples) into one.
+    A move's hit/block/parry samples from every session are concatenated, so
+    `summarize_combat` then medians across all of them. Sessions capture mostly
+    disjoint moves; where they overlap the extra samples just sharpen the
+    median."""
+    out = {"_meta": {"hits": 0, "blocks": 0, "parries": 0, "connects": 0,
+                     "vitality_max": 0, "stun_max": None, "sessions": len(deriveds)}, "moves": {}}
+    for d in deriveds:
+        for k in ("hits", "blocks", "parries", "connects"):
+            out["_meta"][k] += d["_meta"].get(k, 0)
+        out["_meta"]["vitality_max"] = min(160, max(out["_meta"]["vitality_max"], d["_meta"].get("vitality_max", 0)))
+        out["_meta"]["stun_max"] = out["_meta"]["stun_max"] or d["_meta"].get("stun_max")
+        for anim, rec in d["moves"].items():
+            m = out["moves"].setdefault(anim, {"hits": [], "blocks": [], "parries": []})
+            for kind in ("hits", "blocks", "parries"):
+                m[kind].extend(rec.get(kind, []))
+    return out
+
+
 def summarize_combat(derived: dict) -> dict:
     """Collapse samples into one value per (move, hit frame): median damage /
     stun / hitstop / hitstun (from hits) and blockstun / chip (from blocks)."""
@@ -456,12 +478,13 @@ def summarize_combat(derived: dict) -> dict:
         summary = []
         for frame in sorted(by_frame):
             e = by_frame[frame]
+            landed = [s for s in e["hits"] if s["damage"] > 0] or e["hits"]
             summary.append({
                 "frame": frame,
-                "damage": _median([s["damage"] for s in e["hits"]]),
-                "stun": _median([s["stun"] for s in e["hits"]]),
+                "damage": _median([s["damage"] for s in landed]),
+                "stun": _median([s["stun"] for s in landed]),
                 "hitstop": _median([s["hitstop"] for s in e["hits"] + e["blocks"]]),
-                "hitstun": _median([s["stun_frames"] for s in e["hits"]]),
+                "hitstun": _median([s["stun_frames"] for s in landed]),
                 "blockstun": _median([s["stun_frames"] for s in e["blocks"]]),
                 "chip": _median([s["damage"] for s in e["blocks"]]),
                 "samples": {"hits": len(e["hits"]), "blocks": len(e["blocks"])},
@@ -551,14 +574,34 @@ def main(argv=None):
     pv.add_argument("--names", default="data/characters/akuma/move_names.json")
     pv.add_argument("--vhb", default="data/characters/akuma/vhb_supplement.json")
 
-    pc = sub.add_parser("combat", help="JSONL dump -> rom_combat.json (ROM-exact damage/stun/hitstop/hitstun)")
-    pc.add_argument("dump"); pc.add_argument("--out", default="data/characters/akuma/rom_combat.json")
-    pc.add_argument("--raw", default=None, help="also write every connect sample to this path")
+    pc = sub.add_parser("combat", help="JSONL dump(s) -> rom_combat.json (ROM-exact damage/stun/hitstop/hitstun)")
+    pc.add_argument("dump", nargs="+", help="one or more capture sessions; samples merge by move")
+    pc.add_argument("--out", default="data/characters/akuma/rom_combat.json")
+    pc.add_argument("--raw", default=None, help="also write every connect sample to this path (vendor per session)")
+
+    pm2 = sub.add_parser("merge-combat", help="union per-session raw derivations -> rom_combat.json")
+    pm2.add_argument("raw", nargs="+", help="raw sample files saved by `combat --raw`")
+    pm2.add_argument("--out", default="data/characters/akuma/rom_combat.json")
     sub.add_parser("selftest", help="run the built-in self-test (no emulator)")
 
     args = p.parse_args(argv)
+    if args.cmd == "merge-combat":
+        merged = merge_raw([json.loads(Path(r).read_text()) for r in args.raw])
+        summary = summarize_combat(merged)
+        Path(args.out).write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
+        m = summary["_meta"]
+        print(f"wrote {args.out}: {len(summary['moves'])} moves from {m['sessions']} sessions, "
+              f"{m['hits']} hits / {m['blocks']} blocks / {m['parries']} parries")
+        return
     if args.cmd == "combat":
-        derived = derive_combat(load_jsonl(args.dump))
+        # Concatenate sessions: each file's frame numbers restart, which breaks
+        # a move run at every seam (no false connect -- hits_received/markers
+        # reset downward). Samples from all sessions merge per move.
+        records = []
+        for d in args.dump:
+            records.extend(load_jsonl(d))
+        derived = derive_combat(records)
+        derived["_meta"]["sessions"] = len(args.dump)
         summary = summarize_combat(derived)
         Path(args.out).write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
         if args.raw:

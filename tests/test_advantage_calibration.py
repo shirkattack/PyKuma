@@ -69,7 +69,7 @@ def run_move(game, state, gap, frames=170):
     # estimate until the on-block capture pass lands.
     (CharacterState.MEDIUM_KICK, 19, 21),          # ROM hitstun 19; calibrated blockstun 21
     (CharacterState.CROUCH_MEDIUM_PUNCH, 15, 20),  # ROM hitstun 15; calibrated blockstun 20
-    (CharacterState.HEAVY_KICK, 20, 18),           # ROM hitstun 20; calibrated blockstun 18
+    (CharacterState.HEAVY_KICK, 35, 18),           # ROM hitstun 35 (1st of 2 windows; calibrated blockstun 18)
 ])
 def test_captured_hitstun_with_calibrated_blockstun(state, hitstun, blockstun):
     mfd = get_move_frame_data(state)

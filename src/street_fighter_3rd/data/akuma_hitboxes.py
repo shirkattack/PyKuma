@@ -184,7 +184,7 @@ def _hitbox_from_box(box: SourcedBox, move: MoveRecord, frame_1indexed: int = 0)
         c_hitstun = combat.hitstun if combat else 0
         c_blockstun = combat.blockstun if combat else 0
     rom = move.rom_hit(_window_of(move, frame_1indexed)) if move.rom_combat else None
-    if rom and rom.get("damage") is not None:
+    if rom and rom.get("damage"):   # truthy: a captured 0 is a whiff, use community
         damage = int(rom["damage"])
         hitstun = int(rom["hitstun"]) if rom.get("hitstun") is not None else c_hitstun
         # blockstun needs the block pass of the capture; until then, calibrated.

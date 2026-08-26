@@ -943,6 +943,13 @@ class Character:
                            CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
                            CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
                            CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK]:
+            # A GROUNDED normal is stationary: freeze horizontal movement so a
+            # normal started out of a walk doesn't slide (the "punch while
+            # walking" bug). Air normals keep their jump momentum. Moves with
+            # built-in travel (dash, specials) drive velocity from their own
+            # ROM movement table, not this branch.
+            if self.is_grounded:
+                self.velocity_x = 0
             total = self._move_total_frames(self.state) or 20
             if self.state_frame >= total:
                 if not self.is_grounded:

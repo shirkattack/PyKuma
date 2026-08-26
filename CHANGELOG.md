@@ -68,6 +68,11 @@ ROM-accurate.
   `move_frame` (which active window a hit landed on).
 
 ### Fixed
+- **Ground normals no longer slide.** A normal started out of a walk kept its
+  walk velocity for the whole move — you could punch while drifting forward or
+  back instead of freezing in place. Grounded attack states now zero horizontal
+  velocity (air normals keep their jump momentum; moves with built-in travel
+  drive velocity from their own ROM table). Regression: `tests/test_movement.py`.
 - **Block levels are enforced.** Holding back used to block everything. Guard
   posture is now re-evaluated every frame from the held direction
   (`Character._update_guard`: back = standing, down-back = crouching; none
@@ -190,18 +195,24 @@ ROM-accurate.
   end-to-end check that all timing channels measure clean).
 
 ### Changed
-- **Combat runs on the ROM's own scale now.** A live Fightcade capture
-  (Akuma vs Akuma, 20 ground/jump normals) confirmed the arcade life bar is
-  0xA0 = **160** for everyone and that our stored damage was a x7.5 inflation
-  of the real values. Akuma's `max_health` is now 160; the 20 captured moves
-  use their exact ROM damage / stun / hitstun (st.MP 20 dmg / 15 hitstun,
-  cr.HK 22 / 60-frame knockdown, heavies 24); every other move's community
-  damage is divided by the 7.5 anchor to recover the raw (== ROM) value on the
-  same bar (throw 19, fireball 17, SA2 66, KKZ 107, Raging Demon 87). The
-  Frame Lab tags captured moves `verified` and stops diffing their damage /
-  hitstun / advantage against the community tier. Block-pass (blockstun/chip),
-  specials, throws and supers are not captured yet — they stay calibrated
-  community until a second session (`tools/rom_extract/CAPTURE.md`).
+- **Combat runs on the ROM's own scale now.** Two live Fightcade captures
+  (Akuma vs Akuma; session 1 the ground normals, session 2 the specials /
+  neutral-jump normals / demon flip), merged by `ingest.py merge-combat`
+  (**30 mapped moves**; per-session raws vendored under
+  `data/characters/akuma/rom_combat_sessions/`), confirmed the arcade life bar
+  is 0xA0 = **160** for everyone and that our stored damage was a x7.5 inflation
+  of the real values. Akuma's `max_health` is now 160; the captured moves use
+  their exact ROM damage / stun / hitstun (st.MP 20 dmg / 15 hitstun, cr.HK 22 /
+  60-frame knockdown, heavies 24; LP DP one 23-dmg hit, HP DP three hits, tatsu
+  106-frame knockdown); every other move's community damage is divided by the
+  7.5 anchor to recover the raw (== ROM) value on the same bar (throw 19,
+  fireball 17, SA2 66, KKZ 107, Raging Demon 87). The Frame Lab tags captured
+  moves `verified` and stops diffing their damage / hitstun / advantage against
+  the community tier. Not captured yet (stay calibrated community): the on-block
+  pass (blockstun/chip), the air tatsus, ground HK tatsu, f+MP, UOH, the dive
+  kick, a few jump normals, throws and supers. Multi-hit hitstun (e.g. s.HK's
+  first window) is a single-sample estimate pending more captures
+  (`tools/rom_extract/CAPTURE.md`).
 - **Community tier regenerated from Baston (revised) at one scale.** The
   damage/stun/advantage rows were "Baston + tuning" on no fixed scale (st.LP
   was 20x its Baston number, st.HP 7.5x) and many advantages disagreed with
