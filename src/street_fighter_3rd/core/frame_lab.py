@@ -301,11 +301,15 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
         # The ROM script is only the rise/spin; the move's length is the
         # community total (recovery/gap are not measurable from the script).
         total = int(mfd.community_total)
+    # A verified move's damage/hitstun come from the ROM capture; its advantage
+    # is whatever they imply, so there is no community advantage to diff against.
+    on_hit = None if combat_tier == "verified" else getattr(mfd, "on_hit", None)
+    on_block = None if combat_tier == "verified" else getattr(mfd, "on_block", None)
     return Expected(
         startup=mfd.startup, active=active, recovery=mfd.recovery,
         total=total,
         damage=dmg, hitstun=hs, blockstun=bs,
-        on_hit=getattr(mfd, "on_hit", None), on_block=getattr(mfd, "on_block", None),
+        on_hit=on_hit, on_block=on_block,
         gap=max(0, total - (mfd.startup + active + mfd.recovery)),
         hit_windows=windows,
         active_frames=tuple(mfd.active),

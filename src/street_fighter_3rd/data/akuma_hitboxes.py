@@ -175,22 +175,25 @@ def _hitbox_from_box(box: SourcedBox, move: MoveRecord, frame_1indexed: int = 0)
     hit_type = _HIT_TYPE_BY_NAME.get(combat.hit_type if combat else "MID", HitType.MID)
     # ROM-exact tier first: the applied damage / hitstun / blockstun captured
     # live for this hit window outrank the community estimates.
+    # Community stun (calibrated from advantage where possible) is the fallback
+    # for anything the ROM capture doesn't provide.
+    calibrated = _calibrated_stun(move)
+    if calibrated is not None:
+        c_hitstun, c_blockstun = calibrated
+    else:
+        c_hitstun = combat.hitstun if combat else 0
+        c_blockstun = combat.blockstun if combat else 0
     rom = move.rom_hit(_window_of(move, frame_1indexed)) if move.rom_combat else None
     if rom and rom.get("damage") is not None:
         damage = int(rom["damage"])
-        hitstun = int(rom["hitstun"]) if rom.get("hitstun") is not None else (combat.hitstun if combat else 0)
-        blockstun = int(rom["blockstun"]) if rom.get("blockstun") is not None else (combat.blockstun if combat else 0)
+        hitstun = int(rom["hitstun"]) if rom.get("hitstun") is not None else c_hitstun
+        # blockstun needs the block pass of the capture; until then, calibrated.
+        blockstun = int(rom["blockstun"]) if rom.get("blockstun") is not None else c_blockstun
     else:
         # Community tier, rescaled onto the ROM life-bar scale when a capture
         # exists (so partially captured data sets stay on one scale).
-        scale = _repo().community_scale()
-        damage = int(round((combat.damage if combat else 0) * scale))
-        calibrated = _calibrated_stun(move)
-        if calibrated is not None:
-            hitstun, blockstun = calibrated
-        else:
-            hitstun = combat.hitstun if combat else 0
-            blockstun = combat.blockstun if combat else 0
+        damage = int(round((combat.damage if combat else 0) * _repo().community_scale()))
+        hitstun, blockstun = c_hitstun, c_blockstun
     return HitboxFrame(
         offset_x=int(round(box.offset_x)),
         offset_y=int(round(box.offset_y)),

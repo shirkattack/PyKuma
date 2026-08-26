@@ -28,23 +28,27 @@ def _c(life=160, hits=0, marker=0, freeze=0, recovery=0, busy=0, blocking=0, stu
     return {"anim": anim, "anim_frame": af, "posture": 0, "pos_x": 0, "life": life, "dmg_next": 0,
             "stun_next": 0, "freeze": freeze, "recovery": recovery, "busy": busy, "blocking_id": blocking,
             "hits_received": hits, "conn_marker": marker, "input_cap": 1, "att_bonus": 8, "stun_bonus": 8,
-            "def_bonus": 10, "stun_max": 64, "stun_timer": 0, "stun_bar": stun_bar}
+            "def_bonus": 10, "stun_max": 64, "stun_timer": 0, "stun_bar": stun_bar, "vitality": 160,
+            "dmg_next": 0, "dm_vital": 0}
 
 
 def _connect(records, f0, anim, frame, kind, damage, stun, hitstop, stun_frames):
-    """Append one connect: attacker anim/frame; defender frozen `hitstop`,
-    then in stun `stun_frames`, then idle."""
+    """Append one connect at move-frame `frame`: `frame-1` startup frames of the
+    attack anim (so the ingest, which counts frames since the anim id changed,
+    reports `frame`), then the hit, `hitstop` freeze, `stun_frames` of stun,
+    then idle."""
     prev = records[-1]["c2"] if records else _c()
     life0, stun0, hits0 = prev["life"], prev["stun_bar"], prev["hits_received"]
     f = f0
-    records.append({"f": f, "c1": _c(anim=anim, af=frame - 2), "c2": _c(life=life0, stun_bar=stun0, hits=hits0)}); f += 1
+    for k in range(frame - 1):   # startup frames of this move's anim run
+        records.append({"f": f, "c1": _c(anim=anim, af=k), "c2": _c(life=life0, stun_bar=stun0, hits=hits0)}); f += 1
     hits = hits0 + (1 if kind == "hit" else 0)
     marker = 0 if kind == "hit" else (0xFFF1 if kind == "parry" else 0x0101)
-    records.append({"f": f, "c1": _c(anim=anim, af=frame - 1, freeze=hitstop),
+    records.append({"f": f, "c1": _c(anim=anim, af=frame, freeze=hitstop),
                     "c2": _c(life=life0, stun_bar=stun0, hits=hits, marker=marker, freeze=hitstop, busy=1)}); f += 1
     life1, stun1 = life0 - damage, stun0 + stun
     for k in range(hitstop - 1, 0, -1):
-        records.append({"f": f, "c1": _c(anim=anim, af=frame - 1, freeze=k),
+        records.append({"f": f, "c1": _c(anim=anim, af=frame, freeze=k),
                         "c2": _c(life=life1, stun_bar=stun1, hits=hits, marker=marker, freeze=k, recovery=30, busy=1,
                                  blocking=(2 if kind == "block" else 0))}); f += 1
     for k in range(stun_frames):
@@ -118,7 +122,11 @@ def test_engine_prefers_captured_values_over_community():
     assert (hb.damage, hb.hitstun, hb.blockstun) == (30, 20, 16)
     without = _record(None)
     hb2 = _hitbox_from_box(without.attack_boxes_for_frame(9)[0], without, 9)
-    assert hb2.damage == 180 and hb2.hitstun == 26 and hb2.blockstun == 24   # community + calibration
+    # community fallback: damage 180 rescaled onto the 160 life bar (x community_scale),
+    # hitstun/blockstun back-solved from advantage (-4/-6, total 38, hit frame 9)
+    from street_fighter_3rd.data.hitbox_repository import HitboxRepository
+    scale = HitboxRepository.instance().community_scale()
+    assert hb2.damage == round(180 * scale) and hb2.hitstun == 26 and hb2.blockstun == 24
     assert with_rom.rom_hit(5)["window"] == 0                                 # uncovered window -> last captured
 
 

@@ -60,16 +60,21 @@ class StubGame:
         lab.observe(self)
 
 
-def pick_normal_with_data():
-    """Find a grounded normal that has ROM move data + a combat-tier hitbox,
-    so the tests don't hardcode one state name."""
-    for state in (CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
-                  CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_KICK,
-                  CharacterState.HEAVY_KICK, CharacterState.LIGHT_KICK):
+def pick_normal_with_data(community_only=False):
+    """Find a grounded normal (or command normal) with ROM move data + a
+    combat-tier hitbox. When `community_only`, prefer one WITHOUT a ROM combat
+    capture so a community-provenance assertion stays meaningful."""
+    order = (CharacterState.OVERHEAD, CharacterState.FORWARD_MP,
+             CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
+             CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_KICK,
+             CharacterState.HEAVY_KICK, CharacterState.LIGHT_KICK)
+    for state in order:
         mfd = get_move_frame_data(state)
         if mfd and mfd.active and mfd.hitboxes:
+            if community_only and getattr(mfd, "rom_combat", None):
+                continue
             return state, mfd
-    pytest.skip("no ROM move data available for any grounded normal")
+    pytest.skip("no suitable ROM move data")
 
 
 def run_move(game, lab, char, state, total_frames, whiff=True):
@@ -148,7 +153,7 @@ def test_seeded_wrong_damage_yields_damage_discrepancy_and_valid_ticket(tmp_path
     """The user's canonical complaint: 'the HP does too much damage'. Seed a
     hit event whose raw damage disagrees with the community value and demand
     a dimensioned discrepancy + a schema-valid ticket."""
-    state, mfd = pick_normal_with_data()
+    state, mfd = pick_normal_with_data(community_only=True)
     exp = _expected_for(state)
     game, lab = StubGame(), FrameLab()
     char = game.player1
