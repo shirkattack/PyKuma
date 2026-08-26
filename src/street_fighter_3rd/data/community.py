@@ -37,9 +37,19 @@ def community_move(key: str, character: str = "akuma") -> Optional[Dict[str, Any
     return None
 
 
+def _engine_scale() -> float:
+    """1.0 on the community (1050) scale; vitality/1050 once a ROM combat
+    capture sets the life-bar scale (see HitboxRepository.community_scale)."""
+    try:
+        from street_fighter_3rd.data.hitbox_repository import HitboxRepository
+        return HitboxRepository.instance().community_scale()
+    except Exception:  # repository unavailable (stub data sets)
+        return 1.0
+
+
 def community_damage(key: str, default: int, character: str = "akuma") -> int:
-    """Damage for a move key (already on the yaml's scale), else `default`."""
+    """Damage for a move key on the scale the engine runs at, else `default`
+    (also rescaled)."""
     move = community_move(key, character)
-    if move and move.get("damage") is not None:
-        return int(move["damage"])
-    return default
+    raw = int(move["damage"]) if (move and move.get("damage") is not None) else int(default)
+    return max(1, int(round(raw * _engine_scale()))) if raw > 0 else raw

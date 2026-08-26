@@ -85,6 +85,7 @@ class MoveFrameData:
     movement: List[List[int]] = field(default_factory=list)     # ROM per-frame [dx, dy]
     timing_scope: str = "full"               # "segment": ROM script != whole move
     community_total: Optional[int] = None    # full-move length for segment records
+    rom_combat: Optional[dict] = None        # captured ROM tier (verified) when present
 
 
 def _repo() -> HitboxRepository:
@@ -162,16 +163,34 @@ def _calibrated_stun(move: MoveRecord) -> Tuple[int, int] | None:
     return result
 
 
-def _hitbox_from_box(box: SourcedBox, move: MoveRecord) -> HitboxFrame:
+def _window_of(move: MoveRecord, frame_1indexed: int) -> int:
+    for i, (a, b) in enumerate(move.hit_windows_or_derived()):
+        if a <= frame_1indexed <= b:
+            return i
+    return 0
+
+
+def _hitbox_from_box(box: SourcedBox, move: MoveRecord, frame_1indexed: int = 0) -> HitboxFrame:
     combat = move.combat
-    damage = combat.damage if combat else 0
-    calibrated = _calibrated_stun(move)
-    if calibrated is not None:
-        hitstun, blockstun = calibrated
-    else:
-        hitstun = combat.hitstun if combat else 0
-        blockstun = combat.blockstun if combat else 0
     hit_type = _HIT_TYPE_BY_NAME.get(combat.hit_type if combat else "MID", HitType.MID)
+    # ROM-exact tier first: the applied damage / hitstun / blockstun captured
+    # live for this hit window outrank the community estimates.
+    rom = move.rom_hit(_window_of(move, frame_1indexed)) if move.rom_combat else None
+    if rom and rom.get("damage") is not None:
+        damage = int(rom["damage"])
+        hitstun = int(rom["hitstun"]) if rom.get("hitstun") is not None else (combat.hitstun if combat else 0)
+        blockstun = int(rom["blockstun"]) if rom.get("blockstun") is not None else (combat.blockstun if combat else 0)
+    else:
+        # Community tier, rescaled onto the ROM life-bar scale when a capture
+        # exists (so partially captured data sets stay on one scale).
+        scale = _repo().community_scale()
+        damage = int(round((combat.damage if combat else 0) * scale))
+        calibrated = _calibrated_stun(move)
+        if calibrated is not None:
+            hitstun, blockstun = calibrated
+        else:
+            hitstun = combat.hitstun if combat else 0
+            blockstun = combat.blockstun if combat else 0
     return HitboxFrame(
         offset_x=int(round(box.offset_x)),
         offset_y=int(round(box.offset_y)),
@@ -200,7 +219,7 @@ def _build_move_frame_data(move: MoveRecord) -> MoveFrameData:
 
     hitboxes: List[Tuple[List[int], HitboxFrame]] = []
     for key, frames in box_to_frames.items():
-        hitboxes.append((frames, _hitbox_from_box(box_to_box[key], move)))
+        hitboxes.append((frames, _hitbox_from_box(box_to_box[key], move, frames[0])))
 
     combat = move.combat
     on_hit = combat.on_hit if combat else 0
@@ -230,6 +249,7 @@ def _build_move_frame_data(move: MoveRecord) -> MoveFrameData:
         movement=[list(m) for m in move.movement],
         timing_scope=move.timing_scope,
         community_total=(combat.total if combat else None),
+        rom_combat=move.rom_combat,
     )
 
 
@@ -268,7 +288,7 @@ def get_akuma_hitboxes(state: CharacterState, frame_number: int,
     if not move:
         return []
     boxes = move.attack_boxes_for_frame(frame_number)
-    return [_hitbox_from_box(b, move) for b in boxes]
+    return [_hitbox_from_box(b, move, frame_number) for b in boxes]
 
 
 def get_akuma_hurtboxes(state: CharacterState, frame_number: int = 0,

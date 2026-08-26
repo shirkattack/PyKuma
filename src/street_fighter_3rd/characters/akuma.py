@@ -221,7 +221,9 @@ class Akuma(Character):
         # the community damage values are authored against (sf3_authentic_frame_data
         # .yaml character_info.health=1050); a medium punch (115) is ~11%, not 80%.
         # The absolute pool is tunable; the damage:health RATIO is what matters.
-        self.max_health = 1050
+        # Life bar: the ROM's 0xA0 = 160 once a combat capture sets the scale
+        # (hitboxes.yaml meta.rom_combat), else the community 1050 scale.
+        self.max_health = HitboxRepository.instance().vitality() or 1050
         self.health = self.max_health
         self.walk_speed = 3.2  # Slightly faster than average
 
