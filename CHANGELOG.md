@@ -11,6 +11,16 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **On-block ROM data + a self-sufficient capture script.** `dump_framedata.lua`
+  now pins the round timer, refills life while idle and drives the dummy itself
+  (`B` cycles stand / block / block_always / crouch_block / jump — the arcade
+  ROM has no training menu and only one Lua script runs at a time). The
+  2026-08-27 session produced the first 84 block samples: blockstun 11 / 14 / 17
+  for light / medium / heavy normals, chip 0 on normals and 1–2 on specials, and
+  the engine now applies captured blockstun ahead of the community estimate
+  (st.MK 17, cr.MP 14 — the calibration had them at 21 / 20). Its whiff pass
+  took the ROM per-move hurtboxes from 5 to **31 of 43** attack scripts
+  (`merge` prefers whiffed runs, since a connect freezes the attacker).
 - **ROM per-move hurtboxes (v_hb) start landing.** The live capture's
   `ext_vulnerability` array is confirmed as the limb-that-becomes-hittable box
   (st.LK matches the Baston seed to the pixel), and `ingest.py merge` now backfills

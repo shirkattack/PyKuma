@@ -28,10 +28,32 @@
   Output `pykuma_dump.jsonl` is written in THIS script's folder (FBNeo uses the
   script's directory as the working dir). 'R' pauses/resumes if you want to skip
   menus. See tools/rom_extract/CAPTURE.md.
+
+  Only one Lua script runs at a time, so Grouflon's training-mode script is NOT
+  active while this one records: the round timer would run out and life would
+  not refill. KEEP_ALIVE below does both itself (same writes as
+  fbneo-training-mode.lua's games/sfiii3/sfiii3.lua): the timer is pinned at 99
+  every frame, and a player's life is refilled to the 0xA0 bar only while that
+  player is IDLE (no freeze, not busy), so the applied damage / hitstun the
+  ingest reads during the hit reaction are untouched.
+
+  The arcade ROM has no training menu, so the DUMMY is driven here too: press
+  DUMMY_KEY ('B') to cycle  stand -> block -> block_always -> crouch_block ->
+  jump  (shown top-left).  block / crouch_block hold "back" (relative to P2's
+  facing) only while P1 is in a move or P2 is in blockstun, so the dummy stays
+  put; block_always holds back permanently (it walks to the corner and blocks
+  projectiles too); jump holds Up. Use stand for the hurtbox (whiff) pass and
+  the hit pass, block for the on-block pass.
 ============================================================================ ]]
 
 -- ---- config -----------------------------------------------------------------
 local OUT_PATH = "pykuma_dump.jsonl"   -- written in the script's own folder
+local KEEP_ALIVE = true                -- pin the round timer + refill life when idle
+local DUMMY_KEY  = "B"                 -- cycle the dummy behaviour (P2)
+local DUMMY_MODES = { "stand", "block", "block_always", "crouch_block", "jump" }
+local P2_FACING  = 0x02068C77          -- byte: 1 = P2 faces left (P1 is on its left)
+local TIMER_ADDR = 0x02011377          -- round timer (BCD); 0x63 = "99"
+local FULL_LIFE  = 0xA0                -- the 160 life bar (VITAL.c)
 local REC_KEY  = "R"                    -- optional: press to PAUSE/resume recording
 local PLAYER_BASE = 0x02068C6C          -- P1 base (P2 is 0x02069104)
 local P2_BASE     = 0x02069104
@@ -191,7 +213,56 @@ local prev_key = false
 local frame_num = 0
 local fh = io.open(OUT_PATH, "w")
 
+-- Training-mode stand-ins (see the header). A player's life is written only
+-- while idle: the ingest measures damage on the connect frame and hitstun until
+-- idle, so a refill after that changes nothing it reads. Both the internal
+-- vitality word (+0x9C) and the bar byte (+0x9F) are set, as a KO checks the
+-- former.
+local wbyte, wword = memory.writebyte, memory.writeword
+local function player_idle(base)
+  return rdbyte(base + COMBAT.freeze) == 0 and (rdword(base + COMBAT.busy) % 256) == 0
+end
+local function keep_alive()
+  wbyte(TIMER_ADDR, 0x63)
+  for _, base in ipairs({ PLAYER_BASE, P2_BASE }) do
+    if player_idle(base) and rdbyte(base + COMBAT.life) < FULL_LIFE then
+      wword(base + COMBAT.vitality, FULL_LIFE)
+      wbyte(base + COMBAT.life, FULL_LIFE)
+    end
+  end
+end
+
+-- Dummy driver: feeds P2 directions through joypad.set (the same mechanism the
+-- training script uses). "back" = away from P1, from P2's facing byte.
+local dummy_mode = 1
+local prev_dummy_key = false
+local function p1_in_move()
+  return (rdword(PLAYER_BASE + COMBAT.busy) % 256) ~= 0 or rdbyte(PLAYER_BASE + COMBAT.freeze) ~= 0
+end
+local function drive_dummy()
+  local mode = DUMMY_MODES[dummy_mode]
+  if mode == "stand" then return end
+  local back = (rdbyte(P2_FACING) == 1) and "P2 Right" or "P2 Left"
+  local threatened = p1_in_move()
+      or rdbyte(P2_BASE + COMBAT.blocking_id) ~= 0
+      or rdbyte(P2_BASE + COMBAT.freeze) ~= 0
+  local pressed = {}
+  if mode == "block_always" or ((mode == "block" or mode == "crouch_block") and threatened) then
+    pressed[back] = true
+  end
+  if mode == "crouch_block" then pressed["P2 Down"] = true end
+  if mode == "jump" then pressed["P2 Up"] = true end
+  joypad.set(pressed)
+end
+
 local function on_frame()
+  if KEEP_ALIVE then keep_alive() end
+  local dk = input.get()[DUMMY_KEY] == true
+  if dk and not prev_dummy_key then
+    dummy_mode = dummy_mode % #DUMMY_MODES + 1
+  end
+  prev_dummy_key = dk
+  if not emu.registerbefore then drive_dummy() end
   -- optional pause toggle on PAUSE_KEY edge
   local keys = input.get()
   local down = keys[REC_KEY] == true
@@ -207,7 +278,8 @@ local function on_frame()
   end
 
   if gui and gui.text then
-    gui.text(8, 8, (paused and "PAUSED " or "REC ") .. frame_num)
+    gui.text(8, 8, (paused and "PAUSED " or "REC ") .. frame_num .. (KEEP_ALIVE and "  [inf time / life]" or "")
+             .. "  dummy: " .. DUMMY_MODES[dummy_mode] .. " (" .. DUMMY_KEY .. ")")
   end
 end
 
@@ -217,6 +289,8 @@ end
 
 -- FBNeo: run after each emulated frame; flush on exit.
 emu.registerafter(on_frame)
+-- inputs are applied to the frame about to run, so drive the dummy before it
+if emu.registerbefore then emu.registerbefore(drive_dummy) end
 if emu.registerexit then emu.registerexit(close_file) end
 
 print("PyKuma dumper: RECORDING to " .. OUT_PATH ..

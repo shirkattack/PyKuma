@@ -32,6 +32,17 @@ emulator can already see**:
    - Top-left shows `REC <frame>`. It is now recording.
 4. Do the captures below, then just **close the emulator** (or Stop the script).
    The file flushes automatically.
+   - The top-left reads `REC <n>  [inf time / life]`: the script pins the round
+     timer at 99 and refills a player's life whenever that player is idle
+     (Grouflon's training script is not running while this one is, so the
+     dumper does its job for it).
+   - The arcade ROM has **no training menu**; the script drives the dummy.
+     Press **B** to cycle `stand -> block -> block_always -> crouch_block -> jump`
+     (shown top-left). `block` holds back only while P1 is in a move, so the
+     dummy stays where it is; `block_always` holds back permanently (it retreats
+     to the corner and blocks fireballs too); `jump` holds Up. Hurtbox (whiff)
+     pass and hit pass: `stand`. On-block pass: `block` (and `crouch_block` for
+     the lows if you want crouching blockstun as well).
 5. The output lands next to the script:
    `~/.var/app/com.fightcade.Fightcade/data/fbneo-training-mode/pykuma_dump.jsonl`
 
@@ -171,7 +182,9 @@ from all of them:
 Sessions capture mostly disjoint moves, so their samples union cleanly; where
 they overlap the extra samples sharpen the median. A capture's raw dump
 (`pykuma_dump.jsonl`) is overwritten by the next run, so the vendored per-session
-raw files are the durable artifact -- keep them.
+raw files are the durable artifact -- keep them. Since session 2 the full dump
+is vendored too, gzipped (`sessionN_dump.jsonl.gz`; `ingest.py` reads `.gz`
+directly), so hurtboxes and combat can be re-derived after an ingest fix.
 
 ### Notes from the second session (2026-08-26, specials / air normals) — ingested 2026-08-27
 
@@ -205,16 +218,32 @@ raw files are the durable artifact -- keep them.
   `7684`, `8210`, `a130` (10 dmg / 3 stun / hitstun 15 — fireball-class hits),
   `d524`, `d8d4`.
 
-### What is still missing (one session, Akuma vs Akuma)
+### Notes from the third session (2026-08-27, full pass with the built-in dummy)
 
-**Hurtbox pass — whiff each once, dummy out of reach:**
-close LP `13a8`, MP `14e8`/`1598`, f+MP `1638`, HP `1728`/`1818`, MK `1988`/`1a38`,
-HK `1b08`/`1bf8`, cr.LP/MP/HP/LK/MK/HK `1d28 1dd8 1e88 1f68 2008 20d8`,
-jump normals `2708 2800 28e0 29c0 2aa0 2b30` + neutral-jump `21c8 2388 2448 2558 2628`
-(re-drive the forward-jump ones too: `22a8`), MP/HP DP `85c8 8658`, MK/HK tatsu
-`87f8 8968`, air tatsu `9618 9738 9818`, UOH `98f8`, `af08`, `b118`, `b218`.
+- The dumper now pins the timer, refills life when idle and **drives the dummy**
+  (`B` cycles stand / block / block_always / crouch_block / jump) — the arcade
+  ROM has no training menu and only one Lua script runs at a time.
+- **First on-block data**: 84 block samples. Blockstun reads 11 (lights) / 14
+  (mediums) / 17 (heavies), chip 0 on normals and 1–2 on specials; the engine now
+  takes blockstun from the capture where it exists (the calibrated community
+  estimate was 4 frames high on st.MK / cr.MP).
+- **v_hb**: `merge` prefers whiffed runs (a connect freezes the attacker), so the
+  whiff pass landed 26 more moves — 31 of 43 attack scripts now carry the ROM
+  hurtbox. The defender's posture byte turned out to be an action id
+  (0 stand, 2 walk, 22 airborne, 24 launched, 38 down); knockdown is now
+  "reached 24/38 from the ground", which also un-nulled blockstun.
+- Not yet mapped to a PyKuma move but captured: `3768` (throw, 6 samples),
+  `68cc` (12 hits — a super), `7684 8210 a130` (fireballs), `b308`.
 
-**Combat pass — dummy standing, no guard, land each 2+ times:** everything above
-that isn't already in `rom_combat.json` (HK tatsu, air tatsu, f+MP, UOH, throws,
-supers, fireballs). **Then dummy set to guard, repeat all on block** — this is the
-only source of ROM blockstun / chip, and there is none yet.
+### What is still missing
+
+**Hurtbox pass — whiff each once (dummy `stand`, out of reach; close normals
+against a `jump` dummy at its apex):** cl.MP `14e8`, far MP `1598`, cl.HP
+`1728`, cl.MK `1988`, far MK `1a38`, cl.HK `1b08`, nj.HP `2388`, nj.LK `2448`,
+j.LK `28e0`, dive kick `2aa0`, UOH `98f8`. (These either connected every time
+or were never performed.)
+
+**Combat:** UOH and the dive kick on hit and on block; a second sample for the
+single-sample windows (`merge-combat` reports `samples`); parries if wanted.
+Throw / super / fireball samples exist but need their anim ids mapped in
+`move_names.json` before the converter can attach them.
