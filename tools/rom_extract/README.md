@@ -71,10 +71,19 @@ fallback).
 
 ## Validate the extractor
 
-Cross-check the extracted v_hb for st.LP / st.LK / st.MK against the Baston seed
-already in `vhb_supplement.json`:
-- LP `{left:-54,width:22,height:18,bottom:84}`
+`ingest.py validate` cross-checks the extracted per-move box against the Baston
+seed in `vhb_supplement.json` (LP / LK / MK, each also checked against its
+close/far variant since Baston labels those separately):
+- LP `{left:-54,width:22,height:18,bottom:84}` (this is the *close* jab, 13a8)
 - LK `{left:-64,width:38,height:34,bottom:20}`
 - MK `{left:-62,width:32,height:32,bottom:44}`
-If those match (after conversion), the extractor is reading the boxes correctly
-and you can trust the rest.
+
+**Validated 2026-08-26:** LK's `ext_vulnerability` box is pixel-exact to the
+seed, so `ext_vulnerability` is the per-move v_hb array and the extractor reads
+it correctly. (Far LP, 1438, reads `{-76,44,74,20}`; 13a8 was not driven.)
+
+`merge` only annotates a move whose captured attack boxes line up frame-for-frame
+with the vendored framedata and reports the rest as `misaligned` /
+`no_attack_boxes` — a connect freezes the attacker (hitstop) and the ROM does not
+resume the cel timeline in a way the dump can reproduce for every move, so
+**drive moves on whiff for the hurtbox pass**.

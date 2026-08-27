@@ -81,7 +81,8 @@ def test_ingest_derives_applied_values(capture):
     assert m["att_bonus"] == 8 and m["def_bonus"] == 10
     s = ingest.summarize_combat(d)
     lp = s["moves"]["1438"]["windows"][0]
-    assert lp == {"frame": 5, "damage": 4, "stun": 3, "hitstop": 6, "hitstun": 12, "blockstun": 10, "chip": 0,
+    assert lp == {"frame": 5, "hit_index": 0, "run_hits": 1, "damage": 4, "stun": 3, "hitstop": 6, "hitstun": 12,
+                  "blockstun": 10, "chip": 0, "knockdown": False, "down_frames": None,
                   "samples": {"hits": 2, "blocks": 1}}
     hk = s["moves"]["1b08"]["windows"]
     assert [w["frame"] for w in hk] == [6, 17] and hk[1]["damage"] == 21
@@ -153,10 +154,56 @@ def test_live_data_has_no_capture_yet_or_agrees_with_baston():
         # single-window moves only: a multi-hit special is captured hit-by-hit
         # and its total need not match the community per-move figure.
         if (m.rom_combat and len(m.rom_combat.get("hits", [])) == 1
-                and m.rom_combat["damage_total"] and m.combat and m.combat.damage):
+                and m.rom_combat.get("damage_total") and m.combat and m.combat.damage):
             community = m.combat.damage_total or m.combat.damage
             ratios.append((m.state or m.rom_id, m.rom_combat["damage_total"] / community))
     assert ratios, "capture present but attached to no mapped single-hit move"
     med = sorted(r for _, r in ratios)[len(ratios) // 2]
     outliers = [(k, round(r, 3)) for k, r in ratios if abs(r - med) > 0.6 * med]
     assert not outliers, f"captured/community damage ratio outliers (median {med:.3f}): {outliers}"
+
+
+def _frozen_multi_hit_capture():
+    """A 2-hit move (anim 8658): hit 1 on move-frame 3 with 9 frames of attacker
+    hitstop, hit 2 on move-frame 13. The dump keeps counting emulated frames
+    through the freeze, so hit 2 sits 9 records later than its move frame."""
+    recs = [{"f": 0, "c1": _c(anim="0000"), "c2": _c()}]
+    f = 1
+    for k in range(2):                                   # move frames 1-2
+        recs.append({"f": f, "c1": _c(anim="8658", af=k), "c2": _c()}); f += 1
+    # frame 3: hit 1. The ROM sets the attacker's freeze on the connect frame
+    # itself and the cel resumes after the freeze, so the connect record and
+    # the 8 frozen records after it do not advance the move (as observed on
+    # the real LP DP capture: cel of 2 frames = connect + 9 frozen + 2 unfrozen).
+    recs.append({"f": f, "c1": _c(anim="8658", af=2, freeze=9), "c2": _c(hits=1, freeze=9, busy=1)}); f += 1
+    for k in range(8, 0, -1):
+        recs.append({"f": f, "c1": _c(anim="8658", af=2, freeze=k), "c2": _c(life=150, hits=1, freeze=k, busy=1, recovery=30)}); f += 1
+    for k in range(10):                                  # move frames 3-12 resume unfrozen
+        recs.append({"f": f, "c1": _c(anim="8658", af=2 + k), "c2": _c(life=150, hits=1, busy=1, recovery=30)}); f += 1
+    recs.append({"f": f, "c1": _c(anim="8658", af=12, freeze=7), "c2": _c(life=150, hits=2, freeze=7, busy=1)}); f += 1   # frame 13: hit 2
+    for k in range(6, 0, -1):
+        recs.append({"f": f, "c1": _c(anim="8658", af=12, freeze=k), "c2": _c(life=141, hits=2, freeze=k, busy=1, recovery=0)}); f += 1
+    for k in range(10):                                  # defender launched (posture leaves 0) -> knockdown
+        recs.append({"f": f, "c1": _c(anim="8658", af=13 + k), "c2": dict(_c(life=141, hits=2, busy=1, recovery=0), posture=24)}); f += 1
+    for k in range(3):
+        recs.append({"f": f, "c1": _c(anim="0000", af=k), "c2": _c(life=141, hits=2)}); f += 1
+    return recs
+
+
+def test_ingest_counts_move_frames_without_the_attackers_hitstop():
+    s = ingest.summarize_combat(ingest.derive_combat(_frozen_multi_hit_capture()))
+    frames = [w["frame"] for w in s["moves"]["8658"]["windows"]]
+    assert frames == [3, 13], frames   # not [3, 21]: the 9 frozen records do not advance the move
+
+
+def test_ingest_flags_a_knockdown_instead_of_calling_it_hitstun():
+    s = ingest.summarize_combat(ingest.derive_combat(_frozen_multi_hit_capture()))
+    w2 = s["moves"]["8658"]["windows"][1]
+    assert w2["knockdown"] is True and w2["hitstun"] is None and w2["down_frames"] == 10
+    block = conv.rom_combat_block(s["moves"]["8658"]["windows"], [[3, 4], [13, 14]])
+    assert block["hits"][1]["knockdown"] is True and block["hits"][1]["hitstun"] is None
+    # both hits landed in one run -> placed by ordinal even if the 2nd frame is off
+    w = s["moves"]["8658"]["windows"]
+    assert [(x["hit_index"], x["run_hits"]) for x in w] == [(0, 2), (1, 2)]
+    block = conv.rom_combat_block([dict(w[0]), dict(w[1], frame=4)], [[3, 4], [13, 14]])
+    assert [h["window"] for h in block["hits"]] == [0, 1] and block["complete"] and block["damage_total"] == 10 + 9

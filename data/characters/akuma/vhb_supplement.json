@@ -4,7 +4,7 @@
     "source": "Baston ESN3S (ensabahnur.free.fr, iChar=14 fd_normals)",
     "status": "baston",
     "box_format": "raw {left,width,height,bottom} (same convention as the ROM JSON); converted centered, applied to every active frame of the move",
-    "coverage": "interim seed for st.LP/st.LK/st.MK; remaining moves pending ROM extraction"
+    "coverage": "interim seed for st.LP/st.LK/st.MK. The converter ignores an entry once the ROM JSON carries vulnerability boxes for that move (2026-08-26 capture: LIGHT_KICK matched this seed exactly; LIGHT_PUNCH/1438 far LP reads {-76,44,74,20} from the ROM, so the LP seed here is the Baston *close* jab (13a8) box, not far LP's). MEDIUM_KICK (1988) still pending capture."
   },
 
   "LIGHT_PUNCH": {

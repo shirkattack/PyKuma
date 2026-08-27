@@ -172,3 +172,49 @@ Sessions capture mostly disjoint moves, so their samples union cleanly; where
 they overlap the extra samples sharpen the median. A capture's raw dump
 (`pykuma_dump.jsonl`) is overwritten by the next run, so the vendored per-session
 raw files are the durable artifact -- keep them.
+
+### Notes from the second session (2026-08-26, specials / air normals) — ingested 2026-08-27
+
+- **v_hb**: `ext_vulnerability` confirmed as the per-move hurtbox array (LK == Baston
+  seed). Backfilled into `gouki_framedata.json`: far LP `1438`, LK `1908`, air HK
+  `2628`, LP DP `84f8`, LK tatsu `86e8`. Rejected by the alignment check (the move
+  connected, hitstop stretched the run and the cel timeline no longer matches the
+  vendored framedata): `22a8 2388 2448 2558` (air normals), `85c8 8658` (MP/HP DP),
+  `87f8` (MK tatsu), `b218`; no attack box seen at all: `21c8`, `af08`.
+  **For the hurtbox pass, whiff every move** (dummy far away / jumping) — a whiff
+  gives the exact framedata timeline and the same v_hb.
+- **Combat**: session 2's raw samples (`rom_combat_sessions/session2_specials_jumps.json`)
+  were re-derived with the hitstop-aware frame counting (a multi-hit move's later
+  connects now land on their framedata window: MP DP 3/4, HP DP 2/3/4, not 3/14,
+  2/13/24) and `rom_combat.json` rebuilt with `merge-combat`. Knockdowns
+  are detected from the defender's posture byte and stored as `knockdown` +
+  `down_frames` — their time-to-idle is NOT hitstun (`hitstun: null`, the engine
+  falls back to the community value). A multi-hit move whose later hits never
+  landed gets no `damage_total` (`complete: false`) so a partial sum is never
+  read as the move's damage. A later hit's frame cannot be pinned from the
+  defender's freeze (the attacker's own hitstop `hs_me` differs per move), so the
+  ingest also records each connect's ordinal in its run (`hit_index` / `run_hits`)
+  and the converter places a run that landed every hit by ordinal (cl.HK 21+12,
+  MP DP 17+8, HP DP 10+9+9). Still **0 on-block samples**.
+- Session 1's vendored raw had been written with `frame` = cel id (`22047`-style
+  values reached `hitboxes.yaml`); it was repaired from recorded data only (see
+  its `_meta.frame_repair`). It predates the knockdown flag and its dump is gone,
+  so cr.HK `20d8` still reports its 60-frame knockdown as `hitstun` until re-driven.
+- Not in the vendored framedata (kept in `rom_combat.json` under their anim id,
+  not attached to any move): `3768` (3 connects, 0 dm_vital — a throw/grab),
+  `7684`, `8210`, `a130` (10 dmg / 3 stun / hitstun 15 — fireball-class hits),
+  `d524`, `d8d4`.
+
+### What is still missing (one session, Akuma vs Akuma)
+
+**Hurtbox pass — whiff each once, dummy out of reach:**
+close LP `13a8`, MP `14e8`/`1598`, f+MP `1638`, HP `1728`/`1818`, MK `1988`/`1a38`,
+HK `1b08`/`1bf8`, cr.LP/MP/HP/LK/MK/HK `1d28 1dd8 1e88 1f68 2008 20d8`,
+jump normals `2708 2800 28e0 29c0 2aa0 2b30` + neutral-jump `21c8 2388 2448 2558 2628`
+(re-drive the forward-jump ones too: `22a8`), MP/HP DP `85c8 8658`, MK/HK tatsu
+`87f8 8968`, air tatsu `9618 9738 9818`, UOH `98f8`, `af08`, `b118`, `b218`.
+
+**Combat pass — dummy standing, no guard, land each 2+ times:** everything above
+that isn't already in `rom_combat.json` (HK tatsu, air tatsu, f+MP, UOH, throws,
+supers, fireballs). **Then dummy set to guard, repeat all on block** — this is the
+only source of ROM blockstun / chip, and there is none yet.

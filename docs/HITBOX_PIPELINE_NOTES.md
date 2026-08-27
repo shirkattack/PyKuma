@@ -241,8 +241,11 @@ Not needed for the current frame-data work; useful for an input-display / valida
 1. ~~Fix `SF3Hitbox.get_rect` facing + centering (§6) + regression test.~~ ✅ **Done** (`anchor` field + `tests/test_hitbox_geometry.py`).
 2. ~~Resolve remaining move names~~ ✅ **Done** — all 7 verified (§7), st.MP/LK/MK via Baston
    cross-match. Minor caveat: HEAVY_KICK uses Close HK (`1b08`); far st.HK not separately named.
-3. ~~Capture per-move `v_hb`~~ — pipeline + viewer done; LP/LK/MK seeded from Baston. **Remaining:**
-   run `tools/rom_extract/` to backfill authoritative per-move `v_hb` for all moves from the ROM.
+3. ~~Capture per-move `v_hb`~~ — pipeline + viewer done; LP/LK/MK seeded from Baston. **In progress:**
+   the ROM's per-move box is the `ext_vulnerability` array (LK matches the Baston seed to the pixel).
+   The 2026-08-26 capture backfilled far LP, LK, air HK, LP DP, LK tatsu (`data/sources/SOURCE.txt`).
+   Remaining moves: see `tools/rom_extract/CAPTURE.md` "What is still missing" — drive them **on whiff**
+   (a connect freezes the attacker and the alignment check then rejects the move).
 4. **Invincibility** from frame-data notes (not missing hurtbox).
 5. Optional: live emulator memory-reader (§8) to auto-validate boxes/inputs.
 
