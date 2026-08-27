@@ -130,6 +130,30 @@ axis between the feet). What the two probe rounds established:
   adjacent words swapped (`RamPal[i ^ 1]`), which the decoder swaps back.
 - Part offsets are 10-bit signed; a part's position is its centre.
 
-Next: dump automatically on every new ROM cel id (`anim_frame`) during a
-whiff pass and key the PNGs by cel -- sprites, axis offsets and durations all
-from the ROM.
+### Ripping a character (the full pass)
+
+`dump_cels.lua` with `AUTO_NEW_CELS` dumps by itself the first time P1 shows
+each cel id, so a whiff pass through the move list rips every sprite
+(one ~0.8 MB state per cel). Then:
+
+    uv run python tools/rom_extract/cel_decode.py \
+        ~/.var/app/com.fightcade.Fightcade/data/fbneo-training-mode/pykuma_cels.jsonl \
+        --out ~/akuma_cels --p1
+
+writes `cel_<cel id>.png` (transparent, ROM colours) per cel and `cels.json`
+(cel -> anim id, bbox relative to the axis) and skips cels already in the
+manifest, so sessions accumulate. P1's body object is the many-tile object
+nearest P1's position (the sprite list can be a frame apart from `pos_x`
+while P1 moves; the object's `ypos` is `pos_y + 40`).
+
+P1's body is told apart from effect objects drawn at his position by his
+palette (learned from the stance dumps). `P2_KEY` ('A') in the Lua cycles a
+P2 auto-attack (jab / HK / sweep) for the block, hit, launch and knockdown
+cels; `KEEP_ALIVE` pins the timer and keeps both super meters full.
+
+Two passes (2026-08-27): **458 cels / 72 animations** -- every mapped move
+except the dive kick and UOH (never performed), with 7 moves missing a single
+hit-branch cel each; plus reactions, throws, teleport, taunt, wins and the
+supers. Cross-check: the frame dumps' per-move cel sequences cover 31/40
+mapped moves completely. The PNGs and `cels.json` are the durable product
+(Capcom art: kept out of the repo); the states can be deleted after decoding.

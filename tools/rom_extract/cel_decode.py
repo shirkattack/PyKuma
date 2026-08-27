@@ -66,7 +66,7 @@ def state_block(state: bytes) -> bytes:
 PAL_SIZE = 0x40000          # 0x20000 x u16 colour RAM ("Palette" entry, right before the char RAM)
 
 
-def state_areas(path: Path, known_tiles: dict | None = None) -> dict:
+def state_areas(path: Path, known_tiles: dict | None = None, known_palettes: dict | None = None) -> dict:
     """{"cram": 8 MB character RAM, "pal": colour RAM or None} out of a state.
     Current FBNeo: hashed entries. Older forks (Fightcade) concatenate the
     areas without headers, so the char RAM is located by anchoring on a tile
@@ -101,7 +101,22 @@ def state_areas(path: Path, known_tiles: dict | None = None) -> dict:
         if n >= 2 or len(votes) == 1:
             return {"cram": blob[base:base + CRAM_SIZE],
                     "pal": blob[base - PAL_SIZE:base] if base >= PAL_SIZE else None}
-    raise ValueError("could not locate the character RAM in the state (no hashed entry, no usable bank-0 anchor tile)")
+    # second anchor: a palette the Lua read (CPU order) -- the state stores the
+    # colour RAM with adjacent words swapped, right before the char RAM
+    for k, hexdata in (known_palettes or {}).items():
+        words = [int(hexdata[i:i + 4], 16) for i in range(0, len(hexdata), 4)]
+        if len(set(words)) < 8:
+            continue
+        host = bytearray()
+        for i in range(0, len(words) - 1, 2):
+            host += words[i + 1].to_bytes(2, "little") + words[i].to_bytes(2, "little")
+        pos = blob.find(bytes(host))
+        if pos >= 0 and blob.find(bytes(host), pos + 1) < 0:
+            pal_base = pos - int(k) * 2
+            base = pal_base + PAL_SIZE
+            if pal_base >= 0 and base + CRAM_SIZE <= len(blob):
+                return {"cram": blob[base:base + CRAM_SIZE], "pal": blob[pal_base:base]}
+    raise ValueError("could not locate the character RAM in the state (no hashed entry, no usable bank-0 anchor tile or palette)")
 
 
 def cram_tiles_from_state(path: Path, known_tiles: dict | None = None) -> bytes:
@@ -254,9 +269,28 @@ def main(argv=None):
     ap.add_argument("--lua-tiles", action="store_true", help="use the tiles the Lua read through the bank window instead of the state")
     ap.add_argument("--p1", action="store_true",
                     help="render only P1's body object, named cel_<cel id>.png, and write cels.json (cel -> anim, bbox rel. axis)")
+    ap.add_argument("--redo", action="store_true", help="with --p1: re-render cels already in cels.json")
     args = ap.parse_args(argv)
     manifest_path = Path(args.out) / "cels.json"
     manifest = json.loads(manifest_path.read_text()) if args.p1 and manifest_path.exists() else {}
+    # P1's body palette: learned from the stance dumps (anim 8800) of this file,
+    # used to tell Akuma apart from effect objects drawn at his position
+    p1_pal = None
+    if args.p1:
+        from collections import Counter
+        pals = Counter()
+        for line in Path(args.dump).read_text().splitlines():
+            if not line.strip():
+                continue
+            dd = json.loads(line)
+            if dd["p1"]["anim"] != "8800":
+                continue
+            for r in dd["records"]:
+                if abs(r["xpos"] - dd["p1"]["pos_x"]) <= 8 and sum(len(part_tiles(r, pp)) for pp in r["parts"]) >= 10:
+                    pals[(r["whichpal"], r["global_pal"])] += 1
+        if pals:
+            p1_pal = pals.most_common(1)[0][0]
+            print(f"   P1 body palette: whichpal={p1_pal[0]} global_pal={p1_pal[1]}")
     state_dir = Path(args.state_dir) if args.state_dir else Path(args.dump).resolve().parent
 
     out = Path(args.out)
@@ -271,7 +305,7 @@ def main(argv=None):
         if d.get("state") and not args.lua_tiles:
             spath = state_dir / d["state"]
             if spath.exists():
-                areas = state_areas(spath, d["tiles"])
+                areas = state_areas(spath, d["tiles"], d["palettes"])
                 st = StateTiles(areas["cram"])
                 if areas["pal"]:
                     palettes = StatePalettes(areas["pal"])
@@ -291,11 +325,18 @@ def main(argv=None):
               f"{len(d['records'])} objects, {len(d['tiles'])} tiles, {len(d['palettes'])} palettes")
         records = d["records"]
         if args.p1:
-            # P1's objects sit at xpos == pos_x; the body is the one with the most tiles (the other is the shadow)
-            mine = [r for r in records if r["xpos"] == p1["pos_x"] and any(pp["xsize"] for pp in r["parts"])]
-            mine.sort(key=lambda r: -sum(len(part_tiles(r, pp)) for pp in r["parts"]))
+            # P1's body: the many-tile object nearest P1's position (the sprite
+            # list can be a frame apart from pos_x/pos_y while P1 moves, and the
+            # object's ypos is pos_y + 40); the few-tile object there is the shadow
+            def _dist(r):
+                return abs(r["xpos"] - p1["pos_x"]) + abs(r["ypos"] - 40 - p1["pos_y"]) / 4
+            mine = [r for r in records
+                    if sum(len(part_tiles(r, pp)) for pp in r["parts"]) >= 10 and _dist(r) <= 40
+                    and abs(r["xpos"] - p1["pos_x"]) <= abs(r["xpos"] - p2["pos_x"])]
+            # Akuma's own palette first (effects at his position use others), then nearest
+            mine.sort(key=lambda r: (0 if p1_pal is None or (r["whichpal"], r["global_pal"]) == p1_pal else 1, _dist(r)))
             records = mine[:1]
-            if str(p1["cel"]) in manifest and not args.only:
+            if str(p1["cel"]) in manifest and not (args.only or args.redo):
                 print(f"   cel {p1['cel']} already in cels.json, skipping")
                 continue
         print(f"{'obj':>4} {'xpos':>5} {'ypos':>5} {'parts':>5} {'tiles':>5} {'size':>9}  bbox rel. origin (l,t,r,b)")

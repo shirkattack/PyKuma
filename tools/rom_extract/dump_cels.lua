@@ -37,7 +37,10 @@
   USAGE: Misc > Lua Scripting > Browse to this file > Run. With AUTO_NEW_CELS
   the script dumps by itself the first time P1 shows each cel id (anim_frame),
   so a whiff pass through the move list rips every sprite; DUMP_KEY ('C')
-  dumps the current frame on demand. Output next to the script:
+  dumps the current frame on demand; P2_KEY ('A') cycles a P2 auto-attack
+  (jab / HK / sweep) so P1's block, hit, launch and knockdown cels can be
+  ripped too. KEEP_ALIVE pins the round timer, refills life while idle and
+  keeps both super meters full (for the supers). Output next to the script:
   pykuma_cels.jsonl (one JSON object per dump, naming its state file) and
   pykuma_cels_f<frame>.fs (the savestate, ~0.8 MB each). Top-left shows the
   count of cels ripped and the last dump.
@@ -47,16 +50,47 @@ local OUT_PATH     = "pykuma_cels.jsonl"
 local DUMP_KEY     = "C"
 local SAVE_STATE   = true    -- write pykuma_cels_f<frame>.fs (source of the tiles for cel_decode.py)
 local AUTO_NEW_CELS = true   -- dump automatically the first time P1 shows a cel id
+local P2_KEY       = "A"     -- cycle a P2 auto-attack: off -> jab (every 40f) -> HK (every 90f) -> sweep (every 90f)
+                             -- (hold back / down-back / nothing on P1 to rip its block / hit / knockdown cels)
+local P2_MODES = { "off", "jab", "hk", "sweep" }
+local KEEP_ALIVE   = true    -- pin the round timer, refill life while idle, keep both super meters full
 local MAX_TILES    = 64      -- bank-0 tiles read through the window: the decoder's anchor into the state
 
 local SPR_BASE  = 0x04000000
 local PAL_BASE  = 0x04080000
 local CRAM_WIN  = 0x04100000
 local P1_BASE, P2_BASE = 0x02068C6C, 0x02069104
+-- keep-alive addresses (same writes as Grouflon's training script, which is not
+-- running while this one is): round timer (BCD 99), life bar / internal
+-- vitality (0xA0), super gauge byte + its max (the game turns a full bar into
+-- a stock, so writing the max every frame ends at max stocks, bar full)
+local TIMER_ADDR = 0x02011377
+local FULL_LIFE  = 0xA0
+local OFF_VITALITY, OFF_LIFE, OFF_FREEZE, OFF_BUSY = 0x9C, 0x9F, 0x45, 0x3D1
+local METER_ADDR     = { [1] = 0x020695BE, [2] = 0x020695EB }
+local METER_MAX_ADDR = { [1] = 0x020286AD, [2] = 0x020286E1 }
 local TILES_TABLE = { [0] = 8, [1] = 1, [2] = 2, [3] = 4 }
 
 local rdd, rdw, rdb = memory.readdword, memory.readword, memory.readbyte
 local rdws, rdbs = memory.readwordsigned, memory.readbytesigned
+local wbyte, wword = memory.writebyte, memory.writeword
+
+local function player_idle(base)
+  return rdb(base + OFF_FREEZE) == 0 and (rdw(base + OFF_BUSY) % 256) == 0
+end
+local function keep_alive()
+  wbyte(TIMER_ADDR, 0x63)
+  for _, base in ipairs({ P1_BASE, P2_BASE }) do
+    if player_idle(base) and rdb(base + OFF_LIFE) < FULL_LIFE then
+      wword(base + OFF_VITALITY, FULL_LIFE)
+      wbyte(base + OFF_LIFE, FULL_LIFE)
+    end
+  end
+  for i = 1, 2 do
+    local max = rdb(METER_MAX_ADDR[i])
+    if max > 0 then wbyte(METER_ADDR[i], max) end   -- both players: bar full -> stocks max out
+  end
+end
 
 -- bit slicing in plain Lua 5.1 arithmetic (no dependency on the emulator's bit library):
 -- bits(v, shift, width) = (v >> shift) & ((1 << width) - 1)
@@ -132,7 +166,7 @@ local function dump_frame(frame_num)
           pal_order[#pal_order + 1] = pkey
         end
         for t = 0, nx * ny - 1 do
-          if ntiles < MAX_TILES then
+          if ntiles < MAX_TILES and tileno + t < 4096 then   -- bank-0 anchors only (shadows, HUD)
             read_tile(tileno + t, tiles, tile_order)
             ntiles = ntiles + 1
           end
@@ -164,10 +198,28 @@ end
 
 local frame_num, prev_key, status = 0, false, "press " .. DUMP_KEY .. " to dump the current frame"
 local seen, nseen = {}, 0
+local p2_mode, prev_p2_key = 1, false
+local function drive_p2()
+  local mode = P2_MODES[p2_mode]
+  if mode == "off" then return end
+  local pressed = {}
+  if mode == "jab" and frame_num % 40 == 0 then pressed["P2 Weak Punch"] = true end
+  if mode == "hk" and frame_num % 90 == 0 then pressed["P2 Strong Kick"] = true end
+  if mode == "sweep" then
+    if frame_num % 90 < 6 then pressed["P2 Down"] = true end
+    if frame_num % 90 == 5 then pressed["P2 Strong Kick"] = true end
+  end
+  joypad.set(pressed)
+end
 local function on_frame()
   frame_num = frame_num + 1
+  if KEEP_ALIVE then keep_alive() end
   local cel = rdw(P1_BASE + 0x21A)
-  local down = input.get()[DUMP_KEY] == true
+  local keys = input.get()
+  local p2k = keys[P2_KEY] == true
+  if p2k and not prev_p2_key then p2_mode = p2_mode % #P2_MODES + 1 end
+  prev_p2_key = p2k
+  local down = keys[DUMP_KEY] == true
   local want = down and not prev_key
   if AUTO_NEW_CELS and not seen[cel] then
     seen[cel] = true; nseen = nseen + 1; want = true
@@ -178,9 +230,11 @@ local function on_frame()
   end
   prev_key = down
   if gui and gui.text then
-    gui.text(8, 8, string.format("CEL RIP f%d  P1 anim %04x cel %d  ripped %d | %s",
-      frame_num, rdw(P1_BASE + 0x202), cel, nseen, status))
+    gui.text(8, 8, string.format("CEL RIP f%d  P1 anim %04x cel %d  ripped %d  P2:%s(%s)%s | %s",
+      frame_num, rdw(P1_BASE + 0x202), cel, nseen, P2_MODES[p2_mode], P2_KEY,
+      KEEP_ALIVE and "  [inf time/life/meter]" or "", status))
   end
 end
+if emu.registerbefore then emu.registerbefore(drive_p2) end
 
 emu.registerafter(on_frame)

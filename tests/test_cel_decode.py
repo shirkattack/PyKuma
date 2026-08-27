@@ -138,3 +138,16 @@ def test_state_palette_words_are_swapped_back_to_cpu_order():
     pal = (0x7fff).to_bytes(2, "little") + (0x001f).to_bytes(2, "little") + b"\x00" * (0x40000 - 4)
     sp = cel.StatePalettes(pal)
     assert sp.get("0")[:8] == "001f7fff"
+
+
+def test_cram_is_located_by_a_palette_anchor_when_no_bank0_tile_was_read(tmp_path):
+    import zlib
+    words_cpu = list(range(0x100, 0x200))                          # a distinctive palette (CPU order)
+    host = b"".join(words_cpu[i + 1].to_bytes(2, "little") + words_cpu[i].to_bytes(2, "little") for i in range(0, 256, 2))
+    pal = bytearray(cel.PAL_SIZE); pal[512 * 2:512 * 2 + 512] = host      # palette base 512
+    cram = bytearray(cel.CRAM_SIZE); cram[9712 * 256] = 7
+    state = b"FB1 " + b"FS1 " + b"\x00" * 0x40 + b"\x00" * 4 + zlib.compress(b"\x22" * 777 + bytes(pal) + bytes(cram))
+    f = tmp_path / "s.fs"; f.write_bytes(state)
+    areas = cel.state_areas(f, {}, {"512": "".join(f"{w:04x}" for w in words_cpu)})
+    assert areas["cram"][9712 * 256] == 7
+    assert cel.StatePalettes(areas["pal"]).get("512")[:8] == "01000101"
