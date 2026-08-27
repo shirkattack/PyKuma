@@ -63,3 +63,19 @@ cps3_akuma_chardata.json
   guard bits, reaction, level), boda/hana/cata/caua/hosa boxes, hiit cel
   box indices. Linking atit entries to moves is the next step (animation
   script parsing, or the capture's applied dm_vital/stun match).
+
+
+==================================================
+Enrichment of gouki_framedata.json (per-move vulnerability boxes)
+==================================================
+
+The vendored dump carries `vulnerability` boxes on idle/wakeup only. Live
+captures (tools/rom_extract/dump_framedata.lua on sfiii3nr1 in Fightcade,
+`ingest.py merge`) add the ROM's per-move `ext_vulnerability` box -- the limb
+that becomes hittable during a move -- onto the ACTIVE frames of the moves the
+capture drove, as `type:"vulnerability"`. Nothing else in the file is edited;
+`ingest.py merge` only annotates a move whose captured attack boxes line up
+frame-for-frame with this file (misaligned moves are skipped and reported).
+
+  2026-08-26 capture: 1438 (far LP), 1908 (LK), 2628 (air HK),
+                      84f8 (LP DP), 86e8 (LK tatsu)      -- 25 boxes

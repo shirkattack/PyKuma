@@ -16,9 +16,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 5,
-     "frame": 21892,
+     "down_frames": null,
+     "frame": 4,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 2
@@ -34,9 +38,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 21859,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 2
@@ -52,9 +60,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 20,
-     "frame": 21900,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -70,9 +82,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 18,
-     "frame": 21884,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -88,9 +104,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 21906,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
      "hitstop": 11,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -106,9 +126,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 21874,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
      "hitstop": 13,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -124,9 +148,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 7,
-     "frame": 21955,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 2
@@ -142,9 +170,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 19,
-     "frame": 21964,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -160,9 +192,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 14,
-     "frame": 21932,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -178,12 +214,16 @@
      "blockstun": null,
      "chip": null,
      "damage": 21,
-     "frame": 22443,
-     "hitstop": 13,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
+     "hitstop": 10,
      "hitstun": 35,
+     "knockdown": false,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
-      "hits": 2
+      "hits": 3
      },
      "stun": 13
     },
@@ -191,12 +231,16 @@
      "blockstun": null,
      "chip": null,
      "damage": 12,
-     "frame": 22445,
+     "down_frames": null,
+     "frame": null,
+     "hit_index": 1,
      "hitstop": 11,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
-      "hits": 2
+      "hits": 1
      },
      "stun": 10
     }
@@ -209,9 +253,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 25,
-     "frame": 21944,
+     "down_frames": null,
+     "frame": 10,
+     "hit_index": 0,
      "hitstop": 11,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -227,9 +275,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 22003,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -245,9 +297,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 16,
-     "frame": 22003,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -263,9 +319,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 24,
-     "frame": 22015,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 10,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -281,9 +341,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 3,
-     "frame": 22036,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -299,9 +363,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 16,
-     "frame": 22043,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -317,9 +385,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 22,
-     "frame": 22047,
+     "down_frames": null,
+     "frame": 8,
+     "hit_index": 0,
      "hitstop": 9,
      "hitstun": 60,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -335,9 +407,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 8,
+     "down_frames": null,
      "frame": 5,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -353,9 +429,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 16,
+     "down_frames": null,
      "frame": 6,
+     "hit_index": 0,
      "hitstop": 7,
      "hitstun": 14,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -366,9 +446,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 12,
-     "frame": 22085,
+     "down_frames": null,
+     "frame": 8,
+     "hit_index": 0,
      "hitstop": 7,
      "hitstun": 14,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -384,9 +468,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 23,
+     "down_frames": null,
      "frame": 8,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 17,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -402,9 +490,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 7,
+     "down_frames": null,
      "frame": 5,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -420,9 +512,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 14,
+     "down_frames": null,
      "frame": 6,
+     "hit_index": 0,
      "hitstop": 7,
      "hitstun": 14,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -438,9 +534,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 21,
+     "down_frames": null,
      "frame": 7,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": 17,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -456,9 +556,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 6,
-     "frame": 22068,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -474,9 +578,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 0,
-     "frame": 22085,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
      "hitstop": 8,
      "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -492,9 +600,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 0,
+     "down_frames": 134,
      "frame": 3,
+     "hit_index": 0,
      "hitstop": 0,
-     "hitstun": 134,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 3
@@ -510,9 +622,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 4,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -523,9 +639,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 7,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -541,9 +661,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 24,
+     "hit_index": 0,
      "hitstop": 13,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -554,9 +678,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 27,
+     "hit_index": 0,
      "hitstop": 13,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -567,9 +695,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 38,
+     "hit_index": 0,
      "hitstop": 13,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -585,9 +717,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 23,
+     "down_frames": 115,
      "frame": 4,
+     "hit_index": 0,
      "hitstop": 9,
-     "hitstun": 115,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -603,9 +739,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 17,
+     "down_frames": null,
      "frame": 3,
+     "hit_index": 0,
      "hitstop": 9,
      "hitstun": null,
+     "knockdown": false,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -616,9 +756,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 8,
-     "frame": 14,
+     "down_frames": 115,
+     "frame": 4,
+     "hit_index": 1,
      "hitstop": 7,
-     "hitstun": 115,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -634,9 +778,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 2,
+     "hit_index": 0,
      "hitstop": 9,
      "hitstun": null,
+     "knockdown": false,
+     "run_hits": 3,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -647,9 +795,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 9,
-     "frame": 13,
+     "down_frames": null,
+     "frame": 3,
+     "hit_index": 1,
      "hitstop": 9,
      "hitstun": null,
+     "knockdown": false,
+     "run_hits": 3,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -660,9 +812,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 9,
-     "frame": 24,
+     "down_frames": 119,
+     "frame": 4,
+     "hit_index": 2,
      "hitstop": 7,
-     "hitstun": 119,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 3,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -678,9 +834,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 14,
+     "down_frames": 106,
      "frame": 12,
+     "hit_index": 0,
      "hitstop": 7,
-     "hitstun": 106,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -696,9 +856,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 4,
+     "down_frames": null,
      "frame": 12,
+     "hit_index": 0,
      "hitstop": 3,
      "hitstun": null,
+     "knockdown": true,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -709,9 +873,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 4,
-     "frame": 142,
+     "down_frames": null,
+     "frame": 38,
+     "hit_index": 1,
      "hitstop": 0,
      "hitstun": null,
+     "knockdown": true,
+     "run_hits": 2,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -727,9 +895,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 10,
+     "down_frames": null,
      "frame": 11,
+     "hit_index": 0,
      "hitstop": 6,
      "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 1
@@ -745,9 +917,13 @@
      "blockstun": null,
      "chip": null,
      "damage": 15,
+     "down_frames": null,
      "frame": 10,
+     "hit_index": 0,
      "hitstop": 7,
      "hitstun": 17,
+     "knockdown": true,
+     "run_hits": 1,
      "samples": {
       "blocks": 0,
       "hits": 2

@@ -11,6 +11,30 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **ROM per-move hurtboxes (v_hb) start landing.** The live capture's
+  `ext_vulnerability` array is confirmed as the limb-that-becomes-hittable box
+  (st.LK matches the Baston seed to the pixel), and `ingest.py merge` now backfills
+  it into `gouki_framedata.json` — far LP, LK, neutral-jump HK, LP DP and LK tatsu
+  from the 2026-08-26 capture carry `verified` ROM hurtbox extensions (the Baston
+  supplement is ignored once a move has ROM data). `merge` counts a move's frames
+  from the anim change, skipping frames the attacker is frozen by hitstop, and
+  annotates only a move whose captured attack boxes line up frame-for-frame with
+  the vendored framedata (the rest are reported; drive moves on whiff for the
+  hurtbox pass). `validate` works again (it read `move_names.json` inverted).
+
+### Fixed
+- **Multi-hit ROM combat windows.** Session 1's vendored raw samples had `frame`
+  = the ROM cel id (`22047` reached `hitboxes.yaml`) and a multi-hit move's later
+  connects were placed by a frame the defender's hitstop cannot pin, collapsing
+  cl.HK / MP DP / HP DP onto one window. Connects now carry their ordinal in the
+  run (`hit_index`/`run_hits`) and a run that landed every hit is placed by
+  ordinal: cl.HK 21+12, MP DP 17+8, HP DP 10+9+9. Session 1's raw was repaired
+  from recorded data (its `_meta.frame_repair`), session 2's re-derived.
+- **Knockdowns are no longer "hitstun".** A hit that changes the defender's
+  posture (launch / down) records `knockdown` + `down_frames` instead of a
+  115-frame hitstun; the engine falls back to the community hitstun for those.
+  A multi-hit move whose later hits never landed reports no `damage_total`
+  (`complete: false`) so a partial sum is never read as the move's damage.
 - **Arcade ROM tables read directly** (`tools/rom_extract/cps3_chardata.py`):
   decrypts the sfiii3nr1 program SIMMs in memory (CPS3 cipher + table
   locations from crowded-street/3sx) and vendors Akuma's `atta` attack boxes

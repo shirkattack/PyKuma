@@ -378,22 +378,41 @@ def rom_combat_block(windows, hit_windows):
         return min(range(len(hit_windows)), key=lambda i: min(abs(frame - hit_windows[i][0]), abs(frame - hit_windows[i][1])))
     per_window = {}
     for w in windows:
-        wi = window_index(int(w["frame"]))
+        # The k-th connect of a run that landed every hit is the k-th window
+        # (`hit_index`/`run_hits` from the ingest); otherwise place by frame.
+        if (hit_windows and w.get("run_hits") == len(hit_windows)
+                and w.get("hit_index") is not None):
+            wi = min(int(w["hit_index"]), len(hit_windows) - 1)
+        elif w.get("frame") is None:
+            wi = min(int(w.get("hit_index") or 0), max(0, len(hit_windows) - 1))
+        else:
+            wi = window_index(int(w["frame"]))
         e = per_window.setdefault(wi, {"window": wi, "frames": [], "damage": None, "stun": None,
                                        "hitstop": None, "hitstun": None, "blockstun": None, "chip": None,
+                                       "knockdown": False, "down_frames": None,
                                        "samples": {"hits": 0, "blocks": 0}})
-        e["frames"].append(int(w["frame"]))
-        for k in ("damage", "stun", "hitstop", "hitstun", "blockstun", "chip"):
+        if w.get("frame") is not None:
+            e["frames"].append(int(w["frame"]))
+        for k in ("damage", "stun", "hitstop", "hitstun", "blockstun", "chip", "down_frames"):
             if w.get(k) is not None and e[k] is None:
                 e[k] = int(w[k])
+        e["knockdown"] = bool(e["knockdown"] or w.get("knockdown"))
         e["samples"]["hits"] += int(w["samples"]["hits"]); e["samples"]["blocks"] += int(w["samples"]["blocks"])
     hits = [per_window[k] for k in sorted(per_window)]
-    return {
+    # A multi-hit move whose later hits never landed in the capture (e.g. the
+    # first hit knocked the dummy down) has no complete total: report the
+    # per-window values only, so a partial sum is never mistaken for the move's
+    # damage.
+    complete = all(h["damage"] is not None for h in hits) and len(hits) >= max(1, len(hit_windows))
+    block = {
         "status": "verified",
         "source": ROM_COMBAT_SOURCE,
-        "damage_total": sum(h["damage"] for h in hits if h["damage"] is not None),
         "hits": hits,
+        "complete": complete,
     }
+    if complete:
+        block["damage_total"] = sum(h["damage"] for h in hits)
+    return block
 
 
 def build_move(rom_id, entry, names, combat, vhb=None, rom_combat=None):
@@ -411,8 +430,12 @@ def build_move(rom_id, entry, names, combat, vhb=None, rom_combat=None):
     variant = name_info.get("variant") if name_info else None
 
     # Per-move vulnerability extension boxes (centered), applied to every active
-    # frame: from the ROM JSON if present, else from the Baston supplement.
-    supp = vhb.get(state) if state else None
+    # frame: from the ROM JSON if present, else from the Baston supplement. The
+    # supplement is an interim seed and is ignored for a move whose ROM frames
+    # already carry vulnerability boxes (tools/rom_extract backfill).
+    rom_has_vhb = any(b["type"] == "vulnerability"
+                      for idx in active for b in frames[idx].get("boxes", []))
+    supp = vhb.get(state) if (state and not rom_has_vhb) else None
     supp_template = []
     if supp:
         for b in supp.get("boxes", []):

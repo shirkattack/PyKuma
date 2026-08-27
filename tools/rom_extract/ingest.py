@@ -52,32 +52,109 @@ def load_jsonl(path: str) -> List[dict]:
     return out
 
 
+class _NegZero(int):
+    """Lua writes a negative zero as `-0`; keep it so a round trip is byte-exact."""
+    def __repr__(self):
+        return "-0"
+
+
+def _parse_int(text: str):
+    return _NegZero(0) if text == "-0" else int(text)
+
+
+def loads_framedata(text: str):
+    """json.loads that keeps Lua's `-0` (see dumps_framedata)."""
+    return json.loads(text, parse_int=_parse_int)
+
+
+def dumps_framedata(value, indent: int = 0) -> str:
+    """Serialize in the exact layout of the vendored gouki_framedata.json
+    (3rd_training_lua's writer: 2-space nesting, `"key":value`, arrays of
+    objects as `[{ ... },{ ... }]`, scalar arrays inline) so an enriched copy
+    diffs against the vendored file by the added boxes only."""
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        pad = " " * (indent + 2)
+        body = ",\n".join(f'{pad}"{k}":{dumps_framedata(v, indent + 2)}' for k, v in value.items())
+        return "{\n" + body + "\n" + " " * indent + "}"
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        if all(isinstance(v, (dict, list)) for v in value):
+            return "[" + ",".join(dumps_framedata(v, indent + 2) for v in value) + "]"
+        return "[" + ",".join(dumps_framedata(v, indent) for v in value) + "]"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return json.dumps(value)
+    return repr(value)
+
+
 # ---- reconstruct moves ------------------------------------------------------
+
+def _frame_indices(rows: List[dict], side: str = "c1") -> List[int]:
+    """Move-frame index (0-based) of every record in one contiguous anim run.
+
+    The ROM does not advance an animation while the object is frozen by
+    hitstop, but the dump keeps emitting one record per emulated frame, so a
+    run that connected is stretched by the freeze. A record's index is the
+    number of earlier records in the run on which `side` was NOT frozen: the
+    connect frame keeps the index it advanced to (its freeze counter is set on
+    that same frame) and the frozen frames after it repeat that index. Records
+    without combat state (older dumps) count every frame.
+    """
+    out, n = [], 0
+    for r in rows:
+        out.append(n)
+        c = r.get(side) or {}
+        if not c.get("freeze", 0):
+            n += 1
+    return out
+
 
 def _box_key(b: dict) -> tuple:
     return (b["type"], b["left"], b["width"], b["bottom"], b["height"])
 
 
-def reconstruct_moves(records: List[dict]) -> Dict[str, dict]:
+def reconstruct_moves(records: List[dict], attacking_only: bool = False) -> Dict[str, dict]:
     """Group per-frame records by animation id into the gouki_framedata schema.
 
     Returns {anim_id: {"frames": [ {"boxes": [ {type,left,bottom,width,height} ]},
-    ... ]}} where the frames list is dense by `anim_frame` (0-indexed). When the
-    same (anim, anim_frame) is seen on multiple passes, boxes are unioned (deduped).
+    ... ]}} where the frames list is dense and 0-indexed. The dump's `anim_frame`
+    is a running cel id (not an index into the move), so -- exactly like
+    `derive_combat` -- a move's frame index is counted from the start of each
+    contiguous run of the same anim id (consecutive `f`). When the same
+    (anim, index) is seen on multiple runs, boxes are unioned (deduped).
+    Frames on which the player is frozen by hitstop do not advance the index
+    (`_frame_indices`). Caveat: a move that re-triggers itself with no anim
+    change in between reads as one long run; `merge_into_framedata` guards
+    against that by checking the attack boxes line up with the vendored
+    framedata before annotating.
+
+    attacking_only: for an anim id that shows attack boxes in at least one run,
+    drop the runs that never show one -- an attack exposes its attack boxes
+    whether it hits or whiffs, so such a run is the id being used for
+    something else (or a read glitch), not the move.
     """
+    instances = [ins for ins in _instances(records) if ins["anim"] is not None]
+    if attacking_only:
+        has_attack = {ins["anim"] for ins in instances if _has_attack(ins["rows"])}
+        instances = [ins for ins in instances
+                     if ins["anim"] not in has_attack or _has_attack(ins["rows"])]
     # anim -> frame_index -> set of boxes (deduped by geometry)
     acc: Dict[str, Dict[int, Dict[tuple, dict]]] = defaultdict(lambda: defaultdict(dict))
-    for r in records:
-        anim = r.get("anim")
-        fi = r.get("anim_frame")
-        if anim is None or fi is None:
-            continue
-        frame_map = acc[anim][fi]  # register the frame even if it has no boxes
-        for b in r.get("boxes", []):
-            frame_map[_box_key(b)] = {
-                "type": b["type"], "left": b["left"], "bottom": b["bottom"],
-                "width": b["width"], "height": b["height"],
-            }
+    for ins in instances:
+        anim = ins["anim"]
+        for fi, r in zip(_frame_indices(ins["rows"]), ins["rows"]):
+            frame_map = acc[anim][fi]  # register the frame even if it has no boxes
+            for b in r.get("boxes", []):
+                frame_map[_box_key(b)] = {
+                    "type": b["type"], "left": b["left"], "bottom": b["bottom"],
+                    "width": b["width"], "height": b["height"],
+                }
 
     moves: Dict[str, dict] = {}
     for anim, frames_by_idx in acc.items():
@@ -125,32 +202,70 @@ def merge_into_framedata(reconstructed: Dict[str, dict], framedata_path: str,
     already have attack boxes -- i.e. active frames). Writes an enriched copy to
     out_path. Returns a summary dict. The existing converter then picks the
     vulnerability boxes up with no code change.
+
+    Before a move is annotated its captured attack boxes must line up, index
+    for index, with the vendored framedata (same geometry on every frame where
+    the capture saw an attack box). A move that fails that check is reported
+    under "misaligned" and left untouched -- the frame counting is off for it
+    (e.g. a move that re-triggered itself mid-run), so its v_hb can't be trusted
+    to land on the right frame either.
     """
-    base = json.loads(Path(framedata_path).read_text())
+    base = loads_framedata(Path(framedata_path).read_text())
     remapped = remap_box_types(reconstructed, vhb_source)
-    touched, added = 0, 0
+    touched, added, dropped = 0, 0, 0
+    annotated, misaligned, unknown, no_attack = [], [], [], []
+
+    def _attacks(boxes):
+        return {_box_key(b) for b in boxes if b["type"] == "attack"}
+
     for anim, mv in remapped.items():
         if anim not in base or "frames" not in base[anim]:
+            unknown.append(anim)
             continue
         bframes = base[anim]["frames"]
+        checked, ok = 0, True
         for i, fr in enumerate(mv["frames"]):
-            if i >= len(bframes):
+            got = _attacks(fr["boxes"])
+            if not got:
+                continue
+            want = _attacks(bframes[i].get("boxes", [])) if i < len(bframes) else set()
+            checked += 1
+            if got != want:
+                ok = False
                 break
+        if checked == 0:
+            no_attack.append(anim)   # nothing to line up against (dumper saw no attack box)
+            continue
+        if not ok:
+            misaligned.append(anim)
+            continue
+
+        move_added = 0
+        for i, fr in enumerate(mv["frames"]):
             vulns = [b for b in fr["boxes"] if b["type"] == "vulnerability"]
             if not vulns:
                 continue
+            if i >= len(bframes):
+                dropped += 1
+                continue
             existing = bframes[i].setdefault("boxes", [])
-            has_attack = any(b["type"] == "attack" for b in existing)
-            if not has_attack:
-                continue  # only annotate active frames
+            if not any(b["type"] == "attack" for b in existing):
+                dropped += 1  # v_hb on a non-active frame (hitboxes.yaml carries active frames only)
+                continue
             keys = {_box_key(b) for b in existing}
             for v in vulns:
                 if _box_key(v) not in keys:
                     existing.append(v)
                     added += 1
+                    move_added += 1
             touched += 1
-    Path(out_path).write_text(json.dumps(base, indent=1))
-    return {"frames_touched": touched, "vuln_boxes_added": added, "out": out_path}
+        if move_added:
+            annotated.append(anim)
+    Path(out_path).write_text(dumps_framedata(base))
+    return {"frames_touched": touched, "vuln_boxes_added": added,
+            "vuln_frames_dropped_non_active": dropped, "annotated": sorted(annotated),
+            "misaligned": sorted(misaligned), "no_attack_boxes": sorted(no_attack),
+            "not_in_framedata": sorted(unknown), "out": out_path}
 
 
 # ---- physics derivation -----------------------------------------------------
@@ -315,28 +430,41 @@ def validate_vhb(reconstructed: Dict[str, dict], move_names_path: str,
     """
     names = json.loads(Path(move_names_path).read_text())
     seed = json.loads(Path(vhb_supplement_path).read_text())
-    # state -> anim id
-    state_to_anim = {}
-    for anim, info in names.items():
-        st = info.get("state") if isinstance(info, dict) else None
-        if st:
-            state_to_anim[st] = anim
+    # move_names.json is keyed by state ("LIGHT_KICK", "LIGHT_PUNCH:close", ...)
+    # with the ROM pointer under "rom_id". A seed for a base state is checked
+    # against that state AND its close/far variants, since Baston labels the
+    # close/far versions separately and the seed may belong to either.
+    state_to_anim = {st: info["rom_id"] for st, info in names.items()
+                     if isinstance(info, dict) and info.get("rom_id")}
+
+    def _found(anim, src):
+        out = set()
+        for fr in reconstructed[anim]["frames"]:
+            for b in fr["boxes"]:
+                if b["type"] == src:
+                    out.add((b["left"], b["width"], b["bottom"], b["height"]))
+        return out
 
     report = {}
     for state, supp in seed.items():
-        anim = state_to_anim.get(state)
+        if state.startswith("_"):
+            continue
         seed_boxes = {(b["left"], b["width"], b["bottom"], b["height"])
                       for b in supp.get("boxes", [])}
-        entry = {"anim": anim, "seed": sorted(seed_boxes), "matches": {}}
-        if anim and anim in reconstructed:
-            for src in ("vulnerability", "ext_vulnerability"):
-                found = set()
-                for fr in reconstructed[anim]["frames"]:
-                    for b in fr["boxes"]:
-                        if b["type"] == src:
-                            found.add((b["left"], b["width"], b["bottom"], b["height"]))
-                entry["matches"][src] = sorted(seed_boxes & found)
-                entry[f"{src}_all"] = sorted(found)
+        candidates = {st: a for st, a in state_to_anim.items()
+                      if st == state or st.startswith(state + ":")}
+        entry = {"seed": sorted(seed_boxes), "candidates": {}}
+        for st, anim in sorted(candidates.items()):
+            c = {"anim": anim, "captured": anim in reconstructed, "matches": {}}
+            if anim in reconstructed:
+                for src in ("vulnerability", "ext_vulnerability"):
+                    found = _found(anim, src)
+                    c["matches"][src] = sorted(seed_boxes & found)
+                    c[f"{src}_all"] = sorted(found)
+            entry["candidates"][st] = c
+        entry["verdict"] = next((f"{st} ({c['anim']}) ext_vulnerability == seed"
+                                 for st, c in entry["candidates"].items()
+                                 if c["matches"].get("ext_vulnerability")), "no match in capture")
         report[state] = entry
     return report
 
@@ -376,11 +504,34 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
             "stun_max": None, "connects": 0, "hits": 0, "blocks": 0, "parries": 0}
     n = len(records)
     # The dump's anim_frame is a running cel id, not an index into the move:
-    # count the move's frames from the attacker's animation-id change instead.
-    move_start = [0] * n
-    for i in range(n):
-        a, pa = records[i].get(attacker), records[i - 1].get(attacker) if i else None
-        move_start[i] = i if (i == 0 or not pa or a["anim"] != pa["anim"]) else move_start[i - 1]
+    # count the move's frames from the attacker's animation-id change instead,
+    # skipping the frames on which the attacker is frozen by hitstop (the anim
+    # does not advance then) so a multi-hit move's later windows line up with
+    # the framedata timeline. `records` is one contiguous capture (f is dense).
+    frame_of, run_of = [0] * n, [0] * n
+    start = 0
+    for i in range(n + 1):
+        a = records[i].get(attacker) if i < n else None
+        pa = records[i - 1].get(attacker) if i else None
+        if i == n or i == 0 or not a or not pa or a["anim"] != pa["anim"]:
+            if i > start:
+                rows = [{attacker: records[j].get(attacker)} for j in range(start, i)]
+                for j, fi in zip(range(start, i), _frame_indices(rows, attacker)):
+                    frame_of[j], run_of[j] = fi, start
+            start = i
+    # Ordinal of each connect within its run: the k-th connect of a move that
+    # landed all of its hits is its k-th hit window. The attacker's own hitstop
+    # (hs_me) differs from the defender's, so a later hit's *frame* cannot be
+    # pinned from the defender's freeze; the converter uses (hit_index,
+    # run_hits) when run_hits equals the move's window count, else the frame.
+    hit_index, run_hits = {}, {}
+    for i in range(1, n):
+        a, d, pd = records[i].get(attacker), records[i].get(defender), records[i - 1].get(defender)
+        if a and d and pd and (d["hits_received"] > pd["hits_received"]
+                               or (pd["conn_marker"] == 0 and d["conn_marker"] != 0)):
+            key = (a["anim"], run_of[i])
+            hit_index[i] = run_hits.get(key, 0)
+            run_hits[key] = hit_index[i] + 1
     for i in range(1, n):
         a, d = records[i].get(attacker), records[i].get(defender)
         pa, pd = records[i - 1].get(attacker), records[i - 1].get(defender)
@@ -403,7 +554,7 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
         kind = "hit" if hit else ("block" if block else "parry")
         meta["connects"] += 1; meta[kind + "s" if kind != "parry" else "parries"] += 1
         # attacker's move + ROM frame (1-indexed) at the connect
-        anim, frame = a["anim"], i - move_start[i] + 1
+        anim, frame = a["anim"], frame_of[i] + 1
         # Applied damage/stun: the ROM writes dm_vital / dm_piyo on the defender
         # the frame the hit registers (exactly what it will subtract); the
         # life/stun-bar deltas over the settle window are the fallback.
@@ -419,18 +570,28 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
         # stun duration: connect -> defender idle again, minus hitstop. If the
         # next connect lands first (a multi-hit string) this sample can't
         # measure it -> None (the follow-up hit's own sample still can).
-        stun_frames = None
+        # A hit that changes the defender's posture before they are idle again
+        # (launched / knocked down: the ROM posture byte leaves its pre-hit
+        # value) is a knockdown: the time to idle is then the whole
+        # launch + lying-down + wakeup sequence, which is NOT hitstun. It is
+        # kept as `down_frames` and stun_frames is left None for that sample.
+        stun_frames, knockdown = None, False
         for j in range(i + 1, min(n, i + MAX_STUN_FRAMES)):
             dj, pj = records[j].get(defender), records[j - 1].get(defender)
             if not (dj and pj):
                 continue
             if dj["hits_received"] > pj["hits_received"] or (pj["conn_marker"] == 0 and dj["conn_marker"] != 0):
                 break
+            if dj["posture"] != pd["posture"]:
+                knockdown = True
             if _idle(dj, pj):
                 stun_frames = (j - i) - hitstop
                 break
-        sample = {"f": records[i]["f"], "frame": frame, "damage": damage, "stun": stun,
-                  "hitstop": hitstop, "stun_frames": stun_frames, "dmg_next": d["dmg_next"],
+        sample = {"f": records[i]["f"], "frame": frame, "hit_index": hit_index.get(i, 0),
+                  "run_hits": run_hits.get((anim, run_of[i]), 1), "damage": damage, "stun": stun,
+                  "hitstop": hitstop, "stun_frames": None if knockdown else stun_frames,
+                  "knockdown": knockdown, "down_frames": stun_frames if knockdown else None,
+                  "dmg_next": d["dmg_next"],
                   "dm_vital": max((records[j][defender].get("dm_vital", 0) for j in range(i, min(n, i + 3))
                                    if records[j].get(defender)), default=0),
                   "stun_next": d["stun_next"], "posture": d["posture"]}
@@ -468,25 +629,32 @@ def summarize_combat(derived: dict) -> dict:
     stun / hitstop / hitstun (from hits) and blockstun / chip (from blocks)."""
     moves = {}
     for anim, rec in derived["moves"].items():
-        by_frame: Dict[int, dict] = {}
+        # Group by frame; a sample whose frame is unknown (a repaired legacy
+        # multi-hit sample) groups by its ordinal instead.
+        def _key(s):
+            return s["frame"] if s.get("frame") is not None else ("hit", s.get("hit_index", 0))
+        by_frame: Dict[object, dict] = {}
         for s in rec["hits"]:
-            e = by_frame.setdefault(s["frame"], {"frame": s["frame"], "hits": [], "blocks": []})
-            e["hits"].append(s)
+            by_frame.setdefault(_key(s), {"hits": [], "blocks": []})["hits"].append(s)
         for s in rec["blocks"]:
-            e = by_frame.setdefault(s["frame"], {"frame": s["frame"], "hits": [], "blocks": []})
-            e["blocks"].append(s)
+            by_frame.setdefault(_key(s), {"hits": [], "blocks": []})["blocks"].append(s)
         summary = []
-        for frame in sorted(by_frame):
-            e = by_frame[frame]
+        for key in sorted(by_frame, key=lambda k: (isinstance(k, tuple), k if not isinstance(k, tuple) else k[1])):
+            e = by_frame[key]
+            allsamples = e["hits"] + e["blocks"]
             landed = [s for s in e["hits"] if s["damage"] > 0] or e["hits"]
             summary.append({
-                "frame": frame,
+                "frame": _median([s.get("frame") for s in allsamples]),
+                "hit_index": min((s.get("hit_index", 0) for s in allsamples), default=0),
+                "run_hits": max((s.get("run_hits", 1) for s in allsamples), default=1),
                 "damage": _median([s["damage"] for s in landed]),
                 "stun": _median([s["stun"] for s in landed]),
                 "hitstop": _median([s["hitstop"] for s in e["hits"] + e["blocks"]]),
                 "hitstun": _median([s["stun_frames"] for s in landed]),
                 "blockstun": _median([s["stun_frames"] for s in e["blocks"]]),
                 "chip": _median([s["damage"] for s in e["blocks"]]),
+                "knockdown": any(s.get("knockdown") for s in e["hits"]),
+                "down_frames": _median([s.get("down_frames") for s in e["hits"]]),
                 "samples": {"hits": len(e["hits"]), "blocks": len(e["blocks"])},
             })
         moves[anim] = {"windows": summary, "parries": len(rec["parries"])}
@@ -618,14 +786,14 @@ def main(argv=None):
         Path(args.out).write_text(json.dumps(mv, indent=1))
         print(f"{len(mv)} animations -> {args.out}")
     elif args.cmd == "merge":
-        mv = reconstruct_moves(load_jsonl(args.dump))
+        mv = reconstruct_moves(load_jsonl(args.dump), attacking_only=True)
         print(merge_into_framedata(mv, args.framedata, args.out, args.vhb_source))
     elif args.cmd == "physics":
         phys = derive_physics(load_jsonl(args.dump))
         Path(args.out).write_text(physics_to_yaml(phys, args.rom_id, args.repo, args.commit))
         print(f"physics -> {args.out}: {json.dumps({k: phys[k] for k in phys if not k.startswith('_')})[:300]}")
     elif args.cmd == "validate":
-        mv = reconstruct_moves(load_jsonl(args.dump))
+        mv = reconstruct_moves(load_jsonl(args.dump), attacking_only=True)
         print(json.dumps(validate_vhb(mv, args.names, args.vhb), indent=2))
 
 
