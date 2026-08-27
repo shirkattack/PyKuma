@@ -87,3 +87,49 @@ with the vendored framedata and reports the rest as `misaligned` /
 `no_attack_boxes` — a connect freezes the attacker (hitstop) and the ROM does not
 resume the cel timeline in a way the dump can reproduce for every move, so
 **drive moves on whiff for the hurtbox pass**.
+
+
+## Sprite (cel) extraction — probe
+
+The sprites themselves can be read out of the emulator too. `dump_cels.lua`
+dumps, for one frame, the CPS3 sprite list (every object's parts: tile
+numbers, flips, palette, offsets from the object's origin) and the palettes
+(`0x04080000`, 15-bit RGB), and writes a **savestate** on the same frame: the
+8 MB character RAM holding the 16x16 tiles is only reachable from Lua through
+a 1 MB bank window whose bank register the Lua API cannot write, but FBNeo
+states are uncompressed and carry it whole (entry "Sprite ROM").
+`cel_decode.py` takes the tiles from the state and rebuilds each object as a
+PNG whose origin is the object's own axis, so a character cel comes out
+pixel-exact with the true sprite/axis offset (formats: MAME `cps3.cpp`,
+FBNeo `cps3run.cpp` / `statec.cpp`).
+
+    # Fightcade: Misc > Lua Scripting > Browse > fbneo-training-mode/dump_cels.lua > Run
+    # stand still in stance, press C  ->  pykuma_cels.jsonl next to the script
+    uv run python tools/rom_extract/cel_decode.py \
+        ~/.var/app/com.fightcade.Fightcade/data/fbneo-training-mode/pykuma_cels.jsonl --out /tmp/cels
+
+The table it prints lists every object with its origin and bbox. The players
+are the objects whose `xpos` equals their `pos_x` (the camera is applied by
+the PPU), ~35 tiles each; the two 7-tile objects at the same x are their
+shadows.
+
+**Verified 2026-08-27** (stance cel, P1 and the x-flipped P2 pixel-exact,
+axis between the feet). What the two probe rounds established:
+- Lua `memory.write*` goes through FBNeo's *byte* handler; the char-RAM bank
+  register is word-only, so it cannot be switched from Lua. The savestate is
+  the way to the tiles.
+- Fightcade's FBNeo state: `FB1 ` + `FS1 ` chunk with a 0x44-byte header,
+  then a zlib stream starting 4 bytes in; the scanned areas are concatenated
+  with no per-area headers (current FBNeo writes `[id][len][hash]` entries,
+  which the decoder also reads). The 8 MB char RAM is anchored by a bank-0
+  tile the Lua read (shadow tiles 128-131); the 0x40000-byte palette RAM sits
+  right before it.
+- Tile pixel x is byte `x ^ 3` of its 16-byte row, both in the state (host
+  order, FBNeo renders `source[x ^ 3]`) and via the Lua reads.
+- The Lua-read palette is in rendering (CPU) order; the state stores it with
+  adjacent words swapped (`RamPal[i ^ 1]`), which the decoder swaps back.
+- Part offsets are 10-bit signed; a part's position is its centre.
+
+Next: dump automatically on every new ROM cel id (`anim_frame`) during a
+whiff pass and key the PNGs by cel -- sprites, axis offsets and durations all
+from the ROM.
