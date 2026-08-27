@@ -25,7 +25,7 @@ meta:
     vitality: 160
     community_damage_scale: 7.5
     stun_max: 56
-    moves_captured: 31
+    moves_captured: 40
     source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
       combat): applied damage/stun/hitstop/hitstun read live'
 base_hurtbox:
@@ -94,8 +94,8 @@ moves:
         offset_y: -102.0
         width: 22.0
         height: 18.0
-        status: baston
-        rom_id: baston
+        status: verified
+        rom_id: 13a8
     - frame: 5
       attack:
       - offset_x: 34.0
@@ -109,8 +109,8 @@ moves:
         offset_y: -102.0
         width: 22.0
         height: 18.0
-        status: baston
-        rom_id: baston
+        status: verified
+        rom_id: 13a8
     - frame: 6
       attack:
       - offset_x: 34.0
@@ -124,8 +124,8 @@ moves:
         offset_y: -102.0
         width: 22.0
         height: 18.0
-        status: baston
-        rom_id: baston
+        status: verified
+        rom_id: 13a8
     hit_windows:
     - - 4
       - 6
@@ -157,13 +157,13 @@ moves:
         stun: 3
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 2
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 5
   '1438':
@@ -428,13 +428,13 @@ moves:
         stun: 11
         hitstop: 8
         hitstun: 15
-        blockstun: null
-        chip: null
+        blockstun: 14
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 18
   '1638':
@@ -458,12 +458,26 @@ moves:
         height: 14.0
         status: verified
         rom_id: '1638'
+      vulnerability:
+      - offset_x: 54.0
+        offset_y: -84.0
+        width: 24.0
+        height: 18.0
+        status: verified
+        rom_id: '1638'
     - frame: 16
       attack:
       - offset_x: 58.0
         offset_y: -44.0
         width: 22.0
         height: 16.0
+        status: verified
+        rom_id: '1638'
+      vulnerability:
+      - offset_x: 43.0
+        offset_y: -66.0
+        width: 34.0
+        height: 28.0
         status: verified
         rom_id: '1638'
     hit_windows:
@@ -571,6 +585,41 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 38
       damage_total: 105
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 15
+        damage: 7
+        stun: 9
+        hitstop: 7
+        hitstun: null
+        blockstun: null
+        chip: null
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 3
+          blocks: 0
+      - window: 1
+        frames:
+        - 16
+        damage: 7
+        stun: 6
+        hitstop: 14
+        hitstun: 19
+        blockstun: null
+        chip: null
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 3
+          blocks: 0
+      complete: true
+      damage_total: 14
   '1728':
     rom_id: '1728'
     timing:
@@ -667,17 +716,18 @@ moves:
       - window: 0
         frames:
         - 5
+        - 7
         damage: 24
         stun: 15
         hitstop: 11
         hitstun: 19
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 1
       complete: true
       damage_total: 24
   '1818':
@@ -701,12 +751,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '1818'
+      vulnerability:
+      - offset_x: 53.0
+        offset_y: -80.0
+        width: 38.0
+        height: 16.0
+        status: verified
+        rom_id: '1818'
     - frame: 10
       attack:
       - offset_x: 42.0
         offset_y: -70.0
         width: 50.0
         height: 12.0
+        status: verified
+        rom_id: '1818'
+      vulnerability:
+      - offset_x: 53.0
+        offset_y: -80.0
+        width: 38.0
+        height: 16.0
         status: verified
         rom_id: '1818'
     - frame: 11
@@ -717,6 +781,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: '1818'
+      vulnerability:
+      - offset_x: 53.0
+        offset_y: -80.0
+        width: 38.0
+        height: 16.0
+        status: verified
+        rom_id: '1818'
     - frame: 12
       attack:
       - offset_x: 42.0
@@ -725,12 +796,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '1818'
+      vulnerability:
+      - offset_x: 53.0
+        offset_y: -80.0
+        width: 38.0
+        height: 16.0
+        status: verified
+        rom_id: '1818'
     - frame: 13
       attack:
       - offset_x: 42.0
         offset_y: -70.0
         width: 50.0
         height: 12.0
+        status: verified
+        rom_id: '1818'
+      vulnerability:
+      - offset_x: 53.0
+        offset_y: -80.0
+        width: 38.0
+        height: 16.0
         status: verified
         rom_id: '1818'
     hit_windows:
@@ -951,13 +1036,13 @@ moves:
         stun: 3
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 2
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 7
   '1988':
@@ -1133,17 +1218,18 @@ moves:
       - window: 0
         frames:
         - 5
+        - 8
         damage: 19
         stun: 9
         hitstop: 8
         hitstun: 19
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 2
       complete: true
       damage_total: 19
   1a38:
@@ -1334,7 +1420,7 @@ moves:
       - window: 0
         frames:
         - 6
-        damage: 14
+        damage: 16
         stun: 7
         hitstop: 8
         hitstun: 15
@@ -1343,10 +1429,10 @@ moves:
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
+          hits: 2
           blocks: 0
       complete: true
-      damage_total: 14
+      damage_total: 16
   1b08:
     rom_id: 1b08
     timing:
@@ -1561,30 +1647,32 @@ moves:
       - window: 0
         frames:
         - 6
+        - 7
         damage: 21
         stun: 13
         hitstop: 10
         hitstun: 35
         blockstun: null
-        chip: null
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 3
-          blocks: 0
+          hits: 6
+          blocks: 2
       - window: 1
-        frames: []
+        frames:
+        - 13
         damage: 12
         stun: 10
         hitstop: 11
         hitstun: 19
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 33
   1bf8:
@@ -1620,6 +1708,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 1bf8
+      vulnerability:
+      - offset_x: 44.0
+        offset_y: -88.0
+        width: 36.0
+        height: 30.0
+        status: verified
+        rom_id: 1bf8
     - frame: 11
       attack:
       - offset_x: 62.0
@@ -1638,6 +1733,13 @@ moves:
         offset_y: -94.0
         width: 24.0
         height: 18.0
+        status: verified
+        rom_id: 1bf8
+      vulnerability:
+      - offset_x: 44.0
+        offset_y: -88.0
+        width: 36.0
+        height: 30.0
         status: verified
         rom_id: 1bf8
     - frame: 12
@@ -1660,6 +1762,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 1bf8
+      vulnerability:
+      - offset_x: 44.0
+        offset_y: -88.0
+        width: 36.0
+        height: 30.0
+        status: verified
+        rom_id: 1bf8
     - frame: 13
       attack:
       - offset_x: 62.0
@@ -1680,6 +1789,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 1bf8
+      vulnerability:
+      - offset_x: 44.0
+        offset_y: -88.0
+        width: 36.0
+        height: 30.0
+        status: verified
+        rom_id: 1bf8
     - frame: 14
       attack:
       - offset_x: 62.0
@@ -1698,6 +1814,13 @@ moves:
         offset_y: -94.0
         width: 24.0
         height: 18.0
+        status: verified
+        rom_id: 1bf8
+      vulnerability:
+      - offset_x: 44.0
+        offset_y: -88.0
+        width: 36.0
+        height: 30.0
         status: verified
         rom_id: 1bf8
     hit_windows:
@@ -1808,17 +1931,19 @@ moves:
       - window: 0
         frames:
         - 10
+        - 13
+        - 14
         damage: 25
         stun: 11
         hitstop: 11
         hitstun: 19
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 3
+          blocks: 1
       complete: true
       damage_total: 25
   1d28:
@@ -1842,6 +1967,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1d28
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
+        status: verified
+        rom_id: 1d28
     - frame: 6
       attack:
       - offset_x: 26.0
@@ -1850,12 +1982,26 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1d28
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
+        status: verified
+        rom_id: 1d28
     - frame: 7
       attack:
       - offset_x: 26.0
         offset_y: -52.0
         width: 44.0
         height: 8.0
+        status: verified
+        rom_id: 1d28
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
         status: verified
         rom_id: 1d28
     hit_windows:
@@ -1887,13 +2033,13 @@ moves:
         stun: 3
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 3
   1dd8:
@@ -1931,6 +2077,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1dd8
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
+        status: verified
+        rom_id: 1dd8
     - frame: 8
       attack:
       - offset_x: 26.0
@@ -1939,12 +2092,26 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1dd8
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
+        status: verified
+        rom_id: 1dd8
     - frame: 9
       attack:
       - offset_x: 26.0
         offset_y: -52.0
         width: 44.0
         height: 8.0
+        status: verified
+        rom_id: 1dd8
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -58.0
+        width: 28.0
+        height: 18.0
         status: verified
         rom_id: 1dd8
     hit_windows:
@@ -1977,13 +2144,13 @@ moves:
         stun: 7
         hitstop: 8
         hitstun: 15
-        blockstun: null
-        chip: null
+        blockstun: 14
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 3
       complete: true
       damage_total: 16
   1e88:
@@ -2049,12 +2216,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 1e88
+      vulnerability:
+      - offset_x: 16.0
+        offset_y: -118.0
+        width: 28.0
+        height: 38.0
+        status: verified
+        rom_id: 1e88
     - frame: 10
       attack:
       - offset_x: 18.0
         offset_y: -112.0
         width: 14.0
         height: 12.0
+        status: verified
+        rom_id: 1e88
+      vulnerability:
+      - offset_x: 16.0
+        offset_y: -118.0
+        width: 28.0
+        height: 38.0
         status: verified
         rom_id: 1e88
     hit_windows:
@@ -2087,13 +2268,13 @@ moves:
         stun: 11
         hitstop: 10
         hitstun: 19
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 24
   1f68:
@@ -2117,6 +2298,13 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1f68
+      vulnerability:
+      - offset_x: 57.0
+        offset_y: -18.0
+        width: 34.0
+        height: 18.0
+        status: verified
+        rom_id: 1f68
     - frame: 7
       attack:
       - offset_x: 28.0
@@ -2125,12 +2313,26 @@ moves:
         height: 8.0
         status: verified
         rom_id: 1f68
+      vulnerability:
+      - offset_x: 57.0
+        offset_y: -18.0
+        width: 34.0
+        height: 18.0
+        status: verified
+        rom_id: 1f68
     - frame: 8
       attack:
       - offset_x: 28.0
         offset_y: -8.0
         width: 52.0
         height: 8.0
+        status: verified
+        rom_id: 1f68
+      vulnerability:
+      - offset_x: 57.0
+        offset_y: -18.0
+        width: 34.0
+        height: 18.0
         status: verified
         rom_id: 1f68
     hit_windows:
@@ -2162,13 +2364,13 @@ moves:
         stun: 3
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 4
+          blocks: 1
       complete: true
       damage_total: 3
   '2008':
@@ -2198,12 +2400,26 @@ moves:
         height: 14.0
         status: verified
         rom_id: '2008'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: '2008'
     - frame: 8
       attack:
       - offset_x: 30.0
         offset_y: -14.0
         width: 48.0
         height: 14.0
+        status: verified
+        rom_id: '2008'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
         status: verified
         rom_id: '2008'
     - frame: 9
@@ -2214,6 +2430,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '2008'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: '2008'
     - frame: 10
       attack:
       - offset_x: 30.0
@@ -2222,12 +2445,26 @@ moves:
         height: 14.0
         status: verified
         rom_id: '2008'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: '2008'
     - frame: 11
       attack:
       - offset_x: 30.0
         offset_y: -14.0
         width: 48.0
         height: 14.0
+        status: verified
+        rom_id: '2008'
+      vulnerability:
+      - offset_x: 46.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
         status: verified
         rom_id: '2008'
     hit_windows:
@@ -2322,13 +2559,13 @@ moves:
         stun: 3
         hitstop: 8
         hitstun: 15
-        blockstun: null
-        chip: null
+        blockstun: 14
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 1
       complete: true
       damage_total: 16
   20d8:
@@ -2352,12 +2589,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 20d8
+      vulnerability:
+      - offset_x: 56.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: 20d8
     - frame: 9
       attack:
       - offset_x: 22.0
         offset_y: -12.0
         width: 68.0
         height: 12.0
+        status: verified
+        rom_id: 20d8
+      vulnerability:
+      - offset_x: 56.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
         status: verified
         rom_id: 20d8
     - frame: 10
@@ -2368,6 +2619,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 20d8
+      vulnerability:
+      - offset_x: 56.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: 20d8
     - frame: 11
       attack:
       - offset_x: 22.0
@@ -2376,12 +2634,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 20d8
+      vulnerability:
+      - offset_x: 56.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
+        status: verified
+        rom_id: 20d8
     - frame: 12
       attack:
       - offset_x: 22.0
         offset_y: -12.0
         width: 68.0
         height: 12.0
+        status: verified
+        rom_id: 20d8
+      vulnerability:
+      - offset_x: 56.0
+        offset_y: -24.0
+        width: 32.0
+        height: 24.0
         status: verified
         rom_id: 20d8
     hit_windows:
@@ -2496,13 +2768,13 @@ moves:
         stun: 3
         hitstop: 9
         hitstun: 60
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 22
   21c8:
@@ -2526,12 +2798,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 6
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 7
@@ -2542,12 +2828,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 8
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 9
@@ -2558,12 +2858,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 10
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 11
@@ -2574,12 +2888,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 12
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 13
@@ -2590,12 +2918,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 14
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 15
@@ -2606,12 +2948,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 16
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 17
@@ -2622,12 +2978,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 18
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 19
@@ -2638,6 +3008,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 20
       attack:
       - offset_x: 28.0
@@ -2646,12 +3023,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: 21c8
     - frame: 21
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: 21c8
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: 21c8
     - frame: 22
@@ -2813,17 +3204,18 @@ moves:
       - window: 0
         frames:
         - 5
+        - 7
         damage: 8
         stun: 5
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 8
   22a8:
@@ -2853,11 +3245,25 @@ moves:
         height: 16.0
         status: verified
         rom_id: 22a8
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -70.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: 22a8
     - frame: 7
       attack:
       - offset_x: 46.0
         offset_y: -82.0
         width: 22.0
+        height: 18.0
+        status: verified
+        rom_id: 22a8
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -70.0
+        width: 26.0
         height: 18.0
         status: verified
         rom_id: 22a8
@@ -2869,6 +3275,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 22a8
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -70.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: 22a8
     - frame: 9
       attack:
       - offset_x: 50.0
@@ -2877,12 +3290,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: 22a8
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -94.0
+        width: 26.0
+        height: 42.0
+        status: verified
+        rom_id: 22a8
     - frame: 10
       attack:
       - offset_x: 50.0
         offset_y: -70.0
         width: 14.0
         height: 12.0
+        status: verified
+        rom_id: 22a8
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -94.0
+        width: 26.0
+        height: 42.0
         status: verified
         rom_id: 22a8
     hit_windows:
@@ -2974,17 +3401,19 @@ moves:
         frames:
         - 6
         - 8
+        - 9
+        - 10
         damage: 16
         stun: 9
         hitstop: 7
         hitstun: 14
-        blockstun: null
-        chip: null
+        blockstun: 14
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 2
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 16
   '2388':
@@ -3134,17 +3563,18 @@ moves:
       - window: 0
         frames:
         - 8
+        - 9
         damage: 23
         stun: 13
         hitstop: 8
         hitstun: 17
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 23
   '2448':
@@ -3409,17 +3839,18 @@ moves:
       - window: 0
         frames:
         - 5
+        - 6
         damage: 7
         stun: 5
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 2
       complete: true
       damage_total: 7
   '2558':
@@ -3457,12 +3888,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '2558'
+      vulnerability:
+      - offset_x: 48.0
+        offset_y: -78.0
+        width: 24.0
+        height: 28.0
+        status: verified
+        rom_id: '2558'
     - frame: 8
       attack:
       - offset_x: 38.0
         offset_y: -70.0
         width: 44.0
         height: 10.0
+        status: verified
+        rom_id: '2558'
+      vulnerability:
+      - offset_x: 48.0
+        offset_y: -78.0
+        width: 24.0
+        height: 28.0
         status: verified
         rom_id: '2558'
     - frame: 9
@@ -3473,6 +3918,13 @@ moves:
         height: 10.0
         status: verified
         rom_id: '2558'
+      vulnerability:
+      - offset_x: 48.0
+        offset_y: -78.0
+        width: 24.0
+        height: 28.0
+        status: verified
+        rom_id: '2558'
     - frame: 10
       attack:
       - offset_x: 38.0
@@ -3481,12 +3933,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '2558'
+      vulnerability:
+      - offset_x: 48.0
+        offset_y: -78.0
+        width: 24.0
+        height: 28.0
+        status: verified
+        rom_id: '2558'
     - frame: 11
       attack:
       - offset_x: 38.0
         offset_y: -70.0
         width: 44.0
         height: 10.0
+        status: verified
+        rom_id: '2558'
+      vulnerability:
+      - offset_x: 48.0
+        offset_y: -78.0
+        width: 24.0
+        height: 28.0
         status: verified
         rom_id: '2558'
     hit_windows:
@@ -3559,17 +4025,18 @@ moves:
       - window: 0
         frames:
         - 6
+        - 10
         damage: 14
         stun: 7
         hitstop: 7
         hitstun: 14
-        blockstun: null
-        chip: null
+        blockstun: 14
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 14
   '2628':
@@ -3677,6 +4144,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '2628'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -98.0
+        width: 24.0
+        height: 32.0
+        status: verified
+        rom_id: '2628'
     hit_windows:
     - - 7
       - 11
@@ -3765,17 +4239,18 @@ moves:
       - window: 0
         frames:
         - 7
+        - 11
         damage: 21
         stun: 11
         hitstop: 8
         hitstun: 17
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 21
   '2708':
@@ -3799,12 +4274,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 6
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 7
@@ -3815,12 +4304,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 8
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 9
@@ -3831,12 +4334,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 10
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 11
@@ -3847,12 +4364,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 12
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 13
@@ -3863,12 +4394,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 14
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 15
@@ -3879,6 +4424,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 16
       attack:
       - offset_x: 28.0
@@ -3887,12 +4439,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
+        status: verified
+        rom_id: '2708'
     - frame: 17
       attack:
       - offset_x: 28.0
         offset_y: -72.0
         width: 24.0
         height: 12.0
+        status: verified
+        rom_id: '2708'
+      vulnerability:
+      - offset_x: 40.0
+        offset_y: -90.0
+        width: 28.0
+        height: 16.0
         status: verified
         rom_id: '2708'
     - frame: 18
@@ -4109,13 +4675,13 @@ moves:
         stun: 5
         hitstop: 6
         hitstun: 11
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 6
   '2800':
@@ -4145,6 +4711,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '2800'
+      vulnerability:
+      - offset_x: 51.0
+        offset_y: -92.0
+        width: 26.0
+        height: 20.0
+        status: verified
+        rom_id: '2800'
     - frame: 8
       attack:
       - offset_x: 52.0
@@ -4159,6 +4732,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '2800'
+      vulnerability:
+      - offset_x: 51.0
+        offset_y: -92.0
+        width: 26.0
+        height: 20.0
+        status: verified
+        rom_id: '2800'
     - frame: 9
       attack:
       - offset_x: 50.0
@@ -4167,12 +4747,26 @@ moves:
         height: 12.0
         status: verified
         rom_id: '2800'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -94.0
+        width: 26.0
+        height: 42.0
+        status: verified
+        rom_id: '2800'
     - frame: 10
       attack:
       - offset_x: 50.0
         offset_y: -70.0
         width: 14.0
         height: 12.0
+        status: verified
+        rom_id: '2800'
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -94.0
+        width: 26.0
+        height: 42.0
         status: verified
         rom_id: '2800'
     hit_windows:
@@ -4253,13 +4847,13 @@ moves:
         stun: 0
         hitstop: 8
         hitstun: null
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 0
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 1
       complete: true
       damage_total: 0
   28e0:
@@ -4409,6 +5003,30 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 14
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 5
+        - 7
+        - 9
+        - 10
+        - 13
+        damage: null
+        stun: null
+        hitstop: 6
+        hitstun: null
+        blockstun: 11
+        chip: 0
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 0
+          blocks: 5
+      complete: false
   29c0:
     rom_id: 29c0
     timing:
@@ -4442,6 +5060,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 29c0
+      vulnerability:
+      - offset_x: 38.0
+        offset_y: -84.0
+        width: 28.0
+        height: 24.0
+        status: verified
+        rom_id: 29c0
     - frame: 7
       attack:
       - offset_x: -12.0
@@ -4454,6 +5079,13 @@ moves:
         offset_y: -62.0
         width: 50.0
         height: 12.0
+        status: verified
+        rom_id: 29c0
+      vulnerability:
+      - offset_x: 47.0
+        offset_y: -92.0
+        width: 38.0
+        height: 38.0
         status: verified
         rom_id: 29c0
     - frame: 8
@@ -4470,6 +5102,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 29c0
+      vulnerability:
+      - offset_x: 47.0
+        offset_y: -92.0
+        width: 38.0
+        height: 38.0
+        status: verified
+        rom_id: 29c0
     - frame: 9
       attack:
       - offset_x: -12.0
@@ -4482,6 +5121,13 @@ moves:
         offset_y: -62.0
         width: 50.0
         height: 12.0
+        status: verified
+        rom_id: 29c0
+      vulnerability:
+      - offset_x: 47.0
+        offset_y: -92.0
+        width: 38.0
+        height: 38.0
         status: verified
         rom_id: 29c0
     - frame: 10
@@ -4498,6 +5144,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 29c0
+      vulnerability:
+      - offset_x: 47.0
+        offset_y: -92.0
+        width: 38.0
+        height: 38.0
+        status: verified
+        rom_id: 29c0
     - frame: 11
       attack:
       - offset_x: -12.0
@@ -4510,6 +5163,13 @@ moves:
         offset_y: -62.0
         width: 50.0
         height: 12.0
+        status: verified
+        rom_id: 29c0
+      vulnerability:
+      - offset_x: 47.0
+        offset_y: -92.0
+        width: 38.0
+        height: 38.0
         status: verified
         rom_id: 29c0
     hit_windows:
@@ -4572,6 +5232,27 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 11
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 6
+        damage: 14
+        stun: 7
+        hitstop: 7
+        hitstun: 14
+        blockstun: 14
+        chip: 0
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 1
+          blocks: 2
+      complete: true
+      damage_total: 14
   2aa0:
     rom_id: 2aa0
     timing:
@@ -4845,6 +5526,13 @@ moves:
         height: 16.0
         status: verified
         rom_id: 2b30
+      vulnerability:
+      - offset_x: 51.0
+        offset_y: -90.0
+        width: 42.0
+        height: 36.0
+        status: verified
+        rom_id: 2b30
     - frame: 8
       attack:
       - offset_x: 50.0
@@ -4857,6 +5545,13 @@ moves:
         offset_y: -62.0
         width: 32.0
         height: 12.0
+        status: verified
+        rom_id: 2b30
+      vulnerability:
+      - offset_x: 50.0
+        offset_y: -90.0
+        width: 40.0
+        height: 36.0
         status: verified
         rom_id: 2b30
     - frame: 9
@@ -4873,6 +5568,13 @@ moves:
         height: 12.0
         status: verified
         rom_id: 2b30
+      vulnerability:
+      - offset_x: 50.0
+        offset_y: -90.0
+        width: 40.0
+        height: 36.0
+        status: verified
+        rom_id: 2b30
     - frame: 10
       attack:
       - offset_x: 50.0
@@ -4885,6 +5587,13 @@ moves:
         offset_y: -62.0
         width: 32.0
         height: 12.0
+        status: verified
+        rom_id: 2b30
+      vulnerability:
+      - offset_x: 50.0
+        offset_y: -90.0
+        width: 40.0
+        height: 36.0
         status: verified
         rom_id: 2b30
     hit_windows:
@@ -4949,6 +5658,26 @@ moves:
       status: community
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 10
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 7
+        damage: null
+        stun: null
+        hitstop: 8
+        hitstun: null
+        blockstun: 17
+        chip: 0
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 0
+          blocks: 1
+      complete: false
   84f8:
     rom_id: 84f8
     timing:
@@ -5331,13 +6060,13 @@ moves:
         stun: 11
         hitstop: 9
         hitstun: null
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 2
         knockdown: true
         down_frames: 115
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 23
   85c8:
@@ -5409,6 +6138,13 @@ moves:
         height: 20.0
         status: verified
         rom_id: 85c8
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: 85c8
     - frame: 7
       attack:
       - offset_x: 14.0
@@ -5421,6 +6157,13 @@ moves:
         offset_y: -76.0
         width: 24.0
         height: 20.0
+        status: verified
+        rom_id: 85c8
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: 85c8
     - frame: 8
@@ -5437,6 +6180,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: 85c8
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: 85c8
     - frame: 9
       attack:
       - offset_x: 16.0
@@ -5449,6 +6199,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: 85c8
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: 85c8
     hit_windows:
@@ -5526,12 +6283,12 @@ moves:
         hitstop: 9
         hitstun: null
         blockstun: null
-        chip: null
+        chip: 2
         knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       - window: 1
         frames:
         - 4
@@ -5539,13 +6296,13 @@ moves:
         stun: 2
         hitstop: 7
         hitstun: null
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 1
         knockdown: true
         down_frames: 115
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       complete: true
       damage_total: 25
   '8658':
@@ -5659,6 +6416,13 @@ moves:
         height: 20.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 9
       attack:
       - offset_x: 14.0
@@ -5671,6 +6435,13 @@ moves:
         offset_y: -76.0
         width: 24.0
         height: 20.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 10
@@ -5687,6 +6458,13 @@ moves:
         height: 20.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 11
       attack:
       - offset_x: 14.0
@@ -5699,6 +6477,13 @@ moves:
         offset_y: -76.0
         width: 24.0
         height: 20.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 12
@@ -5715,6 +6500,13 @@ moves:
         height: 20.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 13
       attack:
       - offset_x: 16.0
@@ -5727,6 +6519,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 14
@@ -5743,6 +6542,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 15
       attack:
       - offset_x: 16.0
@@ -5755,6 +6561,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 16
@@ -5771,6 +6584,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 17
       attack:
       - offset_x: 16.0
@@ -5783,6 +6603,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 18
@@ -5799,6 +6626,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 19
       attack:
       - offset_x: 16.0
@@ -5811,6 +6645,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 20
@@ -5827,6 +6668,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 21
       attack:
       - offset_x: 16.0
@@ -5839,6 +6687,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     - frame: 22
@@ -5855,6 +6710,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 23
       attack:
       - offset_x: 16.0
@@ -5869,6 +6731,13 @@ moves:
         height: 14.0
         status: verified
         rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
+        status: verified
+        rom_id: '8658'
     - frame: 24
       attack:
       - offset_x: 16.0
@@ -5881,6 +6750,13 @@ moves:
         offset_y: -68.0
         width: 16.0
         height: 14.0
+        status: verified
+        rom_id: '8658'
+      vulnerability:
+      - offset_x: 19.0
+        offset_y: -128.0
+        width: 18.0
+        height: 30.0
         status: verified
         rom_id: '8658'
     hit_windows:
@@ -5970,26 +6846,26 @@ moves:
         hitstop: 9
         hitstun: null
         blockstun: null
-        chip: null
+        chip: 1
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 2
       - window: 1
         frames:
         - 3
-        damage: 9
+        damage: 10
         stun: 2
         hitstop: 9
         hitstun: null
         blockstun: null
-        chip: null
+        chip: 1
         knockdown: false
         down_frames: null
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 2
       - window: 2
         frames:
         - 4
@@ -5997,15 +6873,15 @@ moves:
         stun: 2
         hitstop: 7
         hitstun: null
-        blockstun: null
-        chip: null
+        blockstun: 19
+        chip: 1
         knockdown: true
         down_frames: 119
         samples:
-          hits: 1
-          blocks: 0
+          hits: 2
+          blocks: 2
       complete: true
-      damage_total: 28
+      damage_total: 29
   86e8:
     rom_id: 86e8
     timing:
@@ -6175,13 +7051,13 @@ moves:
         stun: 7
         hitstop: 7
         hitstun: null
-        blockstun: null
-        chip: null
+        blockstun: 11
+        chip: 1
         knockdown: true
         down_frames: 106
         samples:
           hits: 1
-          blocks: 0
+          blocks: 4
       complete: false
   87f8:
     rom_id: 87f8
@@ -6238,6 +7114,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
     - frame: 13
       attack:
       - offset_x: 54.0
@@ -6252,6 +7135,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
     - frame: 15
       attack:
       - offset_x: -64.0
@@ -6260,12 +7150,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
     - frame: 16
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: 87f8
     - frame: 19
@@ -6279,6 +7183,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: 87f8
@@ -6296,6 +7207,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
     - frame: 22
       attack:
       - offset_x: -64.0
@@ -6304,12 +7222,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: 87f8
     - frame: 23
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: 87f8
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: 87f8
     hit_windows:
@@ -6407,20 +7339,49 @@ moves:
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
         combat): applied damage/stun/hitstop/hitstun read live'
       hits:
+      - window: 0
+        frames:
+        - 3
+        damage: 16
+        stun: 7
+        hitstop: 4
+        hitstun: null
+        blockstun: null
+        chip: 2
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 1
+          blocks: 1
       - window: 1
         frames:
         - 12
-        damage: 4
+        damage: 5
         stun: 3
         hitstop: 3
         hitstun: null
         blockstun: null
-        chip: null
+        chip: 1
         knockdown: true
+        down_frames: 108
+        samples:
+          hits: 3
+          blocks: 2
+      - window: 3
+        frames:
+        - 19
+        - 20
+        damage: 5
+        stun: 2
+        hitstop: 7
+        hitstun: null
+        blockstun: 14
+        chip: 1
+        knockdown: false
         down_frames: null
         samples:
           hits: 1
-          blocks: 0
+          blocks: 2
       - window: 4
         frames:
         - 38
@@ -6430,7 +7391,7 @@ moves:
         hitstun: null
         blockstun: null
         chip: null
-        knockdown: true
+        knockdown: false
         down_frames: null
         samples:
           hits: 1
@@ -6491,6 +7452,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 13
       attack:
       - offset_x: 54.0
@@ -6505,6 +7473,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 15
       attack:
       - offset_x: -64.0
@@ -6513,12 +7488,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 16
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '8968'
     - frame: 19
@@ -6532,6 +7521,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: '8968'
@@ -6549,6 +7545,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 22
       attack:
       - offset_x: -64.0
@@ -6557,12 +7560,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 23
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '8968'
     - frame: 26
@@ -6576,6 +7593,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: '8968'
@@ -6593,6 +7617,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 29
       attack:
       - offset_x: -64.0
@@ -6601,12 +7632,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 30
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '8968'
     - frame: 33
@@ -6620,6 +7665,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: '8968'
@@ -6637,6 +7689,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 36
       attack:
       - offset_x: -64.0
@@ -6645,12 +7704,26 @@ moves:
         height: 10.0
         status: verified
         rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '8968'
     - frame: 37
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '8968'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '8968'
     hit_windows:
@@ -6767,6 +7840,82 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 38
       damage_total: 188
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 3
+        damage: 16
+        stun: 7
+        hitstop: 4
+        hitstun: null
+        blockstun: null
+        chip: null
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 2
+          blocks: 0
+      - window: 1
+        frames:
+        - 12
+        damage: 5
+        stun: 2
+        hitstop: 3
+        hitstun: null
+        blockstun: null
+        chip: 1
+        knockdown: true
+        down_frames: null
+        samples:
+          hits: 2
+          blocks: 1
+      - window: 3
+        frames:
+        - 19
+        damage: 4
+        stun: 2
+        hitstop: 7
+        hitstun: null
+        blockstun: null
+        chip: 1
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 2
+          blocks: 1
+      - window: 5
+        frames:
+        - 26
+        damage: null
+        stun: null
+        hitstop: 3
+        hitstun: null
+        blockstun: null
+        chip: 1
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 0
+          blocks: 1
+      - window: 7
+        frames:
+        - 33
+        damage: null
+        stun: null
+        hitstop: 7
+        hitstun: null
+        blockstun: 11
+        chip: 1
+        knockdown: false
+        down_frames: null
+        samples:
+          hits: 0
+          blocks: 1
+      complete: false
   '9618':
     rom_id: '9618'
     timing:
@@ -6794,6 +7943,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9618'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9618'
     - frame: 7
       attack:
       - offset_x: 54.0
@@ -6808,12 +7964,26 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9618'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9618'
     - frame: 10
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '9618'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '9618'
     hit_windows:
@@ -6876,6 +8046,27 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 18
       damage_total: 105
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 6
+        - 7
+        damage: 14
+        stun: 3
+        hitstop: 2
+        hitstun: null
+        blockstun: 11
+        chip: 1
+        knockdown: true
+        down_frames: 107
+        samples:
+          hits: 2
+          blocks: 1
+      complete: false
   '9738':
     rom_id: '9738'
     timing:
@@ -6903,6 +8094,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9738'
     - frame: 7
       attack:
       - offset_x: 54.0
@@ -6917,12 +8115,26 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9738'
     - frame: 10
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '9738'
     - frame: 13
@@ -6936,6 +8148,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: '9738'
@@ -6953,12 +8172,26 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9738'
     - frame: 17
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '9738'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '9738'
     hit_windows:
@@ -7025,6 +8258,40 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 18
       damage_total: 202
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 6
+        damage: 14
+        stun: 3
+        hitstop: 2
+        hitstun: null
+        blockstun: null
+        chip: null
+        knockdown: true
+        down_frames: 107
+        samples:
+          hits: 1
+          blocks: 0
+      - window: 2
+        frames:
+        - 13
+        damage: 14
+        stun: 3
+        hitstop: 2
+        hitstun: null
+        blockstun: 11
+        chip: 1
+        knockdown: true
+        down_frames: 107
+        samples:
+          hits: 1
+          blocks: 1
+      complete: false
   '9818':
     rom_id: '9818'
     timing:
@@ -7052,6 +8319,13 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9818'
     - frame: 7
       attack:
       - offset_x: 54.0
@@ -7066,12 +8340,26 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9818'
     - frame: 10
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '9818'
     - frame: 13
@@ -7085,6 +8373,13 @@ moves:
       - offset_x: 32.0
         offset_y: -76.0
         width: 32.0
+        height: 18.0
+        status: verified
+        rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
         height: 18.0
         status: verified
         rom_id: '9818'
@@ -7102,12 +8397,26 @@ moves:
         height: 18.0
         status: verified
         rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
+        status: verified
+        rom_id: '9818'
     - frame: 17
       attack:
       - offset_x: -64.0
         offset_y: -70.0
         width: 20.0
         height: 10.0
+        status: verified
+        rom_id: '9818'
+      vulnerability:
+      - offset_x: -0.0
+        offset_y: -56.0
+        width: 40.0
+        height: 18.0
         status: verified
         rom_id: '9818'
     - frame: 20
@@ -7230,6 +8539,40 @@ moves:
       source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
       total: 26
       damage_total: 300
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 6
+        damage: 14
+        stun: 3
+        hitstop: 2
+        hitstun: null
+        blockstun: 11
+        chip: 1
+        knockdown: true
+        down_frames: 107
+        samples:
+          hits: 1
+          blocks: 1
+      - window: 2
+        frames:
+        - 13
+        damage: 14
+        stun: 3
+        hitstop: 2
+        hitstun: null
+        blockstun: null
+        chip: null
+        knockdown: true
+        down_frames: 107
+        samples:
+          hits: 1
+          blocks: 0
+      complete: false
   98f8:
     rom_id: 98f8
     timing:
@@ -7831,6 +9174,19 @@ moves:
         height: 18.0
         status: verified
         rom_id: b118
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -59.0
+        width: 28.0
+        height: 21.0
+        status: verified
+        rom_id: b118
+      - offset_x: 30.5
+        offset_y: -74.0
+        width: 27.0
+        height: 24.0
+        status: verified
+        rom_id: b118
     - frame: 12
       attack:
       - offset_x: 45.0
@@ -7851,6 +9207,25 @@ moves:
         height: 18.0
         status: verified
         rom_id: b118
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -59.0
+        width: 28.0
+        height: 21.0
+        status: verified
+        rom_id: b118
+      - offset_x: 30.5
+        offset_y: -74.0
+        width: 27.0
+        height: 24.0
+        status: verified
+        rom_id: b118
+      - offset_x: 52.0
+        offset_y: -46.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b118
     - frame: 13
       attack:
       - offset_x: 45.0
@@ -7868,6 +9243,25 @@ moves:
       - offset_x: 17.0
         offset_y: -67.0
         width: 21.0
+        height: 18.0
+        status: verified
+        rom_id: b118
+      vulnerability:
+      - offset_x: 45.0
+        offset_y: -59.0
+        width: 28.0
+        height: 21.0
+        status: verified
+        rom_id: b118
+      - offset_x: 30.5
+        offset_y: -74.0
+        width: 27.0
+        height: 24.0
+        status: verified
+        rom_id: b118
+      - offset_x: 52.0
+        offset_y: -46.0
+        width: 26.0
         height: 18.0
         status: verified
         rom_id: b118
@@ -7911,6 +9305,27 @@ moves:
       - 9
     - - 4
       - 9
+    rom_combat:
+      status: verified
+      source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
+        combat): applied damage/stun/hitstop/hitstun read live'
+      hits:
+      - window: 0
+        frames:
+        - 11
+        damage: 23
+        stun: 13
+        hitstop: 8
+        hitstun: null
+        blockstun: null
+        chip: null
+        knockdown: true
+        down_frames: 75
+        samples:
+          hits: 3
+          blocks: 0
+      complete: true
+      damage_total: 23
   b218:
     rom_id: b218
     timing:
@@ -7938,6 +9353,13 @@ moves:
         height: 13.0
         status: verified
         rom_id: b218
+      vulnerability:
+      - offset_x: 35.0
+        offset_y: -36.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b218
     - frame: 11
       attack:
       - offset_x: 36.0
@@ -7950,6 +9372,19 @@ moves:
         offset_y: -33.0
         width: 12.0
         height: 11.0
+        status: verified
+        rom_id: b218
+      vulnerability:
+      - offset_x: 35.0
+        offset_y: -36.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b218
+      - offset_x: 42.0
+        offset_y: -29.0
+        width: 24.0
+        height: 19.0
         status: verified
         rom_id: b218
     - frame: 12
@@ -7966,6 +9401,19 @@ moves:
         height: 11.0
         status: verified
         rom_id: b218
+      vulnerability:
+      - offset_x: 35.0
+        offset_y: -36.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b218
+      - offset_x: 42.0
+        offset_y: -29.0
+        width: 24.0
+        height: 19.0
+        status: verified
+        rom_id: b218
     - frame: 13
       attack:
       - offset_x: 36.0
@@ -7980,6 +9428,19 @@ moves:
         height: 11.0
         status: verified
         rom_id: b218
+      vulnerability:
+      - offset_x: 35.0
+        offset_y: -36.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b218
+      - offset_x: 42.0
+        offset_y: -29.0
+        width: 24.0
+        height: 19.0
+        status: verified
+        rom_id: b218
     - frame: 14
       attack:
       - offset_x: 36.0
@@ -7992,6 +9453,19 @@ moves:
         offset_y: -33.0
         width: 12.0
         height: 11.0
+        status: verified
+        rom_id: b218
+      vulnerability:
+      - offset_x: 35.0
+        offset_y: -36.0
+        width: 26.0
+        height: 18.0
+        status: verified
+        rom_id: b218
+      - offset_x: 42.0
+        offset_y: -29.0
+        width: 24.0
+        height: 19.0
         status: verified
         rom_id: b218
     - frame: 15
@@ -8130,16 +9604,17 @@ moves:
       - window: 0
         frames:
         - 10
-        damage: 15
+        - 19
+        damage: 17
         stun: 11
         hitstop: 7
         hitstun: 17
-        blockstun: null
-        chip: null
+        blockstun: 17
+        chip: 2
         knockdown: true
         down_frames: null
         samples:
-          hits: 2
-          blocks: 0
+          hits: 8
+          blocks: 3
       complete: true
-      damage_total: 15
+      damage_total: 17

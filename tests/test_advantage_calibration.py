@@ -64,14 +64,13 @@ def run_move(game, state, gap, frames=170):
 # ------------------------------------------------------ calibration unit --
 
 @pytest.mark.parametrize("state,hitstun,blockstun", [
-    # These moves are ROM-captured: hitstun is the value read live from the
-    # game (tools/rom_extract), blockstun is still the calibrated community
-    # estimate until the on-block capture pass lands.
-    (CharacterState.MEDIUM_KICK, 19, 21),          # ROM hitstun 19; calibrated blockstun 21
-    (CharacterState.CROUCH_MEDIUM_PUNCH, 15, 20),  # ROM hitstun 15; calibrated blockstun 20
+    # These moves are ROM-captured on hit AND on block: both stun values are
+    # read live from the game (tools/rom_extract; block pass 2026-08-27).
+    (CharacterState.MEDIUM_KICK, 19, 17),          # ROM hitstun 19; ROM blockstun 17 (2026-08-27 block pass)
+    (CharacterState.CROUCH_MEDIUM_PUNCH, 15, 14),  # ROM hitstun 15; ROM blockstun 14
     (CharacterState.HEAVY_KICK, 35, 18),           # ROM hitstun 35 (1st of 2 windows; calibrated blockstun 18)
 ])
-def test_captured_hitstun_with_calibrated_blockstun(state, hitstun, blockstun):
+def test_captured_hitstun_and_blockstun(state, hitstun, blockstun):
     mfd = get_move_frame_data(state)
     hb = mfd.hitboxes[0][1]
     assert getattr(mfd, "rom_combat", None), f"{state.name} should be ROM-captured"
@@ -79,13 +78,14 @@ def test_captured_hitstun_with_calibrated_blockstun(state, hitstun, blockstun):
 
 
 def test_calibrated_stun_for_an_uncaptured_move():
-    """The community calibration still drives an UNcaptured move: f+MP's
-    stun is back-solved from Baston advantage (+1/-1) against the ROM total."""
+    """The community calibration still drives an UNcaptured move. f+MP was
+    the example until the 2026-08-27 capture landed it; UOH (98f8) has not
+    been driven yet, so its stun is still back-solved from Baston advantage."""
     from street_fighter_3rd.data.enums import CharacterState as C
-    mfd = get_move_frame_data(C.FORWARD_MP)
+    mfd = get_move_frame_data(C.OVERHEAD)
     assert not getattr(mfd, "rom_combat", None)
     hb = mfd.hitboxes[0][1]
-    assert hb.hitstun == 28 and hb.blockstun == 26
+    assert hb.hitstun == 10 and hb.blockstun == 10
 
 
 def test_jump_normals_keep_stored_stun():
@@ -136,7 +136,7 @@ def test_declared_blockstun_is_applied(game):
     blocked = [h for h in report.hits if h.blocked]
     assert blocked, "the medium kick must have been blocked"
     expected = get_move_frame_data(CharacterState.MEDIUM_KICK).hitboxes[0][1].blockstun
-    assert blocked[0].blockstun == expected == 21   # calibrated (on-block not captured yet)
+    assert blocked[0].blockstun == expected == 17   # ROM block pass (was 21 calibrated before it)
     assert game.player2.blockstun_frames == 0  # fully served by test end
 
 

@@ -1,10 +1,10 @@
 {
  "_meta": {
-  "blocks": 0,
-  "connects": 52,
-  "hits": 52,
+  "blocks": 84,
+  "connects": 215,
+  "hits": 131,
   "parries": 0,
-  "sessions": 2,
+  "sessions": 3,
   "stun_max": 56,
   "vitality_max": 160
  },
@@ -13,8 +13,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 0,
      "damage": 5,
      "down_frames": null,
      "frame": 4,
@@ -24,7 +24,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 2
      },
      "stun": 3
@@ -79,8 +79,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 14,
+     "chip": 0,
      "damage": 18,
      "down_frames": null,
      "frame": 6,
@@ -90,10 +90,49 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 1
      },
      "stun": 11
+    }
+   ]
+  },
+  "1638": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 15,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 2,
+     "samples": {
+      "blocks": 0,
+      "hits": 3
+     },
+     "stun": 9
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 16,
+     "hit_index": 1,
+     "hitstop": 14,
+     "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 2,
+     "samples": {
+      "blocks": 0,
+      "hits": 3
+     },
+     "stun": 6
     }
    ]
   },
@@ -101,8 +140,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 24,
      "down_frames": null,
      "frame": 5,
@@ -112,10 +151,27 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 1
      },
      "stun": 15
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 9,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
     }
    ]
   },
@@ -145,8 +201,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 0,
      "damage": 7,
      "down_frames": null,
      "frame": 5,
@@ -156,7 +212,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 2
      },
      "stun": 3
@@ -167,14 +223,31 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 19,
      "down_frames": null,
      "frame": 5,
      "hit_index": 0,
      "hitstop": 8,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 2,
+      "hits": 1
+     },
+     "stun": 9
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 20,
+     "down_frames": null,
+     "frame": 8,
+     "hit_index": 0,
+     "hitstop": 8,
+     "hitstun": null,
      "knockdown": false,
      "run_hits": 1,
      "samples": {
@@ -191,7 +264,7 @@
     {
      "blockstun": null,
      "chip": null,
-     "damage": 14,
+     "damage": 16,
      "down_frames": null,
      "frame": 6,
      "hit_index": 0,
@@ -201,7 +274,7 @@
      "run_hits": 1,
      "samples": {
       "blocks": 0,
-      "hits": 1
+      "hits": 2
      },
      "stun": 7
     }
@@ -212,7 +285,7 @@
    "windows": [
     {
      "blockstun": null,
-     "chip": null,
+     "chip": 0,
      "damage": 21,
      "down_frames": null,
      "frame": 6,
@@ -222,10 +295,44 @@
      "knockdown": false,
      "run_hits": 2,
      "samples": {
-      "blocks": 0,
-      "hits": 3
+      "blocks": 2,
+      "hits": 5
      },
      "stun": 13
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 21,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 10,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 13
+    },
+    {
+     "blockstun": 17,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 13,
+     "hit_index": 1,
+     "hitstop": 11,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 2,
+     "samples": {
+      "blocks": 2,
+      "hits": 0
+     },
+     "stun": null
     },
     {
      "blockstun": null,
@@ -250,14 +357,48 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 25,
      "down_frames": null,
      "frame": 10,
      "hit_index": 0,
      "hitstop": 11,
      "hitstun": 19,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 11
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 25,
+     "down_frames": null,
+     "frame": 13,
+     "hit_index": 0,
+     "hitstop": 11,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 25,
+     "down_frames": null,
+     "frame": 14,
+     "hit_index": 0,
+     "hitstop": 11,
+     "hitstun": null,
      "knockdown": false,
      "run_hits": 1,
      "samples": {
@@ -272,8 +413,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 0,
      "damage": 3,
      "down_frames": null,
      "frame": 5,
@@ -283,7 +424,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 1
      },
      "stun": 3
@@ -294,8 +435,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 14,
+     "chip": 0,
      "damage": 16,
      "down_frames": null,
      "frame": 6,
@@ -305,7 +446,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 3,
       "hits": 1
      },
      "stun": 7
@@ -316,8 +457,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 24,
      "down_frames": null,
      "frame": 6,
@@ -327,7 +468,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 1
      },
      "stun": 11
@@ -338,8 +479,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 0,
      "damage": 3,
      "down_frames": null,
      "frame": 6,
@@ -349,8 +490,8 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 1,
+      "hits": 4
      },
      "stun": 3
     }
@@ -360,8 +501,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 14,
+     "chip": 0,
      "damage": 16,
      "down_frames": null,
      "frame": 7,
@@ -371,8 +512,8 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 1,
+      "hits": 2
      },
      "stun": 3
     }
@@ -382,8 +523,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 22,
      "down_frames": null,
      "frame": 8,
@@ -393,7 +534,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 1
      },
      "stun": 3
@@ -419,6 +560,23 @@
       "hits": 1
      },
      "stun": 5
+    },
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -458,6 +616,40 @@
       "hits": 1
      },
      "stun": 8
+    },
+    {
+     "blockstun": 14,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 14,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 10,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -480,6 +672,23 @@
       "hits": 1
      },
      "stun": 13
+    },
+    {
+     "blockstun": 17,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
+     "hitstop": 8,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -487,11 +696,28 @@
    "parries": 0,
    "windows": [
     {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 11,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 2,
+      "hits": 1
+     },
+     "stun": 5
+    },
+    {
      "blockstun": null,
      "chip": null,
      "damage": 7,
      "down_frames": null,
-     "frame": 5,
+     "frame": 6,
      "hit_index": 0,
      "hitstop": 6,
      "hitstun": 11,
@@ -524,6 +750,23 @@
       "hits": 1
      },
      "stun": 7
+    },
+    {
+     "blockstun": 14,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 10,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -546,6 +789,23 @@
       "hits": 1
      },
      "stun": 11
+    },
+    {
+     "blockstun": 17,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 11,
+     "hit_index": 0,
+     "hitstop": 8,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -553,8 +813,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 0,
      "damage": 6,
      "down_frames": null,
      "frame": 7,
@@ -564,7 +824,7 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 1
      },
      "stun": 5
@@ -575,8 +835,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 0,
      "damage": 0,
      "down_frames": null,
      "frame": 7,
@@ -586,10 +846,144 @@
      "knockdown": false,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 1,
       "hits": 1
      },
      "stun": 0
+    }
+   ]
+  },
+  "28e0": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 10,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 11,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 13,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    }
+   ]
+  },
+  "29c0": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": 14,
+     "chip": 0,
+     "damage": 14,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": 14,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 2,
+      "hits": 1
+     },
+     "stun": 7
+    }
+   ]
+  },
+  "2b30": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": 17,
+     "chip": 0,
+     "damage": null,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 8,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
@@ -609,15 +1003,292 @@
      "run_hits": 1,
      "samples": {
       "blocks": 0,
-      "hits": 3
+      "hits": 9
      },
      "stun": 0
+    }
+   ]
+  },
+  "68cc": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "down_frames": null,
+     "frame": 2,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "down_frames": null,
+     "frame": 6,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 8,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 2,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "down_frames": null,
+     "frame": 10,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 12,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 9,
+     "down_frames": null,
+     "frame": 14,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 15,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 8,
+     "down_frames": null,
+     "frame": 17,
+     "hit_index": 2,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 7,
+     "down_frames": 107,
+     "frame": 18,
+     "hit_index": 2,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 20,
+     "hit_index": 3,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 21,
+     "hit_index": 3,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "down_frames": null,
+     "frame": 23,
+     "hit_index": 4,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 24,
+     "hit_index": 4,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 7,
+     "down_frames": 107,
+     "frame": 26,
+     "hit_index": 5,
+     "hitstop": 5,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 0
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 27,
+     "hit_index": 5,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 6,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     }
    ]
   },
   "7684": {
    "parries": 0,
    "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 2,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
     {
      "blockstun": null,
      "chip": null,
@@ -657,6 +1328,91 @@
   "8210": {
    "parries": 0,
    "windows": [
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
+     "hitstop": 13,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 15,
+     "hit_index": 0,
+     "hitstop": 13,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 18,
+     "hit_index": 0,
+     "hitstop": 13,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 3,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 21,
+     "hit_index": 0,
+     "hitstop": 13,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 22,
+     "hit_index": 0,
+     "hitstop": 13,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 2
+     },
+     "stun": 3
+    },
     {
      "blockstun": null,
      "chip": null,
@@ -714,8 +1470,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 2,
      "damage": 23,
      "down_frames": 115,
      "frame": 4,
@@ -725,7 +1481,7 @@
      "knockdown": true,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 1
      },
      "stun": 11
@@ -737,7 +1493,7 @@
    "windows": [
     {
      "blockstun": null,
-     "chip": null,
+     "chip": 2,
      "damage": 17,
      "down_frames": null,
      "frame": 3,
@@ -747,14 +1503,14 @@
      "knockdown": false,
      "run_hits": 2,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 1
      },
      "stun": 11
     },
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 17,
+     "chip": 1,
      "damage": 8,
      "down_frames": 115,
      "frame": 4,
@@ -764,7 +1520,7 @@
      "knockdown": true,
      "run_hits": 2,
      "samples": {
-      "blocks": 0,
+      "blocks": 2,
       "hits": 1
      },
      "stun": 2
@@ -776,7 +1532,7 @@
    "windows": [
     {
      "blockstun": null,
-     "chip": null,
+     "chip": 1,
      "damage": 10,
      "down_frames": null,
      "frame": 2,
@@ -786,15 +1542,15 @@
      "knockdown": false,
      "run_hits": 3,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 2,
+      "hits": 2
      },
      "stun": 11
     },
     {
      "blockstun": null,
-     "chip": null,
-     "damage": 9,
+     "chip": 1,
+     "damage": 10,
      "down_frames": null,
      "frame": 3,
      "hit_index": 1,
@@ -803,14 +1559,14 @@
      "knockdown": false,
      "run_hits": 3,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 2,
+      "hits": 2
      },
      "stun": 2
     },
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 19,
+     "chip": 1,
      "damage": 9,
      "down_frames": 119,
      "frame": 4,
@@ -820,8 +1576,8 @@
      "knockdown": true,
      "run_hits": 3,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 2,
+      "hits": 2
      },
      "stun": 2
     }
@@ -831,8 +1587,8 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
+     "blockstun": 11,
+     "chip": 1,
      "damage": 14,
      "down_frames": 106,
      "frame": 12,
@@ -842,7 +1598,7 @@
      "knockdown": true,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
+      "blocks": 4,
       "hits": 1
      },
      "stun": 7
@@ -854,20 +1610,71 @@
    "windows": [
     {
      "blockstun": null,
-     "chip": null,
-     "damage": 4,
+     "chip": 2,
+     "damage": 16,
      "down_frames": null,
+     "frame": 3,
+     "hit_index": 0,
+     "hitstop": 4,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 3,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 7
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 5,
+     "down_frames": 108,
      "frame": 12,
      "hit_index": 0,
      "hitstop": 3,
      "hitstun": null,
      "knockdown": true,
-     "run_hits": 2,
+     "run_hits": 3,
      "samples": {
-      "blocks": 0,
-      "hits": 1
+      "blocks": 2,
+      "hits": 3
      },
      "stun": 3
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": 5,
+     "down_frames": null,
+     "frame": 19,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 3,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 2
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 20,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 2,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
     },
     {
      "blockstun": null,
@@ -878,7 +1685,7 @@
      "hit_index": 1,
      "hitstop": 0,
      "hitstun": null,
-     "knockdown": true,
+     "knockdown": false,
      "run_hits": 2,
      "samples": {
       "blocks": 0,
@@ -888,9 +1695,284 @@
     }
    ]
   },
+  "8968": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 16,
+     "down_frames": null,
+     "frame": 3,
+     "hit_index": 0,
+     "hitstop": 4,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 3,
+     "samples": {
+      "blocks": 0,
+      "hits": 2
+     },
+     "stun": 7
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 5,
+     "down_frames": null,
+     "frame": 12,
+     "hit_index": 0,
+     "hitstop": 3,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 4,
+     "samples": {
+      "blocks": 1,
+      "hits": 2
+     },
+     "stun": 2
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": 4,
+     "down_frames": null,
+     "frame": 19,
+     "hit_index": 1,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 4,
+     "samples": {
+      "blocks": 1,
+      "hits": 2
+     },
+     "stun": 2
+    },
+    {
+     "blockstun": null,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 26,
+     "hit_index": 2,
+     "hitstop": 3,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 4,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": 11,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 33,
+     "hit_index": 3,
+     "hitstop": 7,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 4,
+     "samples": {
+      "blocks": 1,
+      "hits": 0
+     },
+     "stun": null
+    }
+   ]
+  },
+  "9618": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": 11,
+     "chip": 1,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 6,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
+  "9738": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 6,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": 11,
+     "chip": 1,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 13,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
+  "9818": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": 11,
+     "chip": 1,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 6,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 14,
+     "down_frames": 107,
+     "frame": 13,
+     "hit_index": 0,
+     "hitstop": 2,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    }
+   ]
+  },
   "a130": {
    "parries": 0,
    "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 4,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": null,
+     "down_frames": null,
+     "frame": 5,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": null,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 2,
+      "hits": 0
+     },
+     "stun": null
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 7,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 9,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 3
+    },
     {
      "blockstun": null,
      "chip": null,
@@ -904,9 +1986,48 @@
      "run_hits": 1,
      "samples": {
       "blocks": 0,
+      "hits": 2
+     },
+     "stun": 3
+    },
+    {
+     "blockstun": 14,
+     "chip": 1,
+     "damage": 10,
+     "down_frames": null,
+     "frame": 17,
+     "hit_index": 0,
+     "hitstop": 6,
+     "hitstun": 15,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 1,
       "hits": 1
      },
      "stun": 3
+    }
+   ]
+  },
+  "b118": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 23,
+     "down_frames": 75,
+     "frame": 11,
+     "hit_index": 0,
+     "hitstop": 8,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 3
+     },
+     "stun": 13
     }
    ]
   },
@@ -914,9 +2035,9 @@
    "parries": 0,
    "windows": [
     {
-     "blockstun": null,
-     "chip": null,
-     "damage": 15,
+     "blockstun": 17,
+     "chip": 2,
+     "damage": 17,
      "down_frames": null,
      "frame": 10,
      "hit_index": 0,
@@ -925,10 +2046,49 @@
      "knockdown": true,
      "run_hits": 1,
      "samples": {
-      "blocks": 0,
-      "hits": 2
+      "blocks": 3,
+      "hits": 7
      },
      "stun": 11
+    },
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 17,
+     "down_frames": null,
+     "frame": 19,
+     "hit_index": 0,
+     "hitstop": 7,
+     "hitstun": 17,
+     "knockdown": false,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 1
+     },
+     "stun": 11
+    }
+   ]
+  },
+  "b308": {
+   "parries": 0,
+   "windows": [
+    {
+     "blockstun": null,
+     "chip": null,
+     "damage": 0,
+     "down_frames": 121,
+     "frame": 4,
+     "hit_index": 0,
+     "hitstop": 0,
+     "hitstun": null,
+     "knockdown": true,
+     "run_hits": 1,
+     "samples": {
+      "blocks": 0,
+      "hits": 3
+     },
+     "stun": 0
     }
    ]
   }

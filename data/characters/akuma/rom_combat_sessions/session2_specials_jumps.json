@@ -16,6 +16,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 8,
      "dm_vital": 8,
      "dmg_next": 8,
@@ -38,6 +39,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 16,
      "dm_vital": 16,
      "dmg_next": 16,
@@ -60,6 +62,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 23,
      "dm_vital": 23,
      "dmg_next": 23,
@@ -82,6 +85,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 7,
      "dm_vital": 7,
      "dmg_next": 7,
@@ -104,6 +108,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 14,
      "dm_vital": 14,
      "dmg_next": 14,
@@ -126,6 +131,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 21,
      "dm_vital": 21,
      "dmg_next": 21,
@@ -148,6 +154,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 0,
      "dm_vital": 0,
      "dmg_next": 0,
@@ -164,6 +171,7 @@
      "stun_next": 0
     },
     {
+     "air_hit": false,
      "damage": 0,
      "dm_vital": 0,
      "dmg_next": 0,
@@ -180,6 +188,7 @@
      "stun_next": 0
     },
     {
+     "air_hit": false,
      "damage": 0,
      "dm_vital": 0,
      "dmg_next": 0,
@@ -202,6 +211,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -218,6 +228,7 @@
      "stun_next": 3
     },
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -240,6 +251,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -256,6 +268,7 @@
      "stun_next": 3
     },
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -272,6 +285,7 @@
      "stun_next": 3
     },
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -294,6 +308,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 23,
      "dm_vital": 23,
      "dmg_next": 23,
@@ -316,6 +331,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 17,
      "dm_vital": 17,
      "dmg_next": 17,
@@ -332,6 +348,7 @@
      "stun_next": 11
     },
     {
+     "air_hit": false,
      "damage": 8,
      "dm_vital": 8,
      "dmg_next": 8,
@@ -354,6 +371,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -370,6 +388,7 @@
      "stun_next": 11
     },
     {
+     "air_hit": false,
      "damage": 9,
      "dm_vital": 9,
      "dmg_next": 9,
@@ -386,6 +405,7 @@
      "stun_next": 2
     },
     {
+     "air_hit": false,
      "damage": 9,
      "dm_vital": 9,
      "dmg_next": 9,
@@ -408,6 +428,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 14,
      "dm_vital": 14,
      "dmg_next": 14,
@@ -430,6 +451,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 4,
      "dm_vital": 4,
      "dmg_next": 4,
@@ -446,6 +468,7 @@
      "stun_next": 3
     },
     {
+     "air_hit": true,
      "damage": 4,
      "dm_vital": 4,
      "dmg_next": 4,
@@ -454,7 +477,7 @@
      "frame": 38,
      "hit_index": 1,
      "hitstop": 0,
-     "knockdown": true,
+     "knockdown": false,
      "posture": 24,
      "run_hits": 2,
      "stun": 2,
@@ -468,6 +491,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 10,
      "dm_vital": 10,
      "dmg_next": 10,
@@ -490,6 +514,7 @@
    "blocks": [],
    "hits": [
     {
+     "air_hit": false,
      "damage": 15,
      "dm_vital": 15,
      "dmg_next": 15,
@@ -506,6 +531,7 @@
      "stun_next": 11
     },
     {
+     "air_hit": false,
      "damage": 14,
      "dm_vital": 14,
      "dmg_next": 14,

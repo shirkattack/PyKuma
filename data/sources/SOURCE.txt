@@ -79,3 +79,7 @@ frame-for-frame with this file (misaligned moves are skipped and reported).
 
   2026-08-26 capture: 1438 (far LP), 1908 (LK), 2628 (air HK),
                       84f8 (LP DP), 86e8 (LK tatsu)      -- 25 boxes
+  2026-08-27 capture: whiff pass of the full move list (`merge` now prefers
+                      whiffed runs) -- 31 of the 43 attack scripts carry the
+                      ROM v_hb; missing: 14e8 1598 1728 1988 1a38 1b08 2388
+                      2448 28e0 2aa0 98f8 (af08 has no attack box)

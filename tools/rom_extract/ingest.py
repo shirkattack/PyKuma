@@ -43,9 +43,13 @@ DEFAULT_VHB_SOURCE = "ext_vulnerability"
 # ---- IO ---------------------------------------------------------------------
 
 def load_jsonl(path: str) -> List[dict]:
-    """Parse the dumper's JSON-Lines file into a list of frame records."""
+    """Parse the dumper's JSON-Lines file (plain or .gz -- the vendored
+    per-session dumps are gzipped) into a list of frame records."""
+    import gzip
+    text = (gzip.open(path, "rt").read() if str(path).endswith(".gz")
+            else Path(path).read_text())
     out = []
-    for line in Path(path).read_text().splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if line:
             out.append(json.loads(line))
@@ -137,13 +141,20 @@ def reconstruct_moves(records: List[dict], attacking_only: bool = False) -> Dict
     attacking_only: for an anim id that shows attack boxes in at least one run,
     drop the runs that never show one -- an attack exposes its attack boxes
     whether it hits or whiffs, so such a run is the id being used for
-    something else (or a read glitch), not the move.
+    something else (or a read glitch), not the move. Among the remaining runs,
+    if any WHIFFED (the attacker was never frozen by hitstop) only the whiffed
+    runs are used: a whiff is the framedata timeline exactly, a connect is not
+    always recoverable from the freeze counter.
     """
     instances = [ins for ins in _instances(records) if ins["anim"] is not None]
     if attacking_only:
         has_attack = {ins["anim"] for ins in instances if _has_attack(ins["rows"])}
         instances = [ins for ins in instances
                      if ins["anim"] not in has_attack or _has_attack(ins["rows"])]
+        def _whiffed(ins):
+            return all(not (r.get("c1") or {}).get("freeze", 0) for r in ins["rows"])
+        clean = {ins["anim"] for ins in instances if ins["anim"] in has_attack and _whiffed(ins)}
+        instances = [ins for ins in instances if ins["anim"] not in clean or _whiffed(ins)]
     # anim -> frame_index -> set of boxes (deduped by geometry)
     acc: Dict[str, Dict[int, Dict[tuple, dict]]] = defaultdict(lambda: defaultdict(dict))
     for ins in instances:
@@ -472,6 +483,8 @@ def validate_vhb(reconstructed: Dict[str, dict], move_names_path: str,
 # ---- combat: ROM-exact damage / stun / hitstop / hitstun -------------------
 
 PARRY_MARKER = 0xFFF1          # received_connection_marker value for a parry
+AIRBORNE_POSTURES = {22, 24}   # defender posture byte: in the air / launched
+LAUNCHED_POSTURES = {24, 38}   # launched / lying down -> the hit was a knockdown
 CONNECT_SETTLE_FRAMES = 12     # window after a connect in which life/stun settle
 MAX_STUN_FRAMES = 240          # safety cap when the defender never goes idle
 
@@ -570,27 +583,34 @@ def derive_combat(records: List[dict], attacker: str = "c1", defender: str = "c2
         # stun duration: connect -> defender idle again, minus hitstop. If the
         # next connect lands first (a multi-hit string) this sample can't
         # measure it -> None (the follow-up hit's own sample still can).
-        # A hit that changes the defender's posture before they are idle again
-        # (launched / knocked down: the ROM posture byte leaves its pre-hit
-        # value) is a knockdown: the time to idle is then the whole
-        # launch + lying-down + wakeup sequence, which is NOT hitstun. It is
-        # kept as `down_frames` and stun_frames is left None for that sample.
-        stun_frames, knockdown = None, False
+        # The defender's posture byte is its current action id (observed:
+        # 0 standing / hit reel, 2 walking, 6/8 walk transitions, 22 airborne,
+        # 24 launched, 38 lying down). A hit that sends a grounded defender
+        # through 24 or 38 is a knockdown: the time to idle is then the whole
+        # launch + lying-down + wakeup sequence, NOT hitstun -- it is kept as
+        # `down_frames` and stun_frames is left None. A defender that was
+        # already airborne (22/24) is a juggle (`air_hit`): its time to idle is
+        # fall time, so stun_frames is None there too.
+        stun_frames, seen = None, set()
         for j in range(i + 1, min(n, i + MAX_STUN_FRAMES)):
             dj, pj = records[j].get(defender), records[j - 1].get(defender)
             if not (dj and pj):
                 continue
             if dj["hits_received"] > pj["hits_received"] or (pj["conn_marker"] == 0 and dj["conn_marker"] != 0):
                 break
-            if dj["posture"] != pd["posture"]:
-                knockdown = True
+            seen.add(dj["posture"])
             if _idle(dj, pj):
                 stun_frames = (j - i) - hitstop
                 break
+        air_hit = pd["posture"] in AIRBORNE_POSTURES
+        launched = bool(seen & LAUNCHED_POSTURES)
+        knockdown = launched and not air_hit
+        invalid = knockdown or air_hit
         sample = {"f": records[i]["f"], "frame": frame, "hit_index": hit_index.get(i, 0),
                   "run_hits": run_hits.get((anim, run_of[i]), 1), "damage": damage, "stun": stun,
-                  "hitstop": hitstop, "stun_frames": None if knockdown else stun_frames,
-                  "knockdown": knockdown, "down_frames": stun_frames if knockdown else None,
+                  "hitstop": hitstop, "stun_frames": None if invalid else stun_frames,
+                  "knockdown": knockdown, "air_hit": air_hit,
+                  "down_frames": stun_frames if knockdown else None,
                   "dmg_next": d["dmg_next"],
                   "dm_vital": max((records[j][defender].get("dm_vital", 0) for j in range(i, min(n, i + 3))
                                    if records[j].get(defender)), default=0),
