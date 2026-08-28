@@ -157,3 +157,24 @@ hit-branch cel each; plus reactions, throws, teleport, taunt, wins and the
 supers. Cross-check: the frame dumps' per-move cel sequences cover 31/40
 mapped moves completely. The PNGs and `cels.json` are the durable product
 (Capcom art: kept out of the repo); the states can be deleted after decoding.
+
+
+## Animation tables from the ROM (`build_rom_animations.py`)
+
+    uv run python tools/rom_extract/build_rom_animations.py --cels ~/akuma_cels
+
+joins the ripped cels with the frame dumps' per-frame cel ids: for every
+animation id the cel timeline of a WHIFFED run (`[[cel, frames], ...]`),
+looping clips cut to one cycle, plus each cel's bbox relative to the axis ->
+`data/characters/akuma/rom_animations.json` (numbers only, committed) and the
+PNGs copied to `assets/characters/akuma/rom_cels/` (git-ignored). Attack ids
+are labelled from `move_names.json` (state + variant); movement/reaction ids
+from their kinematics (`KINEMATIC_ROLES`). `cel_decode.py --palettes-out
+data/characters/akuma/rom_palettes.json` records P1's and P2's 64-pen palettes
+so P2 renders in the game's own alternate colours.
+
+The engine (`characters/akuma.py::_register_rom_animations`) replaces a
+folder clip with the ROM clip of the same name whenever the sequence is
+complete and the PNGs are present, placing every cel by its exact axis offset
+(`CelAnimation`, `cel_screen_rect`); anything incomplete keeps the zweifuss
+folder clip. First build: 56 animations, 47 complete, 44 clips live.

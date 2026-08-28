@@ -265,7 +265,14 @@ def _sprite_info(char) -> Optional[Dict[str, Any]]:
 
 
 def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
-    """The animation _STATE_ANIM says this state should play."""
+    """The animation the character says this state should play (its own
+    variant resolution: ROM clips such as far_heavy_punch / light_goshoryuken
+    / air_gohadoken), else the plain _STATE_ANIM name."""
+    if hasattr(char, "anim_name_for"):
+        try:
+            return char.anim_name_for(state)
+        except Exception:  # pragma: no cover - a broken resolver must not kill the lab
+            pass
     mapping = getattr(type(char), "_STATE_ANIM", None) or getattr(char, "_STATE_ANIM", None)
     if not mapping:
         return None

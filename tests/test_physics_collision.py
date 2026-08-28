@@ -78,11 +78,16 @@ def test_forward_jump_uses_flip_clip():
     a = Akuma(200, STAGE_FLOOR, player_number=1)
     fwd = a.animation_controller.animations["jump_forward"]
     back = a.animation_controller.animations["jump_backward"]
-    assert "akuma-jumpf" in fwd.frames[0].folder_path
-    assert "akuma-jumpb" in back.frames[0].folder_path
-    # neutral jump remains the plain jump clip
     up = a.animation_controller.animations["jump_up"]
-    assert "akuma-jump" in up.frames[0].folder_path and "jumpf" not in up.frames[0].folder_path
+    if hasattr(fwd.frames[0], "folder_path"):
+        assert "akuma-jumpf" in fwd.frames[0].folder_path
+        assert "akuma-jumpb" in back.frames[0].folder_path
+        # neutral jump remains the plain jump clip
+        assert "akuma-jump" in up.frames[0].folder_path and "jumpf" not in up.frames[0].folder_path
+    else:
+        # ROM cel clips (rom_animations.json): three distinct jump scripts
+        seqs = [tuple(f.cel for f in clip.frames) for clip in (fwd, back, up)]
+        assert len(set(seqs)) == 3
 
 
 def test_forward_jump_transition_plays_flip():

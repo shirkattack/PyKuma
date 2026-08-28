@@ -258,6 +258,29 @@ def render_object(rec: dict, tiles: dict, palettes: dict, swizzle: bool = True):
     return img, (left, top)
 
 
+def player_palettes(d: dict) -> dict | None:
+    """{"p1": [[r,g,b]x64], "p2": [...]} from a dump where both players are on
+    screen: each player's body object (nearest many-tile object) names its
+    palette base; the palettes are the Lua-read ones (rendering order)."""
+    out = {}
+    for who in ("p1", "p2"):
+        pos = d[who]["pos_x"]
+        objs = [r for r in d["records"] if sum(len(part_tiles(r, p)) for p in r["parts"]) >= 10 and abs(r["xpos"] - pos) <= 40]
+        if not objs:
+            return None
+        r = min(objs, key=lambda r: abs(r["xpos"] - pos))
+        part = next(p for p in r["parts"] if p["xsize"])
+        usebpp = r["gbpp"] if r["whichbpp"] else part["bpp"]
+        actualpal = r["global_pal"] if r["whichpal"] else part["pal"]
+        palbase = (actualpal * (64 if usebpp else 256)) & 0x1FFFF
+        hexdata = d["palettes"].get(str(palbase))
+        if hexdata is None:
+            return None
+        cols = decode_palette(hexdata)[:64 if usebpp else 256]
+        out[who] = [list(c[:3]) for c in cols]
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dump", help="pykuma_cels.jsonl from dump_cels.lua")
@@ -270,6 +293,8 @@ def main(argv=None):
     ap.add_argument("--p1", action="store_true",
                     help="render only P1's body object, named cel_<cel id>.png, and write cels.json (cel -> anim, bbox rel. axis)")
     ap.add_argument("--redo", action="store_true", help="with --p1: re-render cels already in cels.json")
+    ap.add_argument("--palettes-out", default=None,
+                    help="write {p1, p2} palettes (RGB per pen) from the first dump showing both players, e.g. data/characters/akuma/rom_palettes.json")
     args = ap.parse_args(argv)
     manifest_path = Path(args.out) / "cels.json"
     manifest = json.loads(manifest_path.read_text()) if args.p1 and manifest_path.exists() else {}
@@ -300,6 +325,13 @@ def main(argv=None):
             continue
         d = json.loads(line)
         p1, p2 = d["p1"], d["p2"]
+        if args.palettes_out and not Path(args.palettes_out).exists():
+            pals = player_palettes(d)
+            if pals:
+                pals["_meta"] = {"source": "sfiii3nr1 colour RAM (dump_cels.lua), 5-5-5 RGB scaled to 8 bit; "
+                                           "pen 0 is transparent", "frame": d["f"]}
+                Path(args.palettes_out).write_text(json.dumps(pals, indent=0) + "\n")
+                print(f"   palettes -> {args.palettes_out}")
         tiles, swizzle = d["tiles"], not args.no_swizzle
         palettes = d["palettes"]
         if d.get("state") and not args.lua_tiles:
@@ -349,6 +381,12 @@ def main(argv=None):
                 print(f"{rec['i']:>4} {rec['xpos']:>5} {rec['ypos']:>5} {len(rec['parts']):>5} {ntiles:>5}  (nothing drawable)")
                 continue
             img, (left, top) = res
+            if args.p1 and p1["flip"] == 0:
+                # P1 faced LEFT on this frame (facing byte 0): the PPU drew the
+                # object mirrored. Store every cel right-facing: mirror back and
+                # reflect the bbox about the axis.
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                left = -(left + img.size[0])
             w, h = img.size
             print(f"{rec['i']:>4} {rec['xpos']:>5} {rec['ypos']:>5} {len(rec['parts']):>5} {ntiles:>5} {w:>4}x{h:<4}  "
                   f"({left},{top},{left + w},{top + h})")
@@ -356,7 +394,8 @@ def main(argv=None):
             img.save(f"{stem}.png")
             if args.p1:
                 manifest[str(p1["cel"])] = {"anim": p1["anim"], "flip": p1["flip"], "left": left, "top": top,
-                                            "width": w, "height": h, "frame": d["f"], "state": d.get("state")}
+                                            "width": w, "height": h, "frame": d["f"], "state": d.get("state"),
+                                            "mirrored_from_left": p1["flip"] == 0}
                 manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True))
             # axis preview: the object on a checker with a crosshair at its origin
             s = args.scale

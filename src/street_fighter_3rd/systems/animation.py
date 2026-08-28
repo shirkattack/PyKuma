@@ -34,6 +34,21 @@ class FolderAnimationFrame:
     duration: int = 1    # How many game frames to display this sprite
 
 
+@dataclass
+class CelAnimationFrame:
+    """One ROM cel: the sprite ripped from the game plus its offset from the
+    character's axis (data/characters/akuma/rom_animations.json). `left`/`top`
+    are px from the axis (between the feet) to the sprite's top-left, y down,
+    for the right-facing sprite; `duration` is the ROM hold in game frames."""
+    cel_dir: str         # folder holding cel_<id>.png
+    cel: int             # ROM cel id
+    duration: int        # game frames held (ROM-exact)
+    left: int
+    top: int
+    width: int
+    height: int
+
+
 class Animation:
     """Handles playback of a sprite sequence."""
 
@@ -164,10 +179,37 @@ class FolderAnimation:
         return self.is_finished
 
 
+class CelAnimation(FolderAnimation):
+    """A clip of ROM cels (CelAnimationFrame). Playback is FolderAnimation's;
+    the renderer places each frame by its own axis offset (cel_screen_rect)."""
+
+    def total_frames(self) -> int:
+        return sum(f.duration for f in self.frames)
+
+
+def cel_screen_rect(frame: CelAnimationFrame, x: float, feet_y: float, facing_right: bool):
+    """Top-left screen position of a cel so its axis lands on (x, feet_y).
+    Facing left mirrors the sprite about the axis: the flipped image's left
+    edge sits at x - (left + width)."""
+    left = x + frame.left if facing_right else x - (frame.left + frame.width)
+    return int(left), int(feet_y + frame.top)
+
+
+def create_cel_animation(cel_dir: str, sequence, cels: dict, loop: bool = False) -> CelAnimation:
+    """CelAnimation from a rom_animations.json entry: `sequence` is
+    [[cel, frames], ...], `cels` maps str(cel) -> {left, top, width, height}."""
+    frames = []
+    for cel, dur in sequence:
+        box = cels[str(cel)]
+        frames.append(CelAnimationFrame(cel_dir, int(cel), int(dur), int(box["left"]), int(box["top"]),
+                                        int(box["width"]), int(box["height"])))
+    return CelAnimation(frames, loop)
+
+
 class SpriteManager:
     """Manages loading and caching of sprite images."""
 
-    def __init__(self, sprite_directory: str, recolor=None):
+    def __init__(self, sprite_directory: str, recolor=None, cel_recolor=None):
         """Initialize sprite manager.
 
         Args:
@@ -179,6 +221,7 @@ class SpriteManager:
         """
         self.sprite_directory = sprite_directory
         self.recolor = recolor
+        self.cel_recolor = cel_recolor if cel_recolor is not None else recolor   # ROM cels (their own palette map)
         self.sprite_cache: Dict[int, pygame.Surface] = {}
 
     def load_sprite(self, sprite_number: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
@@ -236,6 +279,29 @@ class SpriteManager:
     def clear_cache(self):
         """Clear sprite cache to free memory."""
         self.sprite_cache.clear()
+
+    def load_cel(self, cel_dir: str, cel: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
+        """Load a ROM cel (cel_<id>.png, right-facing, transparent) with the
+        same cache / recolor / scale treatment as folder frames."""
+        cache_key = hash(f"cel:{cel_dir}:{cel}")
+        if cache_key in self.sprite_cache:
+            return self.sprite_cache[cache_key]
+        sprite_path = _resolve_asset(os.path.join(cel_dir, f"cel_{cel}.png"))
+        if not os.path.exists(sprite_path):
+            log_once(log, ("cel_miss", sprite_path), logging.WARNING, "Cel %s not found at %s", cel, sprite_path)
+            return None
+        try:
+            sprite = pygame.image.load(sprite_path).convert_alpha()
+            if self.cel_recolor is not None:
+                sprite = self.cel_recolor(sprite)
+            if scale != 1.0:
+                w, h = sprite.get_size()
+                sprite = pygame.transform.scale(sprite, (int(w * scale), int(h * scale)))
+            self.sprite_cache[cache_key] = sprite
+            return sprite
+        except (pygame.error, OSError, FileNotFoundError) as e:
+            log_once(log, ("cel_load_err", sprite_path), logging.WARNING, "Error loading cel %s: %s", sprite_path, e)
+            return None
 
     def load_sprite_from_folder(self, folder_path: str, frame_index: int, scale: float = SPRITE_SCALE) -> Optional[pygame.Surface]:
         """Load a sprite from a folder with frame_NNN.png naming.
@@ -333,7 +399,10 @@ class AnimationController:
         if not self.current_animation:
             return None
 
-        # Check if this is a FolderAnimation or regular Animation
+        # Check if this is a CelAnimation, FolderAnimation or regular Animation
+        if isinstance(self.current_animation, CelAnimation):
+            frame = self.current_animation.get_current_frame()
+            return self.sprite_manager.load_cel(frame.cel_dir, frame.cel)
         if isinstance(self.current_animation, FolderAnimation):
             frame = self.current_animation.get_current_frame()
             return self.sprite_manager.load_sprite_from_folder(frame.folder_path, frame.frame_index)
@@ -374,7 +443,12 @@ class AnimationController:
             "total_frames": len(anim.frames),
             "complete": anim.is_complete(),
         }
-        if isinstance(anim, FolderAnimation):
+        if isinstance(anim, CelAnimation):
+            frame = anim.get_current_frame()
+            info["source"] = f"rom_cels/cel_{frame.cel}"
+            info["cel"] = frame.cel
+            info["axis"] = (frame.left, frame.top)
+        elif isinstance(anim, FolderAnimation):
             frame = anim.get_current_frame()
             info["source"] = f"{os.path.basename(frame.folder_path)}/frame_{frame.frame_index:03d}"
         else:

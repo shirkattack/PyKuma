@@ -61,27 +61,39 @@ def _airborne_body_centers(jump_dir):
     return samples
 
 
+def _rom_jump_clips():
+    from street_fighter_3rd.systems.animation import CelAnimation
+    from street_fighter_3rd.characters.akuma import Akuma
+    a = Akuma(200, 300, 1)
+    return isinstance(a.animation_controller.animations["jump_forward"], CelAnimation)
+
+
+def _check_no_lurch(samples, wrong_way):
+    # Facing right, a back jump travels LEFT. The drawn body must stay glued to x
+    # (no ~70px forward shove). With the folder somersault clips the body must
+    # also never move the wrong way frame to frame; with the ROM cel clips the
+    # body's offset from the axis is the game's own (a somersault swings the
+    # body a few px), so the guard is: no per-frame jump, no wrong-way lurch.
+    rom = _rom_jump_clips()
+    prev = None
+    for body_x, world_x in samples:
+        assert abs(body_x - world_x) < (40 if rom else 20), (
+            f"drawn body ({body_x}) must track x ({world_x}); a big gap is the lurch")
+        if prev is not None:
+            if rom:
+                assert abs(body_x - prev) <= 12, "drawn body must not jump between frames"
+            else:
+                assert not wrong_way(body_x, prev), "body must not drift the wrong way"
+        prev = body_x
+
+
 def test_back_jump_body_never_lurches_forward():
     samples = _airborne_body_centers(InputDirection.UP_BACK)
     assert len(samples) >= 8
-    # Facing right, a back jump travels LEFT. The drawn body must stay glued to x
-    # (no ~70px forward shove) and never move forward (right) frame to frame.
-    prev = None
-    for body_x, world_x in samples:
-        assert abs(body_x - world_x) < 20, (
-            f"drawn body ({body_x}) must track x ({world_x}); a big gap is the lurch")
-        if prev is not None:
-            assert body_x <= prev + 1, "back-jump body must not drift forward (right)"
-        prev = body_x
+    _check_no_lurch(samples, wrong_way=lambda body_x, prev: body_x > prev + 1)
 
 
 def test_forward_jump_body_never_lurches_backward():
     samples = _airborne_body_centers(InputDirection.UP_FORWARD)
     assert len(samples) >= 8
-    prev = None
-    for body_x, world_x in samples:
-        assert abs(body_x - world_x) < 20, (
-            f"drawn body ({body_x}) must track x ({world_x}); a big gap is the lurch")
-        if prev is not None:
-            assert body_x >= prev - 1, "forward-jump body must not drift backward (left)"
-        prev = body_x
+    _check_no_lurch(samples, wrong_way=lambda body_x, prev: body_x < prev - 1)
