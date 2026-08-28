@@ -176,3 +176,31 @@ def test_p1_cels_ripped_facing_left_are_stored_right_facing(tmp_path):
     w = ir.size[0]
     assert ir.getpixel((0, 0))[3] == 255 and ir.getpixel((w - 1, 0))[3] == 0       # right-facing: pens on the left
     assert il.getpixel((w - 1, 0))[3] == 255 and il.getpixel((0, 0))[3] == 0       # mirrored back: pens on the right
+
+
+def test_effects_mode_renders_non_fighter_objects_relative_to_the_defender(tmp_path):
+    body = _part(7, xpos2=0, ypos2=32, xsize=3, ysize=3)       # 16 tiles: a fighter body
+    spark = _part(300, xpos2=0, ypos2=16, xsize=2, ysize=2)     # 4 tiles: an effect with its own palette
+    spark["pal"] = 9
+    p1_body = _rec([body], xpos=424, whichpal=1, global_pal=8)
+    p2_body = dict(_rec([body], xpos=600, whichpal=1, global_pal=16), i=1)
+    hud = dict(_rec([_part(1, 0, 0)], xpos=0), i=2)
+    fx = dict(_rec([spark], xpos=612, ypos=70, whichpal=0), i=3)          # 12 px in front of P2, 30 px up
+    tiles = {str(7 + i): _tile(lambda x, y: 1) for i in range(16)}
+    tiles.update({str(300 + i): _tile(lambda x, y: 2) for i in range(4)}); tiles["1"] = _tile(lambda x, y: 1)
+    pals = {str(8 * 64): _palette({1: (248, 0, 0)}), str(16 * 64): _palette({1: (0, 0, 248)}),
+            str(9 * 256): _palette({2: (248, 248, 248)}), "0": _palette({1: (8, 8, 8)})}
+    d = {"f": 500, "fx": {"hit_on": "p2", "frames_left": 11},
+         "p1": {"anim": "1438", "cel": 21857, "pos_x": 424, "pos_y": 0, "flip": 1, "posture": 0},
+         "p2": {"anim": "a2ec", "cel": 21650, "pos_x": 600, "pos_y": 0, "flip": 0, "posture": 0},
+         "records": [p1_body, p2_body, hud, fx], "tiles": tiles, "palettes": pals}
+    dump = tmp_path / "cels.jsonl"; dump.write_text(json.dumps(d) + "\n")
+    cel.main([str(dump), "--out", str(tmp_path / "out"), "--effects", "--lua-tiles"])
+    m = json.loads((tmp_path / "out" / "fx.json").read_text())
+    assert len(m["frames"]) == 1 and len(m["objects"]) == 1
+    obj = m["frames"][0]["objects"][0]
+    assert obj["dx_defender"] == 12 and obj["dy_defender"] == -30 and obj["dx_attacker"] == 188
+    key = obj["key"]; assert key.startswith("t300x22_p9") and (tmp_path / "out" / f"fx_{key}.png").exists()
+    # the spark's pixels are its own palette's colour
+    from PIL import Image
+    im = Image.open(tmp_path / "out" / f"fx_{key}.png"); assert im.getpixel((0, 0))[:3] == (255, 255, 255)
