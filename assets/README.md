@@ -23,17 +23,20 @@ They are theirs to use. Treat them as first-class:
 ```
 assets/
   characters/<name>/
-    animations/      one PNG-sequence folder per move (frame_000.png, …)
-    rom_cels/        cel_<id>.png ripped from the ROM's memory (tools/rom_extract), used
-                     wherever data/characters/<name>/rom_animations.json is complete
-    sprite_sheets/   numbered sprite frames (projectiles, fx, legacy numbered loader)
-    raw_gifs/        source gifs the frames were extracted from
+    rom_cels/        PRIMARY: cel_<id>.png ripped from the ROM's memory (tools/rom_extract),
+                     placed/timed by data/characters/<name>/rom_animations.json
+    legacy/          the pre-ROM art, kept as the fallback for clips the ROM
+                     tables don't cover yet (reactions, throws, supers, some
+                     close normals) and for projectile sprites:
+      animations/    one PNG-sequence folder per move (frame_000.png, ...; zweifuss)
+      sprite_sheets/ numbered sprite frames (projectiles, fx, legacy numbered loader)
+      raw_gifs/      source gifs the folders were extracted from
   stages/            stage backgrounds (e.g. ryu-stage.gif)
   vfx/ingame_effects/  hit sparks and other in-game effects
   intro/             menu / intro art (intro_*.png)
   sounds/            audio
   data/              misc data
-  sprites/           legacy loose numbered sprites (pre-consolidation; unused)
+  legacy/sprites/    loose numbered sprites (pre-consolidation; unused)
 ```
 
 Akuma's animations were consolidated here from
@@ -44,7 +47,7 @@ from `assets/sprites/akuma/`. The extraction **scripts** remain under
 ## How loaders find these files
 
 All asset paths are stored **repo-relative** (e.g.
-`"assets/characters/akuma/animations"`) and resolved against the repo root by
+`"assets/characters/akuma/legacy/animations"`) and resolved against the repo root by
 `street_fighter_3rd.util.assets` (`ASSETS_ROOT`, `resolve_asset`, `asset_path`),
 so the game loads the same files regardless of the working directory it is
 launched from. Point any new loader through that helper.

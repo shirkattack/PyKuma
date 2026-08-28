@@ -12,7 +12,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-ANIMATIONS = "assets/characters/akuma/animations"
+ANIMATIONS = "assets/characters/akuma/legacy/animations"
 STANCE = f"{ANIMATIONS}/akuma-stance"
 INPUT_ICONS = "assets/ui/inputs"
 HITSPARKS = "assets/vfx/ingame_effects/hitsparks"

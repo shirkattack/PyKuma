@@ -19,7 +19,9 @@ import dataclasses
 import json
 import os
 from pathlib import Path as _Path
-from street_fighter_3rd.util.assets import REPO_ROOT as _REPO_ROOT, resolve_asset as _resolve_asset
+from street_fighter_3rd.util.assets import (REPO_ROOT as _REPO_ROOT, resolve_asset as _resolve_asset,
+                                            LEGACY_ANIMATIONS as _LEGACY_ANIMATIONS,
+                                            LEGACY_SPRITE_SHEETS as _LEGACY_SPRITE_SHEETS)
 from street_fighter_3rd.core.projectile import Gohadoken
 from street_fighter_3rd.data.constants import GRAVITY, STAGE_FLOOR
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository
@@ -29,9 +31,10 @@ from street_fighter_3rd.data.community import community_damage
 log = get_logger(__name__)
 
 # Extracted per-move sprite folders (one PNG sequence per move), under the
-# canonical asset tree (assets/characters/akuma/animations). Single source of
+# legacy folder art (assets/characters/akuma/legacy/animations) -- the ROM cel
+# clips (rom_cels/, rom_animations.json) override these wherever complete. Single source of
 # truth for Akuma's animations. Resolved CWD-independently by the loader.
-ANIM_BASE = "assets/characters/akuma/animations"
+ANIM_BASE = _LEGACY_ANIMATIONS
 
 # States that must NOT auto-return to STANDING when their (non-looping) animation
 # finishes — recovery is governed by physics/input/stun timers, not animation
@@ -303,7 +306,7 @@ class Akuma(Character):
         # sprite_directory is only used by SpriteManager's numbered loader (unused
         # by Akuma now); folder animations resolve their own paths.
         # P2 gets a palette swap at load time so the two Akumas can be told apart.
-        self.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets",
+        self.sprite_manager = SpriteManager(_LEGACY_SPRITE_SHEETS,
                                             recolor=player_recolor("akuma", player_number),
                                             cel_recolor=cel_recolor("akuma", player_number))
         self.animation_controller = AnimationController(self.sprite_manager)
