@@ -1293,8 +1293,11 @@ class Akuma(Character):
             return
         if self.state == CharacterState.TATSUMAKI and self._move_total:
             if self._rom_movement_step() is None:      # table exhausted
-                if (self.move_variant or "").startswith("air_"):
-                    # Air tatsu: resume the fall; physics lands us.
+                if (self.move_variant or "").startswith("air_") and not self.is_grounded:
+                    # Air tatsu still airborne: resume the fall; physics lands us.
+                    # (Already on the ground -- it touched down during the spin --
+                    # it recovers like the ground version instead of sitting in
+                    # a grounded JUMPING state until the safety timeout.)
                     self.velocity_x = 0.0
                     self._transition_to_state(CharacterState.JUMPING)
                 else:

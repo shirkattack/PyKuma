@@ -46,6 +46,14 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **Corner cross-ups no longer jitter or freeze.** Jumping over a cornered
+  opponent (plain jump, air tatsu or demon flip) shoved them off the wall and
+  then swapped the two fighters every frame, flipping both facings and
+  cancelling their walks; an air tatsu that touched down mid-spin sat in a
+  grounded JUMPING state until the safety timeout. The pushbox resolver now
+  has explicit wall ownership (the fighter grounded at the wall longest keeps
+  it; the other is placed inside), which makes the per-frame double resolution
+  idempotent, and the air tatsu recovers on the ground when it lands early.
 - **Specials and jump normals follow the ROM's hand-offs.** The frame dumps
   record what the game plays after a script ends: MP/HP Goshoryuken fall
   through the LP DP script from its 5th cel (`84f8`, movement rows included, so

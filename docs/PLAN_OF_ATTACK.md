@@ -81,7 +81,7 @@ per-window expectations are keyed by ROM window, uncaptured windows are not
 diffed. Tests: `test_multihit_windows.py::test_dp_follows_the_rom_chain_to_touchdown`,
 controller chain unit test.
 
-## Phase 3 — corner cross-up jitter/freeze (M)
+## Phase 3 — corner cross-up jitter/freeze (M) — **done 2026-08-27**
 
 Repro: P1 jumps over a cornered P2 with a special (air tatsu / demon flip);
 P2 jitters and freezes. Likely the wall clamp (`character.py` `STAGE_*_BOUND`)
@@ -93,6 +93,19 @@ overlapped.
 - Write the repro as a `tools/diagnostics/scenario.py` script first (it becomes the test).
 - Fix: resolve pushbox overlap by moving the **un-cornered** fighter only; allow the air side switch; never clamp past the wall twice in one frame.
 - Test: scenario asserts no per-frame x oscillation > 1 px and both facings settle within N frames.
+
+**What it actually was:** the pair is pushbox-resolved twice per frame (once
+from each fighter's update). At touchdown both fighters' prior-frame x was the
+wall (the jumper had been clamped to it mid-air), so the two resolutions
+tie-broke differently and swapped the pair back and forth every frame — the
+jitter, with the facings flipping along. Independently, an air tatsu that
+touched down during its spin went to JUMPING while grounded and sat there
+until the 60-frame safety timeout — the freeze. Fixed with explicit **wall
+ownership** (consecutive grounded frames at a bound, counted before the
+frame's movement; the longer holder keeps the wall and the other is placed
+inside — order-independent, so the second resolution is a no-op) and by
+recovering the air tatsu on the ground when it lands mid-spin. Open-field
+cross-ups still switch sides. Test: `tests/test_corner_crossup.py`.
 
 ## Phase 4 — throws (M–L)
 
