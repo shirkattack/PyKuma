@@ -46,6 +46,13 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **Multi-hit moves no longer double-scale or false-flag.** The combo system
+  stepped damage scaling down for every hit window of the same move (cl.HK's
+  second hit 12 → 10, MP DP 8 → 7) although the ROM-captured per-window values
+  already are what the game applies inside the move; scaling is now anchored at
+  a move's first hit and only a new move steps it down. The Frame Lab diffed
+  every hit against the first window's expectation; it now diffs each hit
+  against its own ROM window (`window` on hit events, `Expected.rom_hits`).
 - **Multi-hit ROM combat windows.** Session 1's vendored raw samples had `frame`
   = the ROM cel id (`22047` reached `hitboxes.yaml`) and a multi-hit move's later
   connects were placed by a frame the defender's hitstop cannot pin, collapsing

@@ -21,24 +21,27 @@ regression pin each fix lands with.
 | 0.5 | Air fireball uses the ground clip | ROM air Gohadoken anim is `a130` (airborne, then `7684`); engine has no air variant | build tool role `air_gohadoken` (+ `7684` tail); engine plays variant `air` for GOHADOKEN when `pending_projectile_air` | `build_rom_animations.py`, `characters/akuma.py` | frame info shows `rom_cels` of `a130` during an air fireball |
 | 0.6 | Close normals / tatsu still on folder clips | 1–3 hit-branch cels missing (`13a8 14e8 1728 1988 1b08`, cel `22216`) | the top-up rip (dummy `stand`, let them **hit**) + `cel_decode --p1` + rebuild | — (data) | `rom_animations.json` complete count 47 → 53 |
 
-## Phase 1 — combat correctness: the hit-window bug (M, highest leverage)
+## Phase 1 — combat correctness: multi-hit windows — **done 2026-08-27**
 
 Warnings: `HEAVY_KICK damage observed=12 expected=21 / hitstun 19 vs 35`,
 `GOSHORYUKEN damage 8 vs 17`, `TATSUMAKI damage 3-5 vs 16`.
 
-In every case the engine applied the values of the **next** hit window to the
-first contact (cl.HK window 1 is 12 dmg / 19 hitstun; MP DP window 1 is 8).
-`akuma_hitboxes._window_of(move, frame_1indexed)` picks the window containing
-the frame, so either the frame passed at collision time is already advanced
-(state_frame incremented before the hit check) or the attack-box frame and the
-window numbering disagree by one. One fix corrects damage, stun, hitstun and
-hitstop for every multi-hit move at once.
+**What it actually was** (the plan's off-by-one hypothesis was wrong; the
+repro showed cl.HK applying 21/35 then 12/19 — the ROM's own per-window
+values):
 
-- Reproduce: scenario `cl.HK` first contact → assert applied damage 21 / hitstun 35; `MP DP` first hit → 17.
-- Then review multi-hit accounting (`scaled applied=7` when the ROM says 8:
-  the combo scaling should not apply to a single hit) and the tatsu's per-spin
-  hits (the Frame Lab logged the same move twice at 3 and 5).
-- Files: `data/akuma_hitboxes.py`, `systems/sf3_collision_adapter.py`; tests: `test_rom_combat.py` (engine-prefers-captured) extended to multi-hit first windows.
+1. The Frame Lab diffed *every* hit of a move against the **first** window's
+   expected values, so the second hit of any multi-hit move was flagged.
+   Fixed: hit events carry their ROM window and `Expected.rom_hits` holds the
+   per-window values; each hit is diffed against its own window.
+2. The combo system stepped the damage scaling down for every window of the
+   same move (12 → 10, 8 → 7). The captured per-window values already are
+   what the game applied inside that move, so scaling is now anchored at a
+   move's first hit (`register_hit(same_move=True)` from the collision
+   system); only a new move steps it down.
+
+Test: `tests/test_multihit_windows.py` (cl.HK windows 21/35 then 12/19,
+scaled 21/12; scaling anchor unit test).
 
 ## Phase 2 — move chains: follow-up animations from the dumps (M)
 
