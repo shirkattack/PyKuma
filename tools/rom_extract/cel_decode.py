@@ -281,6 +281,32 @@ def player_palettes(d: dict) -> dict | None:
     return out
 
 
+def effect_objects(d: dict, p1_pal=None, p2_pal=None):
+    """The sprite-list objects of a dump that are neither a fighter's body nor
+    its shadow nor HUD/background: hit sparks, dust, projectiles. A fighter's
+    body/shadow sits at the fighter's x with the fighter's palette; effects at
+    the same x use another palette. HUD objects sit at x 0; backgrounds are
+    huge."""
+    out = []
+    for r in d["records"]:
+        ntiles = sum(len(part_tiles(r, p)) for p in r["parts"])
+        if ntiles == 0 or ntiles > 60 or r["xpos"] < 16:
+            continue
+        pal = (r["whichpal"], r["global_pal"])
+        near_p1 = abs(r["xpos"] - d["p1"]["pos_x"]) <= 8
+        near_p2 = abs(r["xpos"] - d["p2"]["pos_x"]) <= 8
+        if (near_p1 and (p1_pal is None or pal == p1_pal)) or (near_p2 and (p2_pal is None or pal == p2_pal)):
+            continue
+        out.append(r)
+    return out
+
+
+def object_key(rec: dict) -> str:
+    """Stable id for an effect object: its parts' tile numbers and palette."""
+    parts = "-".join(f"{p['tileno']}x{p['xsize']}{p['ysize']}" for p in rec["parts"] if p["xsize"])
+    return f"t{parts}_p{rec['global_pal'] if rec['whichpal'] else rec['parts'][0]['pal']}"
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dump", help="pykuma_cels.jsonl from dump_cels.lua")
@@ -293,11 +319,16 @@ def main(argv=None):
     ap.add_argument("--p1", action="store_true",
                     help="render only P1's body object, named cel_<cel id>.png, and write cels.json (cel -> anim, bbox rel. axis)")
     ap.add_argument("--redo", action="store_true", help="with --p1: re-render cels already in cels.json")
+    ap.add_argument("--effects", action="store_true",
+                    help="render the non-fighter objects of the connect-window dumps (fx) as fx_<key>.png + fx.json "
+                         "(per dump: the objects and their offsets from the defender's axis)")
     ap.add_argument("--palettes-out", default=None,
                     help="write {p1, p2} palettes (RGB per pen) from the first dump showing both players, e.g. data/characters/akuma/rom_palettes.json")
     args = ap.parse_args(argv)
     manifest_path = Path(args.out) / "cels.json"
     manifest = json.loads(manifest_path.read_text()) if args.p1 and manifest_path.exists() else {}
+    fx_path = Path(args.out) / "fx.json"
+    fx_manifest = json.loads(fx_path.read_text()) if args.effects and fx_path.exists() else {"objects": {}, "frames": []}
     # P1's body palette: learned from the stance dumps (anim 8800) of this file,
     # used to tell Akuma apart from effect objects drawn at his position
     p1_pal = None
@@ -356,6 +387,41 @@ def main(argv=None):
               f"flip {p1['flip']} | P2 anim {p2['anim']} cel {p2['cel']} pos ({p2['pos_x']},{p2['pos_y']}) | "
               f"{len(d['records'])} objects, {len(d['tiles'])} tiles, {len(d['palettes'])} palettes")
         records = d["records"]
+        if args.effects:
+            if not d.get("fx"):
+                continue
+            p2_pal = None
+            for r in d["records"]:
+                if abs(r["xpos"] - p2["pos_x"]) <= 8 and sum(len(part_tiles(r, pp)) for pp in r["parts"]) >= 10:
+                    p2_pal = (r["whichpal"], r["global_pal"])
+            fx_objs = effect_objects(d, p1_pal, p2_pal)
+            defender = p2 if d["fx"].get("hit_on") == "p2" else p1
+            attacker = p1 if defender is p2 else p2
+            frame_entry = {"frame": d["f"], "hit_on": d["fx"].get("hit_on"), "frames_left": d["fx"].get("frames_left"),
+                           "defender": {"x": defender["pos_x"], "y": defender["pos_y"], "anim": defender["anim"], "cel": defender["cel"]},
+                           "attacker": {"x": attacker["pos_x"], "anim": attacker["anim"], "cel": attacker["cel"]},
+                           "objects": []}
+            for r in fx_objs:
+                res = render_object(r, tiles, palettes, swizzle=swizzle)
+                if res is None:
+                    continue
+                img, (left, top) = res
+                key = object_key(r)
+                if key not in fx_manifest["objects"]:
+                    img.save(out / f"fx_{key}.png")
+                    fx_manifest["objects"][key] = {"left": left, "top": top, "width": img.size[0], "height": img.size[1],
+                                                   "tiles": sum(len(part_tiles(r, pp)) for pp in r["parts"]),
+                                                   "palette": r["global_pal"] if r["whichpal"] else r["parts"][0]["pal"]}
+                frame_entry["objects"].append({"key": key, "xpos": r["xpos"], "ypos": r["ypos"], "gxflip": r["gxflip"],
+                                               # object origin relative to the defender's axis (screen axes: x right, y down;
+                                               # the object's ypos is measured like the fighters': pos_y + 40 at the feet)
+                                               "dx_defender": r["xpos"] - defender["pos_x"],
+                                               "dy_defender": -(r["ypos"] - 40 - defender["pos_y"]),
+                                               "dx_attacker": r["xpos"] - attacker["pos_x"]})
+            fx_manifest["frames"].append(frame_entry)
+            fx_path.write_text(json.dumps(fx_manifest, indent=1))
+            print(f"   fx frame {d['f']} ({d['fx'].get('hit_on')} hit): {len(frame_entry['objects'])} effect objects")
+            continue
         if args.p1:
             # P1's body: the many-tile object nearest P1's position (the sprite
             # list can be a frame apart from pos_x/pos_y while P1 moves, and the

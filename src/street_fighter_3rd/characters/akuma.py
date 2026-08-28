@@ -19,7 +19,9 @@ import dataclasses
 import json
 import os
 from pathlib import Path as _Path
-from street_fighter_3rd.util.assets import REPO_ROOT as _REPO_ROOT, resolve_asset as _resolve_asset
+from street_fighter_3rd.util.assets import (REPO_ROOT as _REPO_ROOT, resolve_asset as _resolve_asset,
+                                            LEGACY_ANIMATIONS as _LEGACY_ANIMATIONS,
+                                            LEGACY_SPRITE_SHEETS as _LEGACY_SPRITE_SHEETS)
 from street_fighter_3rd.core.projectile import Gohadoken
 from street_fighter_3rd.data.constants import GRAVITY, STAGE_FLOOR
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository
@@ -29,9 +31,10 @@ from street_fighter_3rd.data.community import community_damage
 log = get_logger(__name__)
 
 # Extracted per-move sprite folders (one PNG sequence per move), under the
-# canonical asset tree (assets/characters/akuma/animations). Single source of
+# legacy folder art (assets/characters/akuma/legacy/animations) -- the ROM cel
+# clips (rom_cels/, rom_animations.json) override these wherever complete. Single source of
 # truth for Akuma's animations. Resolved CWD-independently by the loader.
-ANIM_BASE = "assets/characters/akuma/animations"
+ANIM_BASE = _LEGACY_ANIMATIONS
 
 # States that must NOT auto-return to STANDING when their (non-looping) animation
 # finishes — recovery is governed by physics/input/stun timers, not animation
@@ -156,7 +159,14 @@ _ROM_ROLE_ANIMS = frozenset({
     "stance", "walk_forward", "walk_backward", "crouch_hold", "jump_up", "jump_forward",
     "jump_backward", "dash_forward", "dash_backward", "taunt", "block_high", "block_crouch",
     "gohadoken", "air_gohadoken",
+    "dp_land", "tatsu_land", "jump_attack_land", "jump_land", "air_fireball_land",
 })
+# the landing clip the ROM plays when a state touches down
+_LANDING_CLIP = {
+    CharacterState.GOSHORYUKEN: "dp_land",
+    CharacterState.TATSUMAKI: "tatsu_land",
+    CharacterState.GOHADOKEN: "air_fireball_land",
+}
 # folder clips that loop while the state is held; their ROM replacements loop too
 _HELD_LOOP_ANIMS = frozenset({"block_high", "block_crouch"})
 _ROM_ANIMATIONS_JSON = _REPO_ROOT / "data" / "characters" / "akuma" / "rom_animations.json"
@@ -296,12 +306,13 @@ class Akuma(Character):
         # sprite_directory is only used by SpriteManager's numbered loader (unused
         # by Akuma now); folder animations resolve their own paths.
         # P2 gets a palette swap at load time so the two Akumas can be told apart.
-        self.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets",
+        self.sprite_manager = SpriteManager(_LEGACY_SPRITE_SHEETS,
                                             recolor=player_recolor("akuma", player_number),
                                             cel_recolor=cel_recolor("akuma", player_number))
         self.animation_controller = AnimationController(self.sprite_manager)
         self._move_total = None  # full length of the current ROM-driven special
         self._landed_frame = None  # state_frame at touchdown of a ROM-driven air move
+        self._landing_clip = None  # ROM landing clip playing for the current state
 
         # Set ground offset for consistent positioning
         self.ground_offset = 190  # From YAML configuration (base-class fallback)
@@ -478,8 +489,11 @@ class Akuma(Character):
             log_once(log, ("rom_anim_load",), logging.WARNING, "rom_animations.json unreadable: %s", e)
             return
         state_anim = {state.name: name for state, name in self._STATE_ANIM.items()}
+        for anim_id, e in doc.get("anims", {}).items():
+            e["_id"] = anim_id
         clips = rom_clip_names(doc, state_anim,
                                cel_exists=lambda c: os.path.exists(os.path.join(cel_root, f"cel_{c}.png")))
+        id_to_name = {}
         for name, entry in clips.items():
             loop = bool(entry.get("loop")) or name in _HELD_LOOP_ANIMS
             names = [name]
@@ -492,6 +506,7 @@ class Akuma(Character):
                 self.animation_controller.add_animation(
                     n, create_cel_animation(cel_dir, entry["sequence"], doc["cels"], loop=loop))
                 self._rom_anim_names.add(n)
+            id_to_name[entry["_id"]] = name
             # ROM-timed states: hold the last cel to / trim at the ROM total so the
             # clip and the state machine end together (audit: sprite_timing)
             if state:
@@ -503,8 +518,75 @@ class Akuma(Character):
                 if total:
                     for n in names:
                         self._fit_animation(n, total)
+        # ROM hand-offs: a script that ends into another script (MP DP -> 84f8's
+        # fall -> 6a2c landing) chains to it from the cel the game enters on;
+        # landing clips return to stance.
+        self._rom_handoff = {}     # rom_id -> (successor rom_id, successor frame offset) for movement
+        for name, entry in clips.items():
+            nxt = entry.get("next")
+            target = id_to_name.get(nxt["anim"]) if nxt else None
+            # a landing tail plays on TOUCHDOWN (_on_landing), never on clip
+            # completion -- the script may end while still airborne
+            if target and target in self._rom_anim_names and target != name and not target.endswith("_land"):
+                aliases = [name] + ([f"{entry['equals_variant']}_{name}"] if entry.get("equals_variant") else [])
+                start = int(nxt.get("start_index", 0))
+                for n in aliases:
+                    anim = self.animation_controller.animations[n]
+                    anim.next_name, anim.next_start = target, start
+                # the successor's movement rows continue the arc from the same cel
+                succ_seq = doc["anims"][nxt["anim"]]["sequence"]
+                self._rom_handoff[entry["_id"]] = (nxt["anim"], sum(int(d) for _, d in succ_seq[:start]))
+        for land in ("dp_land", "tatsu_land", "jump_attack_land", "jump_land", "air_fireball_land"):
+            if land in self._rom_anim_names and "stance" in self._rom_anim_names:
+                self.animation_controller.animations[land].next_name = "stance"
         log_once(log, ("rom_anim_summary",), logging.INFO, "ROM cel clips: %d registered (%s)",
                  len(clips), ", ".join(sorted(clips)))
+
+    def chain_of(self, name: str) -> set:
+        """Every clip a clip hands off to (ROM chains), transitively, plus the
+        landing clips and the stance they return to (shown at a move's end)."""
+        out, cur = set(), self.animation_controller.animations.get(name)
+        while cur is not None and getattr(cur, "next_name", None) and cur.next_name not in out:
+            out.add(cur.next_name)
+            cur = self.animation_controller.animations.get(cur.next_name)
+        out.update(n for n in self._rom_anim_names if n.endswith("_land"))
+        if self._rom_anim_names:
+            out.add("stance")
+        return out
+
+    def landing_frames_for(self, state: CharacterState) -> int:
+        """Game frames of the ROM landing clip that follows `state` (0 if none)."""
+        land = "jump_attack_land" if state in _JUMP_NORMALS else _LANDING_CLIP.get(state)
+        anim = self.animation_controller.animations.get(land) if land in self._rom_anim_names else None
+        return anim.total_frames() if isinstance(anim, CelAnimation) else 0
+
+    def _handoff_move(self, rom_id: str):
+        """The repository record the ROM hands `rom_id` off to, and the frame
+        offset into its movement table (MP DP -> 84f8's fall rows)."""
+        nxt = getattr(self, "_rom_handoff", {}).get(rom_id)
+        if not nxt:
+            return None, 0
+        cache = getattr(self, "_moves_by_rom_id", None)
+        if cache is None:
+            cache = self._moves_by_rom_id = {m.rom_id: m for m in HitboxRepository.instance().iter_moves()}
+        return cache.get(nxt[0]), nxt[1]
+
+    def _play_landing_clip(self) -> bool:
+        """Play the ROM landing clip for the state that touched down (jump
+        normal -> jump_attack_land, DP -> dp_land, ...). True when one played."""
+        land = "jump_attack_land" if self.state in _JUMP_NORMALS else _LANDING_CLIP.get(self.state)
+        if land and land in self._rom_anim_names:
+            self.animation_controller.play_animation(land, force_restart=True)
+            self._landing_clip = land
+            return True
+        return False
+
+    def _landing_recovery_done(self) -> bool:
+        """The ROM landing clip (when one is playing for this state) has finished."""
+        clip = getattr(self, "_landing_clip", None)
+        if clip and self.animation_controller.current_name == clip:
+            return self.animation_controller.is_animation_complete()
+        return True
 
     def reset(self, x: float, y: float):
         """Reset Akuma to a clean round-start state.
@@ -687,19 +769,35 @@ class Akuma(Character):
         move = self._rom_move()
         if move is None or not move.movement:
             return None
-        return move.movement_for_frame(self.state_frame + 1)
+        frame = self.state_frame + 1
+        step = move.movement_for_frame(frame)
+        if step is None:
+            # past the script: the ROM continues with the hand-off script's
+            # rows (MP/HP DP fall through 84f8's tail), not engine gravity
+            succ, offset = self._handoff_move(move.rom_id)
+            if succ is not None and succ.movement:
+                step = succ.movement_for_frame(offset + frame - len(move.movement))
+        return step
 
     def _on_landing(self):
         # A ROM-driven special keeps its state on touchdown: the DP holds for
         # its landing recovery and the tatsu's hop touches down inside the
         # move. Its exit is decided in _update_state. (The fallback DP, with
         # no table, lands straight into STANDING like before.)
+        self._landing_clip = None
         move = self._rom_move()
         if move is not None and move.movement:
             self.velocity_x = 0.0
             self._landed_frame = self.state_frame
+            self._play_landing_clip()      # the ROM's landing recovery cels
             return
+        # jumps / jump normals: the ROM landing cels play over the return to
+        # neutral (visual only: the state machine's timing is unchanged)
+        land = "jump_attack_land" if self.state in _JUMP_NORMALS else (
+            "jump_land" if self.state == CharacterState.JUMPING else None)
         super()._on_landing()
+        if land and land in self._rom_anim_names and self.state == CharacterState.STANDING:
+            self.animation_controller.play_animation(land, force_restart=True)
 
     def _fit_animation(self, name: str, total: int):
         """Re-time a clip so it lasts exactly `total` frames: spread the holds
@@ -1179,10 +1277,11 @@ class Akuma(Character):
 
         # ROM-movement-driven specials own their exit.
         if self.state == CharacterState.GOSHORYUKEN and self._move_total:
-            # Landed (table exhausted, on the ground) and the Baston total has
-            # elapsed -> the landing recovery is over.
-            if (self.is_grounded and self._rom_movement_step() is None
-                    and self.state_frame >= self._move_total):
+            # Landed (table exhausted, on the ground) and the recovery is over:
+            # the ROM landing clip's length when one played, else the Baston total.
+            if self.is_grounded and self._rom_movement_step() is None and (
+                    (getattr(self, "_landing_clip", None) and self._landing_recovery_done())
+                    or self.state_frame >= self._move_total):
                 self.velocity_x = 0.0
                 self._transition_to_state(CharacterState.STANDING)
             return
@@ -1197,18 +1296,24 @@ class Akuma(Character):
             return
         if self.state == CharacterState.TATSUMAKI and self._move_total:
             if self._rom_movement_step() is None:      # table exhausted
-                if (self.move_variant or "").startswith("air_"):
-                    # Air tatsu: resume the fall; physics lands us.
+                if (self.move_variant or "").startswith("air_") and not self.is_grounded:
+                    # Air tatsu still airborne: resume the fall; physics lands us.
+                    # (Already on the ground -- it touched down during the spin --
+                    # it recovers like the ground version instead of sitting in
+                    # a grounded JUMPING state until the safety timeout.)
                     self.velocity_x = 0.0
                     self._transition_to_state(CharacterState.JUMPING)
                 else:
                     # Ground tatsu ends a hair above the floor (its hop);
-                    # touch down and stand.
+                    # touch down, play the ROM landing recovery, then stand.
                     self.y = STAGE_FLOOR
                     self.is_grounded = True
                     self.velocity_x = 0.0
                     self.velocity_y = 0.0
-                    self._transition_to_state(CharacterState.STANDING)
+                    if getattr(self, "_landing_clip", None) is None and self._play_landing_clip():
+                        return
+                    if self._landing_recovery_done():
+                        self._transition_to_state(CharacterState.STANDING)
             return
 
         # Ashura Senku teleport: strike-invulnerable; glide the travel distance,

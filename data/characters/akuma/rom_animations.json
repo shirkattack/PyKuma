@@ -1027,7 +1027,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_LIGHT_PUNCH",
-   "variant": "neutral"
+   "variant": "neutral",
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 3
+   }
   },
   "22a8": {
    "loop": false,
@@ -1083,7 +1088,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_MEDIUM_PUNCH",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 5
+   }
   },
   "2388": {
    "loop": false,
@@ -1131,7 +1141,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_HEAVY_PUNCH",
-   "variant": "neutral"
+   "variant": "neutral",
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 4
+   }
   },
   "2448": {
    "loop": false,
@@ -1179,7 +1194,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_LIGHT_KICK",
-   "variant": "neutral"
+   "variant": "neutral",
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 5
+   }
   },
   "2558": {
    "loop": false,
@@ -1215,7 +1235,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_MEDIUM_KICK",
-   "variant": "neutral"
+   "variant": "neutral",
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 3
+   }
   },
   "2628": {
    "loop": false,
@@ -1251,7 +1276,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_HEAVY_KICK",
-   "variant": "neutral"
+   "variant": "neutral",
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 3
+   }
   },
   "2708": {
    "loop": false,
@@ -1291,7 +1321,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_LIGHT_PUNCH",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 2
+   }
   },
   "2800": {
    "loop": false,
@@ -1339,7 +1374,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_HEAVY_PUNCH",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 3
+   }
   },
   "28e0": {
    "loop": false,
@@ -1383,7 +1423,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_LIGHT_KICK",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 6
+   }
   },
   "29c0": {
    "loop": false,
@@ -1427,7 +1472,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_MEDIUM_KICK",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 4
+   }
   },
   "2b30": {
    "loop": false,
@@ -1475,7 +1525,52 @@
    "complete": true,
    "missing_cels": [],
    "state": "JUMP_HEAVY_KICK",
-   "variant": null
+   "variant": null,
+   "next": {
+    "anim": "5c7c",
+    "start_index": 0,
+    "count": 2
+   }
+  },
+  "5b7c": {
+   "loop": false,
+   "sequence": [
+    [
+     21546,
+     2
+    ]
+   ],
+   "total": 2,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 68
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "jump_land",
+   "signature": "after a plain jump touches down, 3 cels"
+  },
+  "5c7c": {
+   "loop": false,
+   "sequence": [
+    [
+     21546,
+     3
+    ]
+   ],
+   "total": 3,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 40
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "jump_attack_land",
+   "signature": "after a jump normal touches down, 1 cel"
   },
   "5cec": {
    "loop": true,
@@ -1571,6 +1666,106 @@
    ],
    "role": "lying",
    "signature": "dummy posture 38, long"
+  },
+  "645c": {
+   "loop": false,
+   "sequence": [
+    [
+     22217,
+     2
+    ],
+    [
+     22218,
+     2
+    ],
+    [
+     21545,
+     4
+    ],
+    [
+     21833,
+     1
+    ]
+   ],
+   "total": 9,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 30
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "tatsu_land",
+   "signature": "after every ground/air tatsu: landing recovery, 5 cels"
+  },
+  "6a2c": {
+   "loop": false,
+   "sequence": [
+    [
+     22203,
+     2
+    ],
+    [
+     21990,
+     2
+    ],
+    [
+     21991,
+     3
+    ],
+    [
+     21651,
+     1
+    ]
+   ],
+   "total": 8,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 15
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "dp_land",
+   "signature": "after 84f8 (every DP falls into 84f8's tail): landing, 4 cels"
+  },
+  "7684": {
+   "loop": false,
+   "sequence": [
+    [
+     21545,
+     1
+    ],
+    [
+     21546,
+     2
+    ],
+    [
+     21579,
+     1
+    ],
+    [
+     21550,
+     2
+    ],
+    [
+     21551,
+     1
+    ]
+   ],
+   "total": 7,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 12
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "air_fireball_land",
+   "signature": "after a130 (air fireball) touches down, 5 cels"
   },
   "8210": {
    "loop": false,
@@ -1706,7 +1901,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "GOSHORYUKEN",
-   "variant": "light"
+   "variant": "light",
+   "next": {
+    "anim": "6a2c",
+    "start_index": 0,
+    "count": 15
+   }
   },
   "85c8": {
    "loop": false,
@@ -1738,7 +1938,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "GOSHORYUKEN",
-   "variant": "medium"
+   "variant": "medium",
+   "next": {
+    "anim": "84f8",
+    "start_index": 4,
+    "count": 5
+   }
   },
   "8658": {
    "loop": false,
@@ -1778,7 +1983,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "GOSHORYUKEN",
-   "variant": "heavy"
+   "variant": "heavy",
+   "next": {
+    "anim": "84f8",
+    "start_index": 4,
+    "count": 5
+   }
   },
   "86e8": {
    "loop": false,
@@ -1838,7 +2048,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "light"
+   "variant": "light",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 5
+   }
   },
   "87f8": {
    "loop": false,
@@ -1918,7 +2133,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "medium"
+   "variant": "medium",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 6
+   }
   },
   "8800": {
    "loop": true,
@@ -2146,7 +2366,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "heavy"
+   "variant": "heavy",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 4
+   }
   },
   "89e0": {
    "loop": true,
@@ -2578,7 +2803,12 @@
    "complete": true,
    "missing_cels": [],
    "role": "jump_backward",
-   "signature": "airborne, dx -0.7/f, posture 24"
+   "signature": "airborne, dx -0.7/f, posture 24",
+   "next": {
+    "anim": "5b7c",
+    "start_index": 0,
+    "count": 6
+   }
   },
   "9618": {
    "loop": false,
@@ -2646,7 +2876,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "air_light"
+   "variant": "air_light",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 8
+   }
   },
   "9738": {
    "loop": false,
@@ -2722,7 +2957,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "air_medium"
+   "variant": "air_medium",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 3
+   }
   },
   "9818": {
    "loop": false,
@@ -2794,7 +3034,12 @@
    "complete": true,
    "missing_cels": [],
    "state": "TATSUMAKI",
-   "variant": "air_heavy"
+   "variant": "air_heavy",
+   "next": {
+    "anim": "645c",
+    "start_index": 0,
+    "count": 4
+   }
   },
   "9fdc": {
    "loop": false,
@@ -2906,7 +3151,12 @@
    "complete": true,
    "missing_cels": [],
    "role": "air_gohadoken",
-   "signature": "airborne (posture 22), dx +2.3/f, busy: the air fireball"
+   "signature": "airborne (posture 22), dx +2.3/f, busy: the air fireball",
+   "next": {
+    "anim": "7684",
+    "start_index": 0,
+    "count": 12
+   }
   },
   "a2ec": {
    "loop": false,
@@ -3486,6 +3736,12 @@
    "top": -132,
    "width": 80,
    "height": 144
+  },
+  "21579": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
   },
   "21580": {
    "left": -39,
@@ -4291,6 +4547,18 @@
    "width": 80,
    "height": 128
   },
+  "21990": {
+   "left": -55,
+   "top": -123,
+   "width": 96,
+   "height": 128
+  },
+  "21991": {
+   "left": -55,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
   "22000": {
    "left": -40,
    "top": -91,
@@ -4915,6 +5183,12 @@
    "width": 80,
    "height": 144
   },
+  "22203": {
+   "left": -33,
+   "top": -131,
+   "width": 64,
+   "height": 144
+  },
   "22204": {
    "left": -39,
    "top": -108,
@@ -4944,6 +5218,18 @@
    "top": -134,
    "width": 64,
    "height": 144
+  },
+  "22217": {
+   "left": -43,
+   "top": -119,
+   "width": 80,
+   "height": 128
+  },
+  "22218": {
+   "left": -55,
+   "top": -91,
+   "width": 96,
+   "height": 112
   },
   "22219": {
    "left": -33,

@@ -9,10 +9,10 @@ the catalog markdown is tracked.
 
 | Asset | Location | Format |
 |---|---|---|
-| Character flat sprites | `assets/characters/<char>/sprite_sheets/{num}.png` | numbered PNGs (Akuma 18273–19461) |
-| Character raw GIFs (source) | `assets/characters/<char>/raw_gifs/` | original GIFs, extraction source |
-| ROM cels | `assets/characters/<char>/rom_cels/cel_<id>.png` | sprites ripped from the game's memory (`tools/rom_extract/cel_decode.py`), keyed by ROM cel id; placed by `data/characters/<char>/rom_animations.json` and preferred over the folder clips whenever a move's sequence is complete |
-| Per-move animation folders | `assets/characters/<char>/animations/<move>/frame_NNN.png` | sequential frames + a `description.txt` label — **the only sprite path the engine reads** (`characters/akuma.py` `ANIM_BASE`) |
+| **ROM cels (primary)** | `assets/characters/<char>/rom_cels/cel_<id>.png` | sprites ripped from the game's memory (`tools/rom_extract/cel_decode.py`), keyed by ROM cel id; placed and timed by `data/characters/<char>/rom_animations.json`; used for every move whose sequence is complete |
+| Legacy per-move folders (fallback) | `assets/characters/<char>/legacy/animations/<move>/frame_NNN.png` | zweifuss frames + a `description.txt` label — the fallback clip when a move has no complete ROM sequence (`characters/akuma.py` `ANIM_BASE`) |
+| Legacy flat sprites | `assets/characters/<char>/legacy/sprite_sheets/{num}.png` | numbered PNGs (Akuma 18273–19461); projectile art |
+| Legacy raw GIFs (source) | `assets/characters/<char>/legacy/raw_gifs/` | original GIFs the folders were extracted from |
 | In-game effects | `assets/vfx/ingame_effects/<category>/{num}.png` | numbered PNGs, sparse (gaps delimit sequences) |
 | Stages | `assets/backgrounds/` (fallback `assets/stages/`) | backgrounds |
 | Intro banner | `assets/intro/intro_N.png` | menu intro frames |

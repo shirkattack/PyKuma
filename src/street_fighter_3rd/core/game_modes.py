@@ -21,6 +21,7 @@ class GameModeConfig:
     
     # Visual debug features
     show_hitboxes: bool = False
+    native_view: bool = False       # CPS3 384x224 viewport instead of the zoom camera (F3)
     show_hurtboxes: bool = False
     show_frame_data: bool = False
     show_input_display: bool = False

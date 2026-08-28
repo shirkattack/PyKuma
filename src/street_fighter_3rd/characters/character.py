@@ -438,6 +438,13 @@ class Character:
         # resolution can keep left/right order stable (no cross-through on a dash).
         self._prev_x = self.x
         self._prev_grounded = self.is_grounded
+        # Wall ownership: consecutive GROUNDED frames spent at a stage bound
+        # before this frame's movement. The pushbox resolver gives the wall to
+        # the fighter who has held it longest, so a jumper clamped to the wall
+        # mid-air (0 grounded frames there) can never take a cornered
+        # defender's spot, and both per-frame resolutions agree.
+        at_wall = self.is_grounded and (self.x <= STAGE_LEFT_BOUND or self.x >= STAGE_RIGHT_BOUND)
+        self._wall_frames = (getattr(self, "_wall_frames", 0) + 1) if at_wall else 0
 
         # Update invincibility status based on current frame
         self._update_invincibility()
@@ -1068,6 +1075,25 @@ class Character:
 
         # Minimum center-to-center distance from the ROM pushboxes.
         min_distance = (self.pushbox_width + opponent.pushbox_width) / 2
+        # Wall owner first: whoever has been grounded at the wall longer keeps
+        # it and the other fighter is placed inside. Order-independent, so the
+        # second resolution of the frame (from the opponent's update) finds
+        # nothing left to do -- no per-frame swapping, no facing jitter.
+        mine, theirs = getattr(self, "_wall_frames", 0), getattr(opponent, "_wall_frames", 0)
+        if mine != theirs and max(mine, theirs) > 0:
+            owner, other = (self, opponent) if mine > theirs else (opponent, self)
+            if abs(other.x - owner.x) < min_distance:
+                if owner._prev_x >= STAGE_RIGHT_BOUND - 1 or owner.x >= STAGE_RIGHT_BOUND - 1:
+                    owner.x = STAGE_RIGHT_BOUND
+                    other.x = owner.x - min_distance
+                    if other.velocity_x > 0:
+                        other.velocity_x = 0
+                else:
+                    owner.x = STAGE_LEFT_BOUND
+                    other.x = owner.x + min_distance
+                    if other.velocity_x < 0:
+                        other.velocity_x = 0
+            return
 
         # Corner landing: you cannot cross up a cornered opponent. A character
         # that was airborne last frame and comes down on top of (or behind) an

@@ -3,6 +3,7 @@
 import pygame
 from street_fighter_3rd.systems.animation import (
     AnimationController, SpriteManager, create_simple_animation, create_folder_animation)
+from street_fighter_3rd.util.assets import LEGACY_ANIMATIONS, LEGACY_SPRITE_SHEETS
 from street_fighter_3rd.data.enums import FacingDirection
 from street_fighter_3rd.data.constants import STAGE_FLOOR
 
@@ -134,7 +135,7 @@ class Gohadoken(Projectile):
             damage = int(damage_override)
 
         # Initialize sprite manager for Gohadoken (canonical character asset tree)
-        sprite_directory = "assets/characters/akuma/sprite_sheets"
+        sprite_directory = LEGACY_SPRITE_SHEETS
         sprite_manager = SpriteManager(sprite_directory)
 
         super().__init__(x, y, velocity_x, owner_facing, damage, sprite_manager,
@@ -153,7 +154,7 @@ class Gohadoken(Projectile):
         self.animation_controller = AnimationController(sprite_manager)
         self.animation_controller.add_animation(
             "proj", create_folder_animation(
-                "assets/characters/akuma/animations/akuma-gohadoken-proj",
+                f"{LEGACY_ANIMATIONS}/akuma-gohadoken-proj",
                 frame_count=9, frame_duration=2, loop=True))
         self.animation_controller.play_animation("proj")
         self._anim_t = 0  # for the procedural-fallback pulse

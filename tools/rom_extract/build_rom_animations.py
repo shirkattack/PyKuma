@@ -67,6 +67,12 @@ KINEMATIC_ROLES = {
     "10d0": {"role": "taunt",           "loop": False, "signature": "P1 only, posture 0, 7 cels"},
     "8210": {"role": "gohadoken",       "loop": False, "signature": "P1 fireball launch, 14 cels; hits at f24+ (the projectile)"},
     "a130": {"role": "air_gohadoken",   "loop": False, "signature": "airborne (posture 22), dx +2.3/f, busy: the air fireball"},
+    # hand-off tails: what the ROM plays after a script ends (see NEUTRAL_ANIMS / build `next`)
+    "6a2c": {"role": "dp_land",         "loop": False, "signature": "after 84f8 (every DP falls into 84f8's tail): landing, 4 cels"},
+    "645c": {"role": "tatsu_land",      "loop": False, "signature": "after every ground/air tatsu: landing recovery, 5 cels"},
+    "5c7c": {"role": "jump_attack_land", "loop": False, "signature": "after a jump normal touches down, 1 cel"},
+    "5b7c": {"role": "jump_land",       "loop": False, "signature": "after a plain jump touches down, 3 cels"},
+    "7684": {"role": "air_fireball_land", "loop": False, "signature": "after a130 (air fireball) touches down, 5 cels"},
     "a2ec": {"role": "hit_medium",      "loop": False, "signature": "dummy stand reel, most frequent"},
     "adfc": {"role": "crouch_hit",      "loop": False, "signature": "dummy reel, posture 32"},
     "c4b0": {"role": "launch_spin",     "loop": False, "signature": "dummy launched, posture 24 (after DP)"},
@@ -86,6 +92,37 @@ def load_move_names(path: Path = MOVE_NAMES) -> dict:
             continue
         state, _, variant = key.partition(":")
         out[info["rom_id"]] = {"state": state, "variant": variant or None}
+    return out
+
+
+# Idle / movement ids: a hand-off INTO one of these ends a chain (the move is over).
+NEUTRAL_ANIMS = {"8800", "8910", "89e0", "8c20", "8c90", "8d60", "9490", "88c0", "8ab0", "8b60", "8f20", "8e20", "9030"}
+
+
+def successors(records: list[dict]) -> dict[str, dict]:
+    """anim -> {"anim": most common non-neutral successor, "start_cel": the cel
+    the successor run begins on, "count": n} from the c1 runs. The successor's
+    first cel matters because a hand-off can enter a script mid-way (MP/HP DP
+    fall into 84f8 at its 5th cel)."""
+    from collections import Counter, defaultdict
+    runs = []
+    cur = None
+    for r in records:
+        c = r.get("c1")
+        if not c:
+            continue
+        if cur is None or c["anim"] != cur[0]:
+            cur = [c["anim"], c["anim_frame"]]
+            runs.append(cur)
+    votes: dict[str, Counter] = defaultdict(Counter)
+    for (a, _), (b, first_cel) in zip(runs, runs[1:]):
+        if b in NEUTRAL_ANIMS or a == b:
+            continue
+        votes[a][(b, first_cel)] += 1
+    out = {}
+    for a, cnt in votes.items():
+        (b, first_cel), n = cnt.most_common(1)[0]
+        out[a] = {"anim": b, "start_cel": first_cel, "count": n}
     return out
 
 
@@ -144,7 +181,7 @@ def sequence(cels: list[int]) -> list[list[int]]:
     return [[cel, len(list(g))] for cel, g in itertools.groupby(cels)]
 
 
-def pick_run(runs: list[dict], loop: bool, rom_total: int | None) -> dict | None:
+def pick_run(runs: list[dict], loop: bool, rom_total: int | None, typical: bool = False) -> dict | None:
     """The run to take the timeline from: a whiffed run whose length matches the
     framedata total when one is known, else the longest whiffed run, else the
     longest run with its frozen frames dropped."""
@@ -158,6 +195,12 @@ def pick_run(runs: list[dict], loop: bool, rom_total: int | None) -> dict | None
     pool = whiffs or [r for r in runs if r["cels"]]
     if not pool:
         return None
+    if typical:
+        # a tail clip (landing) is followed by whatever the player did next;
+        # the typical run length is the clip, the longest run is a pause
+        from collections import Counter
+        n = Counter(len(r["cels"]) for r in pool).most_common(1)[0][0]
+        return next(r for r in pool if len(r["cels"]) == n)
     return max(pool, key=lambda r: len(r["cels"]))
 
 
@@ -174,7 +217,7 @@ def build(records: list[dict], cels_manifest: dict, move_names: dict,
         rom_total = None
         if framedata and anim in framedata and isinstance(framedata[anim], dict):
             rom_total = len(framedata[anim].get("frames", [])) or None
-        run = pick_run(rlist, loop, rom_total)
+        run = pick_run(rlist, loop, rom_total, typical=bool(role and role["role"].endswith("_land")))
         if run is None:
             continue
         cels = run["cels"]
@@ -207,6 +250,18 @@ def build(records: list[dict], cels_manifest: dict, move_names: dict,
             entry["role"] = role["role"]
             entry["signature"] = role["signature"]
         anims[anim] = entry
+    # hand-offs between the emitted anims: next anim + the index into its
+    # sequence where the run entered it. A hand-off is the ROM's, not the
+    # player's next input, when the successor is a tail (not an attack script)
+    # or is entered mid-script (MP/HP DP fall into 84f8's 5th cel), seen twice+.
+    for a, nxt in successors(records).items():
+        if a in anims and nxt["anim"] in anims and nxt["count"] >= 2:
+            seq_cels = [c for c, _ in anims[nxt["anim"]]["sequence"]]
+            idx = seq_cels.index(nxt["start_cel"]) if nxt["start_cel"] in seq_cels else 0
+            successor_is_attack = nxt["anim"] in move_names
+            if successor_is_attack and idx == 0:
+                continue
+            anims[a]["next"] = {"anim": nxt["anim"], "start_index": idx, "count": nxt["count"]}
     used = {c for a in anims.values() for c, _ in a["sequence"]}
     cels = {}
     for cel, info in cels_manifest.items():

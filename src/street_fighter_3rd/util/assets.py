@@ -4,8 +4,10 @@ All game assets live under one canonical tree at the repo root::
 
     assets/
       characters/<name>/animations/   one PNG-sequence folder per move
-      characters/<name>/sprite_sheets/ numbered sprite sheets (projectiles, fx)
-      characters/<name>/raw_gifs/      source gifs the frames were extracted from
+      characters/<name>/rom_cels/            sprites ripped from the ROM (primary; rom_animations.json)
+      characters/<name>/legacy/animations/   zweifuss per-move folders (fallback clips)
+      characters/<name>/legacy/sprite_sheets/ numbered sprite sheets (projectiles, fx)
+      characters/<name>/legacy/raw_gifs/     source gifs the folders were extracted from
       stages/                          stage backgrounds
       vfx/ingame_effects/              hit sparks and other in-game effects
       intro/                           menu / intro art
@@ -26,6 +28,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ASSETS_ROOT = REPO_ROOT / "assets"
 
+# Akuma's folder-based art, pre-ROM. Kept as the fallback for clips the ROM
+# tables don't cover yet (reactions, throws, supers, a few close normals) and
+# for the projectile sprites; the primary art is assets/characters/akuma/rom_cels.
+LEGACY_AKUMA = "assets/characters/akuma/legacy"
+LEGACY_ANIMATIONS = f"{LEGACY_AKUMA}/animations"
+LEGACY_SPRITE_SHEETS = f"{LEGACY_AKUMA}/sprite_sheets"
+
 
 def resolve_asset(path: str) -> str:
     """Make a repo-relative asset path absolute (CWD-independent).
@@ -39,6 +48,6 @@ def asset_path(*parts: str) -> str:
     """Absolute path to an asset under ``assets/`` from its sub-parts.
 
     ``asset_path("characters", "akuma", "animations")`` ->
-    ``<repo>/assets/characters/akuma/animations``.
+    ``<repo>/assets/characters/akuma/legacy/animations``.
     """
     return str(ASSETS_ROOT.joinpath(*parts))

@@ -11,6 +11,17 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **CPS3 view (F3).** A fixed 384×224 viewport at 1:1 world pixels — the
+  arcade's window — scrolled after the fighters, clamped to the stage and
+  integer-upscaled with letterboxing, as an alternative to the dynamic zoom
+  camera (`GameConfig.native_view` sets the default). The feet line's row in
+  the viewport is provisional pending a ROM capture; stage art at native size
+  and the 384-px HUD layout are still open.
+- **Rip-session prep.** `dump_cels.lua` gains a `throw` P2 mode (P1 gets
+  thrown, for the thrown-reaction cels) and an effects capture: after any
+  connect it dumps every frame for 12 frames; `cel_decode.py --effects`
+  renders the non-fighter objects (hit sparks, dust) with their offsets from
+  the defender's axis into `fx_<key>.png` + `fx.json`.
 - **Sprites, axis and timing from the ROM.** `tools/rom_extract/dump_cels.lua`
   + `cel_decode.py` rip a character's cels pixel-exact out of the emulator
   (sprite list, tiles from a savestate's character RAM, palettes), keyed by ROM
@@ -46,6 +57,23 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **Corner cross-ups no longer jitter or freeze.** Jumping over a cornered
+  opponent (plain jump, air tatsu or demon flip) shoved them off the wall and
+  then swapped the two fighters every frame, flipping both facings and
+  cancelling their walks; an air tatsu that touched down mid-spin sat in a
+  grounded JUMPING state until the safety timeout. The pushbox resolver now
+  has explicit wall ownership (the fighter grounded at the wall longest keeps
+  it; the other is placed inside), which makes the per-frame double resolution
+  idempotent, and the air tatsu recovers on the ground when it lands early.
+- **Specials and jump normals follow the ROM's hand-offs.** The frame dumps
+  record what the game plays after a script ends: MP/HP Goshoryuken fall
+  through the LP DP script from its 5th cel (`84f8`, movement rows included, so
+  the arcs are the ROM's 88 / 125 / 56 px and the moves land on f42 / f51 /
+  f35), every tatsu lands with `645c`, jump normals with `5c7c`, jumps with
+  `5b7c`, the air fireball with `7684`. `rom_animations.json` carries those
+  links; the animation controller chains clips on completion and Akuma plays
+  the landing clip on touchdown and recovers for its ROM length. The Frame Lab
+  no longer flags hand-offs as held cels or wrong animations.
 - **Multi-hit moves no longer double-scale or false-flag.** The combo system
   stepped damage scaling down for every hit window of the same move (cl.HK's
   second hit 12 → 10, MP DP 8 → 7) although the ROM-captured per-window values

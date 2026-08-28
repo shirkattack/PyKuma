@@ -38,8 +38,10 @@
   the script dumps by itself the first time P1 shows each cel id (anim_frame),
   so a whiff pass through the move list rips every sprite; DUMP_KEY ('C')
   dumps the current frame on demand; P2_KEY ('A') cycles a P2 auto-attack
-  (jab / HK / sweep) so P1's block, hit, launch and knockdown cels can be
-  ripped too. KEEP_ALIVE pins the round timer, refills life while idle and
+  (jab / HK / sweep / throw) so P1's block, hit, launch, knockdown and thrown
+  cels can be ripped too. AUTO_EFFECTS dumps every frame for FX_FRAMES after
+  any connect, so the hit sparks / dust objects are captured for
+  cel_decode.py --effects. KEEP_ALIVE pins the round timer, refills life while idle and
   keeps both super meters full (for the supers). Output next to the script:
   pykuma_cels.jsonl (one JSON object per dump, naming its state file) and
   pykuma_cels_f<frame>.fs (the savestate, ~0.8 MB each). Top-left shows the
@@ -52,7 +54,9 @@ local SAVE_STATE   = true    -- write pykuma_cels_f<frame>.fs (source of the til
 local AUTO_NEW_CELS = true   -- dump automatically the first time P1 shows a cel id
 local P2_KEY       = "A"     -- cycle a P2 auto-attack: off -> jab (every 40f) -> HK (every 90f) -> sweep (every 90f)
                              -- (hold back / down-back / nothing on P1 to rip its block / hit / knockdown cels)
-local P2_MODES = { "off", "jab", "hk", "sweep" }
+local P2_MODES = { "off", "jab", "hk", "sweep", "throw" }
+local AUTO_EFFECTS = true    -- when a hit/block connects, dump EVERY frame for FX_FRAMES (sparks, dust: Phase 7)
+local FX_FRAMES    = 12
 local KEEP_ALIVE   = true    -- pin the round timer, refill life while idle, keep both super meters full
 local MAX_TILES    = 64      -- bank-0 tiles read through the window: the decoder's anchor into the state
 
@@ -67,6 +71,8 @@ local P1_BASE, P2_BASE = 0x02068C6C, 0x02069104
 local TIMER_ADDR = 0x02011377
 local FULL_LIFE  = 0xA0
 local OFF_VITALITY, OFF_LIFE, OFF_FREEZE, OFF_BUSY = 0x9C, 0x9F, 0x45, 0x3D1
+local OFF_HITS, OFF_MARKER = 0x33E, 0x32E   -- total_received_hit_count (word), received_connection_marker (word)
+local P2_FACING = 0x02068C77                -- byte: 1 = P2 faces left (P1 is on its left)
 local METER_ADDR     = { [1] = 0x020695BE, [2] = 0x020695EB }
 local METER_MAX_ADDR = { [1] = 0x020286AD, [2] = 0x020286E1 }
 local TILES_TABLE = { [0] = 8, [1] = 1, [2] = 2, [3] = 4 }
@@ -126,6 +132,7 @@ local function read_tile(tileno, cache, order)
   order[#order + 1] = key
 end
 
+local fx_left, fx_on = 0, ""   -- effect capture window (set by connect_check below)
 local function dump_frame(frame_num)
   local recs, tiles, tile_order, pals, pal_order = {}, {}, {}, {}, {}
   local ntiles = 0
@@ -188,8 +195,9 @@ local function dump_frame(frame_num)
   local tj, pj = {}, {}
   for _, k in ipairs(tile_order) do tj[#tj + 1] = '"' .. k .. '":"' .. tiles[k] .. '"' end
   for _, k in ipairs(pal_order) do pj[#pj + 1] = '"' .. k .. '":"' .. pals[k] .. '"' end
-  local line = string.format('{"f":%d,"state":"%s","p1":%s,"p2":%s,"records":[%s],"tiles":{%s},"palettes":{%s}}',
-    frame_num, state_name, player_json(P1_BASE), player_json(P2_BASE),
+  local fx = (fx_left > 0) and string.format('"fx":{"hit_on":"%s","frames_left":%d},', fx_on, fx_left) or ""
+  local line = string.format('{"f":%d,"state":"%s",%s"p1":%s,"p2":%s,"records":[%s],"tiles":{%s},"palettes":{%s}}',
+    frame_num, state_name, fx, player_json(P1_BASE), player_json(P2_BASE),
     table.concat(recs, ","), table.concat(tj, ","), table.concat(pj, ","))
   local fh = io.open(OUT_PATH, "a")
   if fh then fh:write(line, "\n"); fh:close() end
@@ -198,6 +206,18 @@ end
 
 local frame_num, prev_key, status = 0, false, "press " .. DUMP_KEY .. " to dump the current frame"
 local seen, nseen = {}, 0
+local prev_hits, prev_marker = { 0, 0 }, { 0, 0 }
+local function connect_check()
+  -- a hit (hit counter up) or a block/parry (marker 0 -> nonzero) on either player
+  local bases = { P1_BASE, P2_BASE }
+  for i = 1, 2 do
+    local hits, marker = rdw(bases[i] + OFF_HITS), rdw(bases[i] + OFF_MARKER)
+    if hits > prev_hits[i] or (prev_marker[i] == 0 and marker ~= 0) then
+      fx_left, fx_on = FX_FRAMES, (i == 1) and "p1" or "p2"
+    end
+    prev_hits[i], prev_marker[i] = hits, marker
+  end
+end
 local p2_mode, prev_p2_key = 1, false
 local function drive_p2()
   local mode = P2_MODES[p2_mode]
@@ -208,6 +228,12 @@ local function drive_p2()
   if mode == "sweep" then
     if frame_num % 90 < 6 then pressed["P2 Down"] = true end
     if frame_num % 90 == 5 then pressed["P2 Strong Kick"] = true end
+  end
+  if mode == "throw" then
+    -- walk up for a few frames, then LP+LK (the 3S throw): P1 gets thrown
+    local fwd = (rdb(P2_FACING) == 1) and "P2 Left" or "P2 Right"
+    if frame_num % 120 < 10 then pressed[fwd] = true end
+    if frame_num % 120 == 10 then pressed["P2 Weak Punch"] = true; pressed["P2 Weak Kick"] = true end
   end
   joypad.set(pressed)
 end
@@ -223,6 +249,10 @@ local function on_frame()
   local want = down and not prev_key
   if AUTO_NEW_CELS and not seen[cel] then
     seen[cel] = true; nseen = nseen + 1; want = true
+  end
+  if AUTO_EFFECTS then
+    connect_check()
+    if fx_left > 0 then fx_left = fx_left - 1; want = true end
   end
   if want then
     local nrec, nt = dump_frame(frame_num)

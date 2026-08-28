@@ -27,7 +27,7 @@ from street_fighter_3rd.data.constants import (
     CAMERA_MAX_ZOOM,
     CAMERA_MIN_ZOOM,
     CAMERA_H_MARGIN,
-    CAMERA_GROUND_Y,
+    CAMERA_GROUND_Y, NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT, NATIVE_VIEW_GROUND_ROW,
 )
 from street_fighter_3rd.characters.akuma import Akuma
 from street_fighter_3rd.systems.input_system import InputSystem
@@ -97,6 +97,8 @@ class Game:
         # it onto the screen. _cam = (crop_x, crop_y, zoom) for world->screen maps.
         self._world_buf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self._cam = (0.0, 0.0, 1.0)
+        self._cam_off = (0, 0)     # screen offset of the world blit (native view letterbox)
+        self.native_view = False   # CPS3 384x224 view (F3); default from the mode config below
 
         # Health-bar animation + training regen state (set up after players exist)
         self.p1_ghost_health = 0
@@ -110,6 +112,7 @@ class Game:
         # Initialize game mode manager
         self.game_mode_manager = game_mode_manager or GameModeManager()
         self.config = self.game_mode_manager.get_config()
+        self.native_view = bool(getattr(self.config, "native_view", False))
         # Frame meter defaults on wherever the mode already shows frame data.
         self.show_frame_meter = bool(getattr(self.config, "show_frame_data", False))
         # F2: world-coordinate grid over the background (off by default).
@@ -257,6 +260,10 @@ class Game:
                 self._toggle_pause()
             elif event.key == pygame.K_F1:
                 self.debug_display = not self.debug_display
+            elif event.key == pygame.K_F3:
+                # CPS3 view: a 384x224 window at 1:1 world px, scrolled after the
+                # fighters and integer-upscaled -- what the arcade shows.
+                self.native_view = not self.native_view
             elif event.key == pygame.K_F2:
                 # World-coordinate grid: gives humans an address space for
                 # positions ("the spark should be at x=560, y=300") that maps
@@ -679,6 +686,8 @@ class Game:
         """
         W, H = SCREEN_WIDTH, SCREEN_HEIGHT
         midx = (self.player1.x + self.player2.x) / 2.0
+        if self.native_view:
+            return self._compute_native_camera(midx)
         sep = abs(self.player1.x - self.player2.x)
         crop_w = sep + 2 * CAMERA_H_MARGIN
         crop_w = max(W / CAMERA_MAX_ZOOM, min(crop_w, W / CAMERA_MIN_ZOOM))
@@ -688,10 +697,35 @@ class Game:
         crop_y = max(0.0, min(CAMERA_GROUND_Y - crop_h * 0.86, H - crop_h))
         return crop_x, crop_y, crop_w, crop_h
 
+    def _compute_native_camera(self, midx):
+        """The CPS3 viewport: NATIVE_VIEW_WIDTH x HEIGHT world px, centred on
+        the fighters' midpoint and clamped to the stage, with the feet line on
+        NATIVE_VIEW_GROUND_ROW. No zoom: 1 world px = 1 viewport px."""
+        W, H = SCREEN_WIDTH, SCREEN_HEIGHT
+        cw, ch = NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT
+        crop_x = max(0.0, min(midx - cw / 2.0, W - cw))
+        crop_y = max(0.0, min(CAMERA_GROUND_Y - NATIVE_VIEW_GROUND_ROW, H - ch))
+        return float(int(crop_x)), float(int(crop_y)), float(cw), float(ch)
+
+    def _native_scale(self) -> int:
+        """Integer upscale that fits the viewport on the screen (>= 1)."""
+        return max(1, min(SCREEN_WIDTH // NATIVE_VIEW_WIDTH, SCREEN_HEIGHT // NATIVE_VIEW_HEIGHT))
+
     def _blit_world_zoomed(self, offset=(0, 0)):
         """Zoom-scale the camera crop of the world buffer onto the screen."""
         cx, cy, cw, ch = self._compute_camera()
+        if self.native_view:
+            k = self._native_scale()
+            crop = self._world_buf.subsurface((int(cx), int(cy), int(cw), int(ch)))
+            scaled = pygame.transform.scale(crop, (int(cw) * k, int(ch) * k))
+            ox = (SCREEN_WIDTH - scaled.get_width()) // 2
+            oy = (SCREEN_HEIGHT - scaled.get_height()) // 2
+            self._cam = (cx, cy, float(k))
+            self._cam_off = (ox, oy)
+            self.screen.blit(scaled, (ox + offset[0], oy + offset[1]))
+            return
         self._cam = (cx, cy, SCREEN_WIDTH / cw)  # for world->screen mapping
+        self._cam_off = (0, 0)
         crop = self._world_buf.subsurface((int(cx), int(cy),
                                            int(round(cw)), int(round(ch))))
         scaled = pygame.transform.scale(crop, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -700,7 +734,8 @@ class Game:
     def _world_to_screen(self, x, y):
         """Map a world-buffer point to screen coords through the current camera."""
         cx, cy, zoom = self._cam
-        return (x - cx) * zoom, (y - cy) * zoom
+        ox, oy = self._cam_off
+        return (x - cx) * zoom + ox, (y - cy) * zoom + oy
 
     @staticmethod
     def _health_color(percent: float):

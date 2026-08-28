@@ -10,233 +10,382 @@ Filmstrips (one row per animation, frames in playback order) are in [`animation_
 
 ## Summary
 
-- **54** animations (0 numbered, 54 folder-based)
-- **3** need attention (0 missing/empty frame(s), 16 size-outlier frame(s))
+- **85** animations (0 numbered, 85 folder-based)
+- **4** need attention (0 missing/empty frame(s), 17 size-outlier frame(s))
 
 | animation | status |
 |---|---|
 | `chipdeath` | ⚠️ review |
+| `dive_kick` | ⚠️ review |
 | `knockdown` | ⚠️ review |
 | `launch_spin` | ⚠️ review |
 
 ## Numbered animations (sprite_sheets)
 
-## Folder animations (assets/characters/akuma/animations)
+## Folder animations (assets/characters/akuma/legacy/animations)
+
+### `air_fireball_land`  —  OK
+
+- loop: `False` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21545, cel21546, cel21579, cel21550, cel21551`
+
+![air_fireball_land](animation_audit/air_fireball_land.png)
+
+### `air_gohadoken`  —  OK
+
+- loop: `False` · frames: 9 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22081, cel22082, cel22272, cel22273, cel22274, cel22275, cel22276, cel22274, cel21577`
+
+![air_gohadoken](animation_audit/air_gohadoken.png)
+
+### `air_heavy_tatsumaki`  —  OK
+
+- loop: `False` · frames: 14 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22416, cel22417, cel22418, cel22304, cel22305, cel22306, cel22307, cel22308, cel22309, cel22304, cel22305, cel22306, cel22307, cel22308`
+
+![air_heavy_tatsumaki](animation_audit/air_heavy_tatsumaki.png)
+
+### `air_light_tatsumaki`  —  OK
+
+- loop: `False` · frames: 13 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22416, cel22417, cel22418, cel22304, cel22305, cel22306, cel22307, cel22308, cel22309, cel22215, cel21574, cel21575, cel21576`
+
+![air_light_tatsumaki](animation_audit/air_light_tatsumaki.png)
+
+### `air_medium_tatsumaki`  —  OK
+
+- loop: `False` · frames: 15 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22416, cel22417, cel22418, cel22304, cel22305, cel22306, cel22307, cel22308, cel22309, cel22304, cel22305, cel22306, cel22307, cel22308, cel22309`
+
+![air_medium_tatsumaki](animation_audit/air_medium_tatsumaki.png)
 
 ### `block_crouch`  —  OK
 
-- loop: `True` · frames: 5 (unique: 5) · source: `assets/characters/akuma/animations/akuma-block-crouch`
-- sequence: `f000, f001, f002, f003, f004`
+- loop: `True` · frames: 4 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21606, cel21607, cel21605, cel21603`
 
 ![block_crouch](animation_audit/block_crouch.png)
 
 ### `block_high`  —  OK
 
-- loop: `True` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-block-high`
-- sequence: `f000, f001, f002, f003, f004, f005`
+- loop: `True` · frames: 3 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21601, cel21602, cel21600`
 
 ![block_high](animation_audit/block_high.png)
 
 ### `chipdeath`  —  ⚠️ review
 
-- loop: `False` · frames: 17 (unique: 17) · source: `assets/characters/akuma/animations/akuma-chipdeath`
+- loop: `False` · frames: 17 (unique: 17) · source: `assets/characters/akuma/legacy/animations/akuma-chipdeath`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016`
 - ⚠️ size-outlier frame(s) to review: f000 (h113), f001 (h106), f013 (h31)
 
 ![chipdeath](animation_audit/chipdeath.png)
 
+### `close_heavy_kick`  —  OK
+
+- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/legacy/animations/akuma-hkc`
+- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013`
+
+![close_heavy_kick](animation_audit/close_heavy_kick.png)
+
+### `close_heavy_punch`  —  OK
+
+- loop: `False` · frames: 12 (unique: 12) · source: `assets/characters/akuma/legacy/animations/akuma-hpc`
+- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011`
+
+![close_heavy_punch](animation_audit/close_heavy_punch.png)
+
+### `close_medium_kick`  —  OK
+
+- loop: `False` · frames: 10 (unique: 10) · source: `assets/characters/akuma/legacy/animations/akuma-mkc`
+- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009`
+
+![close_medium_kick](animation_audit/close_medium_kick.png)
+
+### `close_medium_punch`  —  OK
+
+- loop: `False` · frames: 9 (unique: 9) · source: `assets/characters/akuma/legacy/animations/akuma-mpc`
+- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008`
+
+![close_medium_punch](animation_audit/close_medium_punch.png)
+
 ### `crouch_heavy_kick`  —  OK
 
-- loop: `False` · frames: 13 (unique: 13) · source: `assets/characters/akuma/animations/akuma-crouch-hk`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012`
+- loop: `False` · frames: 12 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22038, cel22044, cel22045, cel22046, cel22047, cel22048, cel22049, cel22050, cel22051, cel22052, cel22053, cel21547`
 
 ![crouch_heavy_kick](animation_audit/crouch_heavy_kick.png)
 
 ### `crouch_heavy_punch`  —  OK
 
-- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-crouch-hp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
+- loop: `False` · frames: 11 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22012, cel22013, cel22014, cel22015, cel22016, cel22017, cel22018, cel22019, cel22020, cel21546, cel21547`
 
 ![crouch_heavy_punch](animation_audit/crouch_heavy_punch.png)
 
 ### `crouch_hit`  —  OK
 
-- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-crouch-hit`
+- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/legacy/animations/akuma-crouch-hit`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
 
 ![crouch_hit](animation_audit/crouch_hit.png)
 
 ### `crouch_hold`  —  OK
 
-- loop: `True` · frames: 5 (unique: 5) · source: `assets/characters/akuma/animations/akuma-crouch`
-- sequence: `f000, f001, f002, f003, f004`
+- loop: `True` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21548, cel21552, cel21553, cel21554, cel21555`
 
 ![crouch_hold](animation_audit/crouch_hold.png)
 
 ### `crouch_light_kick`  —  OK
 
-- loop: `False` · frames: 7 (unique: 7) · source: `assets/characters/akuma/animations/akuma-crouch-wk`
-- sequence: `f000, f001, f002, f003, f004, f005, f006`
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22033, cel22034, cel22035, cel22036, cel22033, cel22032, cel22037`
 
 ![crouch_light_kick](animation_audit/crouch_light_kick.png)
 
 ### `crouch_light_punch`  —  OK
 
-- loop: `False` · frames: 7 (unique: 7) · source: `assets/characters/akuma/animations/akuma-crouch-wp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006`
+- loop: `False` · frames: 6 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22000, cel22001, cel22002, cel22004, cel22003, cel21547`
 
 ![crouch_light_punch](animation_audit/crouch_light_punch.png)
 
 ### `crouch_medium_kick`  —  OK
 
-- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-crouch-mk`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
+- loop: `False` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22038, cel22052, cel22039, cel22040, cel22041, cel22042, cel22043, cel22052, cel22053, cel21547`
 
 ![crouch_medium_kick](animation_audit/crouch_medium_kick.png)
 
 ### `crouch_medium_punch`  —  OK
 
-- loop: `False` · frames: 7 (unique: 7) · source: `assets/characters/akuma/animations/akuma-crouch-mp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006`
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22000, cel22001, cel22002, cel22004, cel22003, cel22000, cel21547`
 
 ![crouch_medium_punch](animation_audit/crouch_medium_punch.png)
 
 ### `crumble`  —  OK
 
-- loop: `False` · frames: 3 (unique: 3) · source: `assets/characters/akuma/animations/akuma-shocked`
+- loop: `False` · frames: 3 (unique: 3) · source: `assets/characters/akuma/legacy/animations/akuma-shocked`
 - sequence: `f000, f001, f002`
 
 ![crumble](animation_audit/crumble.png)
 
 ### `dash_backward`  —  OK
 
-- loop: `False` · frames: 9 (unique: 9) · source: `assets/characters/akuma/animations/akuma-dashb`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008`
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21545, cel21622, cel21623, cel21624, cel21625, cel21626, cel21627`
 
 ![dash_backward](animation_audit/dash_backward.png)
 
 ### `dash_forward`  —  OK
 
-- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/animations/akuma-dashf`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013`
+- loop: `False` · frames: 6 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21545, cel21616, cel21617, cel21618, cel21619, cel21620`
 
 ![dash_forward](animation_audit/dash_forward.png)
 
+### `dive_kick`  —  ⚠️ review
+
+- loop: `False` · frames: 16 (unique: 16) · source: `assets/characters/akuma/legacy/animations/akuma-airkick`
+- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015`
+- ⚠️ size-outlier frame(s) to review: f000 (h56)
+
+![dive_kick](animation_audit/dive_kick.png)
+
+### `dp_land`  —  OK
+
+- loop: `False` · frames: 4 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22203, cel21990, cel21991, cel21651`
+
+![dp_land](animation_audit/dp_land.png)
+
+### `far_heavy_kick`  —  OK
+
+- loop: `False` · frames: 15 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21936, cel21937, cel21938, cel21939, cel21940, cel21941, cel21942, cel21943, cel21944, cel21950, cel21945, cel21946, cel21947, cel21948, cel21651`
+
+![far_heavy_kick](animation_audit/far_heavy_kick.png)
+
+### `far_heavy_punch`  —  OK
+
+- loop: `False` · frames: 13 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21505, cel21869, cel21870, cel21871, cel21872, cel21873, cel21874, cel21873, cel21874, cel21875, cel21876, cel21877, cel21651`
+
+![far_heavy_punch](animation_audit/far_heavy_punch.png)
+
+### `far_light_punch`  —  OK
+
+- loop: `False` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21856, cel21857, cel21858, cel21859, cel21860`
+
+![far_light_punch](animation_audit/far_light_punch.png)
+
+### `far_medium_kick`  —  OK
+
+- loop: `False` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21928, cel21929, cel21930, cel21931, cel21949, cel21932, cel21935, cel21933, cel21934, cel21551`
+
+![far_medium_kick](animation_audit/far_medium_kick.png)
+
+### `far_medium_punch`  —  OK
+
+- loop: `False` · frames: 8 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21862, cel21863, cel21864, cel21865, cel21883, cel21866, cel21867, cel21651`
+
+![far_medium_punch](animation_audit/far_medium_punch.png)
+
+### `forward_mp`  —  OK
+
+- loop: `False` · frames: 12 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22310, cel22311, cel22312, cel22313, cel22314, cel22315, cel22316, cel22315, cel22316, cel22317, cel22318, cel21651`
+
+![forward_mp](animation_audit/forward_mp.png)
+
 ### `gohadoken`  —  OK
 
-- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/animations/akuma-fireball`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013`
+- loop: `False` · frames: 16 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22176, cel22188, cel22177, cel22178, cel22179, cel22180, cel22181, cel22182, cel22183, cel22184, cel22185, cel22189, cel22186, cel22187, cel21551, cel21651`
 
 ![gohadoken](animation_audit/gohadoken.png)
 
 ### `goshoryuken`  —  OK
 
-- loop: `False` · frames: 20 (unique: 20) · source: `assets/characters/akuma/animations/akuma-dp`
+- loop: `False` · frames: 20 (unique: 20) · source: `assets/characters/akuma/legacy/animations/akuma-dp`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019`
 
 ![goshoryuken](animation_audit/goshoryuken.png)
 
+### `heavy_goshoryuken`  —  OK
+
+- loop: `False` · frames: 6 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22192, cel22193, cel22194, cel22195, cel22196, cel22197`
+
+![heavy_goshoryuken](animation_audit/heavy_goshoryuken.png)
+
 ### `heavy_kick`  —  OK
 
-- loop: `False` · frames: 15 (unique: 15) · source: `assets/characters/akuma/animations/akuma-hk`
+- loop: `False` · frames: 15 (unique: 15) · source: `assets/characters/akuma/legacy/animations/akuma-hk`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014`
 
 ![heavy_kick](animation_audit/heavy_kick.png)
 
 ### `heavy_punch`  —  OK
 
-- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/animations/akuma-hp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013`
+- loop: `False` · frames: 13 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21505, cel21869, cel21870, cel21871, cel21872, cel21873, cel21874, cel21873, cel21874, cel21875, cel21876, cel21877, cel21651`
 
 ![heavy_punch](animation_audit/heavy_punch.png)
 
+### `heavy_tatsumaki`  —  OK
+
+- loop: `False` · frames: 24 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21879, cel22204, cel22205, cel22206, cel22207, cel22305, cel22307, cel22308, cel22309, cel22304, cel22305, cel22307, cel22308, cel22309, cel22304, cel22305, cel22307, cel22308, cel22309, cel22304, cel22305, cel22307, cel22308, cel22309`
+
+![heavy_tatsumaki](animation_audit/heavy_tatsumaki.png)
+
 ### `hit_medium`  —  OK
 
-- loop: `False` · frames: 10 (unique: 10) · source: `assets/characters/akuma/animations/akuma-stand-hit`
+- loop: `False` · frames: 10 (unique: 10) · source: `assets/characters/akuma/legacy/animations/akuma-stand-hit`
 - sequence: `f008, f009, f010, f011, f012, f013, f014, f015, f016, f017`
 
 ![hit_medium](animation_audit/hit_medium.png)
 
 ### `hyakkishuu`  —  OK
 
-- loop: `False` · frames: 54 (unique: 54) · source: `assets/characters/akuma/animations/akuma-hyakkishuu`
+- loop: `False` · frames: 54 (unique: 54) · source: `assets/characters/akuma/legacy/animations/akuma-hyakkishuu`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038, f039, f040, f041, f042, f043, f044, f045, f046, f047, f048, f049, f050, f051, f052, f053`
 
 ![hyakkishuu](animation_audit/hyakkishuu.png)
 
 ### `intro1`  —  OK
 
-- loop: `False` · frames: 23 (unique: 23) · source: `assets/characters/akuma/animations/akuma-intro1`
+- loop: `False` · frames: 23 (unique: 23) · source: `assets/characters/akuma/legacy/animations/akuma-intro1`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022`
 
 ![intro1](animation_audit/intro1.png)
 
+### `jump_attack_land`  —  OK
+
+- loop: `False` · frames: 1 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21546`
+
+![jump_attack_land](animation_audit/jump_attack_land.png)
+
 ### `jump_backward`  —  OK
 
-- loop: `False` · frames: 38 (unique: 38) · source: `assets/characters/akuma/animations/akuma-jumpb`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037`
+- loop: `False` · frames: 11 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21588, cel21587, cel21586, cel21585, cel21584, cel21583, cel21582, cel21581, cel21580, cel21592, cel21590`
 
 ![jump_backward](animation_audit/jump_backward.png)
 
 ### `jump_forward`  —  OK
 
-- loop: `False` · frames: 37 (unique: 37) · source: `assets/characters/akuma/animations/akuma-jumpf`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036`
+- loop: `False` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21580, cel21581, cel21582, cel21583, cel21584, cel21585, cel21586, cel21587, cel21588, cel21589`
 
 ![jump_forward](animation_audit/jump_forward.png)
 
 ### `jump_heavy_kick`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-jump-hk`
-- sequence: `f000, f001, f002, f003, f004, f005`
+- loop: `False` · frames: 8 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22117, cel22118, cel22119, cel22120, cel22121, cel22122, cel22123, cel22124`
 
 ![jump_heavy_kick](animation_audit/jump_heavy_kick.png)
 
 ### `jump_heavy_punch`  —  OK
 
-- loop: `False` · frames: 8 (unique: 8) · source: `assets/characters/akuma/animations/akuma-jump-hp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007`
+- loop: `False` · frames: 8 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22081, cel22082, cel22083, cel22084, cel22088, cel22085, cel22086, cel22087`
 
 ![jump_heavy_punch](animation_audit/jump_heavy_punch.png)
 
+### `jump_land`  —  OK
+
+- loop: `False` · frames: 1 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21546`
+
+![jump_land](animation_audit/jump_land.png)
+
 ### `jump_light_kick`  —  OK
 
-- loop: `False` · frames: 10 (unique: 10) · source: `assets/characters/akuma/animations/akuma-jump-wk`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009`
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22117, cel22118, cel22112, cel22113, cel22114, cel22115, cel22116`
 
 ![jump_light_kick](animation_audit/jump_light_kick.png)
 
 ### `jump_light_punch`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-jump-wp`
-- sequence: `f000, f001, f002, f003, f004, f005`
+- loop: `False` · frames: 6 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22064, cel22065, cel22066, cel22067, cel22068, cel22069`
 
 ![jump_light_punch](animation_audit/jump_light_punch.png)
 
 ### `jump_medium_kick`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-jump-mk`
-- sequence: `f000, f001, f002, f003, f004, f005`
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22117, cel22118, cel22119, cel22120, cel22121, cel22122, cel22123`
 
 ![jump_medium_kick](animation_audit/jump_medium_kick.png)
 
 ### `jump_medium_punch`  —  OK
 
-- loop: `False` · frames: 8 (unique: 8) · source: `assets/characters/akuma/animations/akuma-jump-mp`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007`
+- loop: `False` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22081, cel22082, cel22083, cel22084, cel22088, cel22085, cel22086, cel22087, cel21590, cel21591`
 
 ![jump_medium_punch](animation_audit/jump_medium_punch.png)
 
 ### `jump_up`  —  OK
 
-- loop: `False` · frames: 34 (unique: 34) · source: `assets/characters/akuma/animations/akuma-jump`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033`
+- loop: `False` · frames: 14 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21568, cel21569, cel21568, cel21569, cel21570, cel21571, cel21572, cel21573, cel21574, cel21575, cel21576, cel21577, cel21578, cel21577`
 
 ![jump_up](animation_audit/jump_up.png)
 
 ### `knockdown`  —  ⚠️ review
 
-- loop: `False` · frames: 25 (unique: 25) · source: `assets/characters/akuma/animations/akuma-slam`
+- loop: `False` · frames: 25 (unique: 25) · source: `assets/characters/akuma/legacy/animations/akuma-slam`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024`
 - ⚠️ size-outlier frame(s) to review: f000 (h98), f001 (h81), f007 (h100), f008 (h98)
 
@@ -244,162 +393,232 @@ Filmstrips (one row per animation, frames in playback order) are in [`animation_
 
 ### `launch_spin`  —  ⚠️ review
 
-- loop: `True` · frames: 27 (unique: 27) · source: `assets/characters/akuma/animations/akuma-twist`
+- loop: `True` · frames: 27 (unique: 27) · source: `assets/characters/akuma/legacy/animations/akuma-twist`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026`
 - ⚠️ size-outlier frame(s) to review: f000 (h115), f001 (h116), f002 (h117), f003 (h111), f004 (h111), f005 (h104), f006 (h93), f007 (h98), f008 (h90)
 
 ![launch_spin](animation_audit/launch_spin.png)
 
+### `light_goshoryuken`  —  OK
+
+- loop: `False` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22193, cel22194, cel22196, cel22197, cel22198, cel22199, cel22200, cel22201, cel22202, cel22219`
+
+![light_goshoryuken](animation_audit/light_goshoryuken.png)
+
 ### `light_kick`  —  OK
 
-- loop: `False` · frames: 7 (unique: 7) · source: `assets/characters/akuma/animations/akuma-wk`
-- sequence: `f000, f001, f002, f003, f004, f005, f006`
+- loop: `False` · frames: 6 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21952, cel21953, cel21954, cel21955, cel21956, cel21651`
 
 ![light_kick](animation_audit/light_kick.png)
 
 ### `light_punch`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-wp`
-- sequence: `f000, f001, f002, f003, f004, f005`
+- loop: `False` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21856, cel21857, cel21858, cel21859, cel21860`
 
 ![light_punch](animation_audit/light_punch.png)
 
+### `light_tatsumaki`  —  OK
+
+- loop: `False` · frames: 11 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21879, cel22204, cel22205, cel22206, cel22207, cel22305, cel22307, cel22308, cel22309, cel22304, cel22215`
+
+![light_tatsumaki](animation_audit/light_tatsumaki.png)
+
+### `medium_goshoryuken`  —  OK
+
+- loop: `False` · frames: 4 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22193, cel22194, cel22196, cel22197`
+
+![medium_goshoryuken](animation_audit/medium_goshoryuken.png)
+
 ### `medium_kick`  —  OK
 
-- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-mk`
+- loop: `False` · frames: 11 (unique: 11) · source: `assets/characters/akuma/legacy/animations/akuma-mk`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
 
 ![medium_kick](animation_audit/medium_kick.png)
 
 ### `medium_punch`  —  OK
 
-- loop: `False` · frames: 8 (unique: 8) · source: `assets/characters/akuma/animations/akuma-mp`
+- loop: `False` · frames: 8 (unique: 8) · source: `assets/characters/akuma/legacy/animations/akuma-mp`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007`
 
 ![medium_punch](animation_audit/medium_punch.png)
 
+### `medium_tatsumaki`  —  OK
+
+- loop: `False` · frames: 16 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21879, cel22204, cel22205, cel22206, cel22207, cel22305, cel22307, cel22308, cel22309, cel22304, cel22305, cel22307, cel22308, cel22309, cel22304, cel22215`
+
+![medium_tatsumaki](animation_audit/medium_tatsumaki.png)
+
+### `neutral_jump_heavy_kick`  —  OK
+
+- loop: `False` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22131, cel22132, cel22133, cel22134, cel22135`
+
+![neutral_jump_heavy_kick](animation_audit/neutral_jump_heavy_kick.png)
+
+### `neutral_jump_heavy_punch`  —  OK
+
+- loop: `False` · frames: 8 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22094, cel22095, cel22096, cel22097, cel22099, cel22100, cel21578, cel21577`
+
+![neutral_jump_heavy_punch](animation_audit/neutral_jump_heavy_punch.png)
+
+### `neutral_jump_light_kick`  —  OK
+
+- loop: `False` · frames: 8 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22117, cel22118, cel22112, cel22113, cel22114, cel22115, cel22113, cel22114`
+
+![neutral_jump_light_kick](animation_audit/neutral_jump_light_kick.png)
+
+### `neutral_jump_light_punch`  —  OK
+
+- loop: `False` · frames: 7 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22064, cel22065, cel22066, cel22067, cel22068, cel22069, cel22067`
+
+![neutral_jump_light_punch](animation_audit/neutral_jump_light_punch.png)
+
+### `neutral_jump_medium_kick`  —  OK
+
+- loop: `False` · frames: 5 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22125, cel22126, cel22127, cel22128, cel22129`
+
+![neutral_jump_medium_kick](animation_audit/neutral_jump_medium_kick.png)
+
 ### `overhead`  —  OK
 
-- loop: `False` · frames: 23 (unique: 23) · source: `assets/characters/akuma/animations/akuma-overhead`
+- loop: `False` · frames: 23 (unique: 23) · source: `assets/characters/akuma/legacy/animations/akuma-overhead`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022`
 
 ![overhead](animation_audit/overhead.png)
 
 ### `raging_demon`  —  OK
 
-- loop: `False` · frames: 30 (unique: 30) · source: `assets/characters/akuma/animations/akuma-flame`
+- loop: `False` · frames: 30 (unique: 30) · source: `assets/characters/akuma/legacy/animations/akuma-flame`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029`
 
 ![raging_demon](animation_audit/raging_demon.png)
 
 ### `sa1`  —  OK
 
-- loop: `False` · frames: 66 (unique: 66) · source: `assets/characters/akuma/animations/akuma-sa1-air`
+- loop: `False` · frames: 66 (unique: 66) · source: `assets/characters/akuma/legacy/animations/akuma-sa1-air`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038, f039, f040, f041, f042, f043, f044, f045, f046, f047, f048, f049, f050, f051, f052, f053, f054, f055, f056, f057, f058, f059, f060, f061, f062, f063, f064, f065`
 
 ![sa1](animation_audit/sa1.png)
 
 ### `sa2`  —  OK
 
-- loop: `False` · frames: 40 (unique: 40) · source: `assets/characters/akuma/animations/akuma-sa2`
+- loop: `False` · frames: 40 (unique: 40) · source: `assets/characters/akuma/legacy/animations/akuma-sa2`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038, f039`
 
 ![sa2](animation_audit/sa2.png)
 
 ### `sa3`  —  OK
 
-- loop: `False` · frames: 92 (unique: 92) · source: `assets/characters/akuma/animations/akuma-sa3`
+- loop: `False` · frames: 92 (unique: 92) · source: `assets/characters/akuma/legacy/animations/akuma-sa3`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038, f039, f040, f041, f042, f043, f044, f045, f046, f047, f048, f049, f050, f051, f052, f053, f054, f055, f056, f057, f058, f059, f060, f061, f062, f063, f064, f065, f066, f067, f068, f069, f070, f071, f072, f073, f074, f075, f076, f077, f078, f079, f080, f081, f082, f083, f084, f085, f086, f087, f088, f089, f090, f091`
 
 ![sa3](animation_audit/sa3.png)
 
 ### `stance`  —  OK
 
-- loop: `True` · frames: 10 (unique: 10) · source: `assets/characters/akuma/animations/akuma-stance`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009`
+- loop: `True` · frames: 10 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21506, cel21507, cel21508, cel21509, cel21510, cel21511, cel21512, cel21513, cel21514, cel21505`
 
 ![stance](animation_audit/stance.png)
 
+### `tatsu_land`  —  OK
+
+- loop: `False` · frames: 4 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel22217, cel22218, cel21545, cel21833`
+
+![tatsu_land](animation_audit/tatsu_land.png)
+
 ### `tatsumaki`  —  OK
 
-- loop: `False` · frames: 30 (unique: 30) · source: `assets/characters/akuma/animations/akuma-hurricane`
+- loop: `False` · frames: 30 (unique: 30) · source: `assets/characters/akuma/legacy/animations/akuma-hurricane`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029`
 
 ![tatsumaki](animation_audit/tatsumaki.png)
 
 ### `taunt`  —  OK
 
-- loop: `False` · frames: 39 (unique: 39) · source: `assets/characters/akuma/animations/akuma-taunt`
+- loop: `False` · frames: 39 (unique: 39) · source: `assets/characters/akuma/legacy/animations/akuma-taunt`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038`
 
 ![taunt](animation_audit/taunt.png)
 
 ### `teleport`  —  OK
 
-- loop: `False` · frames: 63 (unique: 63) · source: `assets/characters/akuma/animations/akuma-teleport`
+- loop: `False` · frames: 63 (unique: 63) · source: `assets/characters/akuma/legacy/animations/akuma-teleport`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037, f038, f039, f040, f041, f042, f043, f044, f045, f046, f047, f048, f049, f050, f051, f052, f053, f054, f055, f056, f057, f058, f059, f060, f061, f062`
 
 ![teleport](animation_audit/teleport.png)
 
 ### `throw_back`  —  OK
 
-- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/animations/akuma-throw-back`
+- loop: `False` · frames: 14 (unique: 14) · source: `assets/characters/akuma/legacy/animations/akuma-throw-back`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013`
 
 ![throw_back](animation_audit/throw_back.png)
 
 ### `throw_forward`  —  OK
 
-- loop: `False` · frames: 17 (unique: 17) · source: `assets/characters/akuma/animations/akuma-throw-forward`
+- loop: `False` · frames: 17 (unique: 17) · source: `assets/characters/akuma/legacy/animations/akuma-throw-forward`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016`
 
 ![throw_forward](animation_audit/throw_forward.png)
 
 ### `throw_miss`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-throw-miss`
+- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/legacy/animations/akuma-throw-miss`
 - sequence: `f000, f001, f002, f003, f004, f005`
 
 ![throw_miss](animation_audit/throw_miss.png)
 
 ### `timeout`  —  OK
 
-- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/animations/akuma-timeout`
+- loop: `False` · frames: 6 (unique: 6) · source: `assets/characters/akuma/legacy/animations/akuma-timeout`
 - sequence: `f000, f001, f002, f003, f004, f005`
 
 ![timeout](animation_audit/timeout.png)
 
 ### `walk_backward`  —  OK
 
-- loop: `True` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-walkb`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
+- loop: `True` · frames: 11 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21532, cel21533, cel21534, cel21535, cel21536, cel21537, cel21538, cel21539, cel21540, cel21541, cel21542`
 
 ![walk_backward](animation_audit/walk_backward.png)
 
 ### `walk_forward`  —  OK
 
-- loop: `True` · frames: 11 (unique: 11) · source: `assets/characters/akuma/animations/akuma-walkf`
-- sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010`
+- loop: `True` · frames: 11 (unique: 0) · source: `assets/characters/akuma/rom_cels (ROM cels)`
+- sequence: `cel21520, cel21521, cel21522, cel21523, cel21524, cel21525, cel21526, cel21527, cel21528, cel21529, cel21530`
 
 ![walk_forward](animation_audit/walk_forward.png)
 
 ### `win1`  —  OK
 
-- loop: `False` · frames: 28 (unique: 28) · source: `assets/characters/akuma/animations/akuma-win1`
+- loop: `False` · frames: 28 (unique: 28) · source: `assets/characters/akuma/legacy/animations/akuma-win1`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027`
 
 ![win1](animation_audit/win1.png)
 
 ### `win2`  —  OK
 
-- loop: `False` · frames: 38 (unique: 38) · source: `assets/characters/akuma/animations/akuma-win2`
+- loop: `False` · frames: 38 (unique: 38) · source: `assets/characters/akuma/legacy/animations/akuma-win2`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008, f009, f010, f011, f012, f013, f014, f015, f016, f017, f018, f019, f020, f021, f022, f023, f024, f025, f026, f027, f028, f029, f030, f031, f032, f033, f034, f035, f036, f037`
 
 ![win2](animation_audit/win2.png)
 
 ### `win3`  —  OK
 
-- loop: `False` · frames: 9 (unique: 9) · source: `assets/characters/akuma/animations/akuma-win3`
+- loop: `False` · frames: 9 (unique: 9) · source: `assets/characters/akuma/legacy/animations/akuma-win3`
 - sequence: `f000, f001, f002, f003, f004, f005, f006, f007, f008`
 
 ![win3](animation_audit/win3.png)

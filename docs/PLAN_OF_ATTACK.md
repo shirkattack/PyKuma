@@ -43,7 +43,7 @@ values):
 Test: `tests/test_multihit_windows.py` (cl.HK windows 21/35 then 12/19,
 scaled 21/12; scaling anchor unit test).
 
-## Phase 2 — move chains: follow-up animations from the dumps (M)
+## Phase 2 — move chains: follow-up animations from the dumps (M) — **done 2026-08-27**
 
 Warnings: `GOSHORYUKEN sprite_timing observed=19 expected=50 (held its last
 cel)`, `JUMP_MEDIUM_PUNCH recovery/total/sprite_timing`.
@@ -67,7 +67,21 @@ hand-off (`c1.anim` transitions):
 - Jump physics: verify the engine's arc uses `physics.yaml` (ROM airborne frames / apex) so the jump normals' observed totals (15–19) approach the script totals (31) for the same reason.
 - Test: frame-lab audit clean for DP (all strengths) and one jump normal.
 
-## Phase 3 — corner cross-up jitter/freeze (M)
+**Done:** `build_rom_animations.py` records each script's hand-off (`next`:
+successor anim + the cel it is entered on; only ROM hand-offs — a tail that
+is not an attack, or a script entered mid-way — count, seen twice+) and the
+landing roles `dp_land 6a2c`, `tatsu_land 645c`, `jump_attack_land 5c7c`,
+`jump_land 5b7c`, `air_fireball_land 7684`. The controller chains a finished
+`CelAnimation` into its `next` from the entry cel; Akuma continues the ROM
+**movement** through the hand-off too (MP/HP DP fall on `84f8`'s rows: rises
+88 / 125 / 56 px, lands f42 / f51 / f35, totals 50 / 59 / 43 = Baston), plays
+the landing clip on touchdown and recovers for its ROM length (tatsu 38 + 9).
+Frame Lab: hand-offs and landings are not "wrong animations" or held cels,
+per-window expectations are keyed by ROM window, uncaptured windows are not
+diffed. Tests: `test_multihit_windows.py::test_dp_follows_the_rom_chain_to_touchdown`,
+controller chain unit test.
+
+## Phase 3 — corner cross-up jitter/freeze (M) — **done 2026-08-27**
 
 Repro: P1 jumps over a cornered P2 with a special (air tatsu / demon flip);
 P2 jitters and freezes. Likely the wall clamp (`character.py` `STAGE_*_BOUND`)
@@ -79,6 +93,19 @@ overlapped.
 - Write the repro as a `tools/diagnostics/scenario.py` script first (it becomes the test).
 - Fix: resolve pushbox overlap by moving the **un-cornered** fighter only; allow the air side switch; never clamp past the wall twice in one frame.
 - Test: scenario asserts no per-frame x oscillation > 1 px and both facings settle within N frames.
+
+**What it actually was:** the pair is pushbox-resolved twice per frame (once
+from each fighter's update). At touchdown both fighters' prior-frame x was the
+wall (the jumper had been clamped to it mid-air), so the two resolutions
+tie-broke differently and swapped the pair back and forth every frame — the
+jitter, with the facings flipping along. Independently, an air tatsu that
+touched down during its spin went to JUMPING while grounded and sat there
+until the 60-frame safety timeout — the freeze. Fixed with explicit **wall
+ownership** (consecutive grounded frames at a bound, counted before the
+frame's movement; the longer holder keeps the wall and the other is placed
+inside — order-independent, so the second resolution is a no-op) and by
+recovering the air tatsu on the ground when it lands mid-spin. Open-field
+cross-ups still switch sides. Test: `tests/test_corner_crossup.py`.
 
 ## Phase 4 — throws (M–L)
 
@@ -109,7 +136,7 @@ Ground/damage effects are separate sprite objects in the ROM; the cel ripper alr
 - Catalogue: hit sparks (light/medium/heavy, block spark, parry flash), dust (landing, dash, wake-up), KO/dizzy stars.
 - Engine: an effect layer (`assets/vfx/` is the fallback) spawned at the ROM offset on hit/block/land/dash, ROM-timed.
 
-## Phase 8 — native-resolution view (M)
+## Phase 8 — native-resolution view (M) — **viewport done 2026-08-28; stage art + HUD re-layout open**
 
 CPS3 is **384×224**. The world buffer is already composed at native scale
 (`SCREEN_WIDTH 896`, dynamic zoom 0.7–1.0 of a crop). A "CPS3 view" mode:
@@ -117,6 +144,14 @@ CPS3 is **384×224**. The world buffer is already composed at native scale
 - a fixed 384×224 viewport at 1:1 world units, scrolled by the ROM camera rule (follow the midpoint, clamp to the stage), integer-upscaled ×2/×3 to the window; no zoom.
 - stage art at native size: the ROM's stage tilemaps can be ripped the same way as the cels (tilemap RAM + tiles); interim: downscale the izakaya background to 2 screens wide.
 - HUD re-laid out for 384 px.
+
+**Done:** `F3` (or `GameConfig.native_view`) switches to a fixed 384×224
+window at 1:1 world px, centred on the fighters' midpoint, clamped to the
+stage, feet line on `NATIVE_VIEW_GROUND_ROW` (192 — provisional, not a ROM
+capture yet), integer-upscaled (×2 on the 896×512 window) and letterboxed;
+`_world_to_screen` carries the letterbox offset so overlays stay aligned.
+The dynamic zoom camera remains the default. Open: stage art at native size
+(rip the tilemaps) and the HUD layout for 384 px.
 
 ## Order
 

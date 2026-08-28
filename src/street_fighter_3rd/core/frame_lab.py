@@ -57,6 +57,10 @@ log = get_logger(__name__)
 
 RING = 90  # frames of meter history (~1.5s)
 
+_JUMP_NORMAL_STATES = frozenset({
+    CharacterState.JUMP_LIGHT_PUNCH, CharacterState.JUMP_MEDIUM_PUNCH, CharacterState.JUMP_HEAVY_PUNCH,
+    CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
+})
 _ATTACK_STATES = frozenset({
     CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
     CharacterState.LIGHT_KICK, CharacterState.MEDIUM_KICK, CharacterState.HEAVY_KICK,
@@ -183,7 +187,7 @@ class Expected:
     segment: bool = False              # ROM script is only part of the move:
                                        # recovery/gap/total aren't script-measurable
     combat_tier: str = "community"     # 'verified' when damage/stun come from the ROM capture
-    rom_hits: tuple = ()               # per ROM hit window: (damage, hitstun, blockstun), None = not captured
+    rom_hits: dict = field(default_factory=dict)   # ROM window -> (damage, hitstun, blockstun), None = not captured
 
 
 @dataclass
@@ -198,6 +202,7 @@ class MoveReport:
     recovery: int = 0
     frozen_frames: int = 0
     cancelled: bool = False     # closed by cancelling into another attack
+    landed: bool = False        # an air move cut short by touchdown (the ROM script would run on)
     hits: List[HitEvent] = field(default_factory=list)
     expected: Optional[Expected] = None
     advantage: Optional[int] = None       # measured; None until both actors free
@@ -287,8 +292,12 @@ def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
     return name
 
 
-def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optional[Expected]:
-    """Declared values for a move. Timing = ROM-verified; combat = community."""
+def _expected_for(state: CharacterState, variant: Optional[str] = None,
+                  landing_frames: int = 0) -> Optional[Expected]:
+    """Declared values for a move. Timing = ROM-verified; combat = community.
+    `landing_frames`: the ROM landing clip that follows a segment move (tatsu
+    -> 645c): the move lasts script + landing when that is longer than the
+    community total."""
     mfd = get_move_frame_data(state, variant)
     if mfd is None:
         return None
@@ -298,8 +307,10 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
         dmg, hs, bs = hb.damage, hb.hitstun, hb.blockstun
     # Per-window ROM values for a multi-hit move (cl.HK 21 then 12): each hit
     # is diffed against ITS window, not the first one.
-    rom_hits = tuple((h.get("damage"), h.get("hitstun"), h.get("blockstun"))
-                     for h in (getattr(mfd, "rom_combat", None) or {}).get("hits", []))
+    # keyed by ROM window index: the captured windows are sparse (a tatsu's
+    # spins may be 0, 1, 3, 5), so a positional tuple would mis-assign them
+    rom_hits = {int(h.get("window", i)): (h.get("damage"), h.get("hitstun"), h.get("blockstun"))
+                for i, h in enumerate((getattr(mfd, "rom_combat", None) or {}).get("hits", []))}
     # Provenance of the combat expectations: the captured ROM tier when the
     # move has one, else the community tier.
     combat_tier = "verified" if getattr(mfd, "rom_combat", None) else "community"
@@ -312,8 +323,10 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
     segment = getattr(mfd, "timing_scope", "full") == "segment"
     if segment and getattr(mfd, "community_total", None):
         # The ROM script is only the rise/spin; the move's length is the
-        # community total (recovery/gap are not measurable from the script).
-        total = int(mfd.community_total)
+        # community total (recovery/gap are not measurable from the script),
+        # or script + the ROM landing clip when the engine plays one and
+        # that runs longer (HK tatsu: 38 + 9).
+        total = max(int(mfd.community_total), (mfd.total or 0) + landing_frames)
     # A verified move's damage/hitstun come from the ROM capture; its advantage
     # is whatever they imply, so there is no community advantage to diff against.
     on_hit = None if combat_tier == "verified" else getattr(mfd, "on_hit", None)
@@ -336,12 +349,14 @@ class MoveCapture:
     """Tracks one execution of one move for one player."""
 
     def __init__(self, player: int, state: CharacterState, start_frame: int,
-                 expected_anim: Optional[str] = None, variant: Optional[str] = None):
+                 expected_anim: Optional[str] = None, variant: Optional[str] = None,
+                 expected_chain=(), landing_frames: int = 0):
         self.player = player
         self.state = state
         self.report = MoveReport(player=player, move=state.name, start_frame=start_frame)
-        self.report.expected = _expected_for(state, variant)
+        self.report.expected = _expected_for(state, variant, landing_frames)
         self.report.expected_anim = expected_anim
+        self.expected_chain = set(expected_chain or ())   # ROM hand-off clips of the expected one
         self.seen_active = False
         self.nonfrozen_index = 0  # position on the declared timeline
         self._last_cel_key = None
@@ -404,6 +419,10 @@ class MoveCapture:
         sample.anim_complete, sample.fallback = sp["complete"], sp["fallback"]
         if sp["anim"] and sp["anim"] not in r.anims_seen:
             r.anims_seen.append(sp["anim"])
+            if len(r.anims_seen) > 1:
+                # a hand-off (DP fall, landing clip): the previous clip did not
+                # sit on its last cel, the chain continued
+                r.anim_completed_at = None
         if sp["fallback"]:
             r.fallback_frames += 1
         if sp["complete"] and r.anim_completed_at is None and not frozen:
@@ -425,10 +444,11 @@ class MoveCapture:
                                    "fallback": sp["fallback"]})
             self._last_cel_key = key
 
-    def close(self, frame: int, cancelled: bool) -> MoveReport:
+    def close(self, frame: int, cancelled: bool, landed: bool = False) -> MoveReport:
         r = self.report
         r.end_frame = frame
         r.cancelled = cancelled
+        r.landed = landed
         # Retroactive S/A/GAP/R accounting from what the engine actually did:
         # boxes-off frames BETWEEN the first and last observed box frame are
         # GAP (multi-hit move), not recovery. Only now — at close — do we know
@@ -471,7 +491,9 @@ class MoveCapture:
         # A cancel legitimately truncates recovery/total — don't false-flag.
         # A segment record (specials) can't declare recovery/gap: its ROM
         # script stops at the rise/spin; only the community total is checked.
-        if not r.cancelled and e.segment:
+        if r.landed:
+            pass  # cut short by touchdown: the script's tail was never due
+        elif not r.cancelled and e.segment:
             if r.total != e.total:
                 self._flag("total", r.total, e.total, community, "community")
         elif not r.cancelled:
@@ -486,11 +508,12 @@ class MoveCapture:
         for h in r.hits:
             # expected values for THIS hit's ROM window (multi-hit moves), else the move's
             exp_dmg, exp_hs, exp_bs = e.damage, e.hitstun, e.blockstun
-            if e.rom_hits and 0 <= h.window < len(e.rom_hits):
-                wd, whs, wbs = e.rom_hits[h.window]
-                exp_dmg = wd if wd is not None else exp_dmg
-                exp_hs = whs if whs is not None else exp_hs
-                exp_bs = wbs if wbs is not None else exp_bs
+            if e.rom_hits and h.window in e.rom_hits:
+                # a window the capture saw: its values, or nothing to diff
+                # against when that field was not captured (never window 0's)
+                exp_dmg, exp_hs, exp_bs = e.rom_hits[h.window]
+            elif e.rom_hits:
+                exp_dmg = exp_hs = exp_bs = None   # a window the capture never saw
             if h.blocked:
                 if exp_bs and h.blockstun != exp_bs:
                     self._flag("blockstun", h.blockstun, exp_bs, community,
@@ -520,7 +543,8 @@ class MoveCapture:
             return  # no sprite track (stub, or no controller)
         map_src = "characters/akuma.py _STATE_ANIM"
         if r.expected_anim:
-            wrong = [a for a in r.anims_seen if a != r.expected_anim]
+            chain = getattr(self, "expected_chain", set())
+            wrong = [a for a in r.anims_seen if a != r.expected_anim and a not in chain]
             if wrong:
                 self._flag("sprite_mapping", "+".join(wrong), r.expected_anim,
                            map_src, "engine-mapping",
@@ -530,8 +554,9 @@ class MoveCapture:
             self._flag("sprite_fallback", r.fallback_frames, 0,
                        "renderer (placeholder rectangle)", "engine",
                        "missing local sprite assets or a bad sprite id/path")
-        # Timing: the mechanical move is the ruler. Cancels truncate anything.
-        if not r.cancelled:
+        # Timing: the mechanical move is the ruler. Cancels (and a landing that
+        # ends an air move) truncate anything.
+        if not r.cancelled and not r.landed:
             total = r.total
             if r.anim_completed_at is not None and r.anim_completed_at < total:
                 self._flag("sprite_timing", r.anim_completed_at, total,
@@ -691,14 +716,22 @@ class FrameLab:
             if cap is None or cap.state != char.state or char.state_frame < 1:
                 if cap is not None:
                     self.last_reports[pid] = cap.close(frame, cancelled=True)
+                exp_anim = _expected_anim_for(char, char.state)
+                chain = char.chain_of(exp_anim) if exp_anim and hasattr(char, "chain_of") else ()
+                landing = char.landing_frames_for(char.state) if hasattr(char, "landing_frames_for") else 0
                 cap = MoveCapture(pid, char.state, frame,
-                                  expected_anim=_expected_anim_for(char, char.state),
-                                  variant=getattr(char, "move_variant", None))
+                                  expected_anim=exp_anim,
+                                  variant=getattr(char, "move_variant", None),
+                                  expected_chain=chain, landing_frames=landing)
                 self.captures[pid] = cap
             return cap.sample(char, frame)
 
         if cap is not None:  # move just ended normally
-            self.last_reports[pid] = cap.close(frame, cancelled=False)
+            # a jump normal ends on touchdown; if that came before its script's
+            # end the total/recovery/cels are truncated by the landing, not wrong
+            landed = (cap.state in _JUMP_NORMAL_STATES and bool(getattr(char, "is_grounded", False))
+                      and cap.report.expected is not None and cap.nonfrozen_index < cap.report.expected.total)
+            self.last_reports[pid] = cap.close(frame, cancelled=False, landed=landed)
             self.captures[pid] = None
 
         frozen = char.hitfreeze_frames > 0

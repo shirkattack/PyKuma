@@ -288,7 +288,7 @@ def _load_character(name):
 
     if not getattr(char, "animation_controller", None):
         from street_fighter_3rd.systems.animation import SpriteManager, AnimationController
-        char.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets")
+        char.sprite_manager = SpriteManager("assets/characters/akuma/legacy/sprite_sheets")
         char.animation_controller = AnimationController(char.sprite_manager)
         char._setup_animations()
     return char
@@ -315,7 +315,7 @@ def unique_frames_in_order(anim):
 
 def path_for(info):
     if info[0] == "numbered":
-        return os.path.join("assets/characters/akuma/sprite_sheets", f"{info[1]}.png")
+        return os.path.join("assets/characters/akuma/legacy/sprite_sheets", f"{info[1]}.png")
     return os.path.join(info[1], f"frame_{info[2]:03d}.png")
 
 
@@ -359,9 +359,11 @@ def cmd_character(name, out_dir, md_path):
         total_missing += len(missing)
         total_flagged += len(flagged)
 
-        seq = [str(f.sprite_number) if is_numbered else f"f{f.frame_index:03d}" for f in anim.frames]
-        src = ("assets/characters/akuma/sprite_sheets"
-               if is_numbered else anim.frames[0].folder_path if anim.frames else "?")
+        seq = [str(f.sprite_number) if is_numbered
+               else (f"cel{f.cel}" if hasattr(f, "cel") else f"f{f.frame_index:03d}") for f in anim.frames]
+        src = ("assets/characters/akuma/legacy/sprite_sheets"
+               if is_numbered else (getattr(anim.frames[0], "folder_path", None)
+                                    or f"{getattr(anim.frames[0], 'cel_dir', 'rom_cels')} (ROM cels)") if anim.frames else "?")
 
         status = "OK"
         notes = []
@@ -416,7 +418,7 @@ def cmd_character(name, out_dir, md_path):
             md.append("")
 
     section("Numbered animations (sprite_sheets)", numbered)
-    section("Folder animations (assets/characters/akuma/animations)", folder)
+    section("Folder animations (assets/characters/akuma/legacy/animations)", folder)
 
     with open(md_path, "w") as f:
         f.write("\n".join(md))

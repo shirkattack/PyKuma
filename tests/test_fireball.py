@@ -85,7 +85,7 @@ def test_gohadoken_uses_real_projectile_sprite_when_present():
     import os
     from street_fighter_3rd.core.projectile import Gohadoken
     from street_fighter_3rd.data.enums import FacingDirection
-    if not os.path.isdir("assets/characters/akuma/animations/akuma-gohadoken-proj"):
+    if not os.path.isdir("assets/characters/akuma/legacy/animations/akuma-gohadoken-proj"):
         pytest.skip("projectile sprite assets not present")
     fb = Gohadoken(300, 300, 7.0, FacingDirection.RIGHT, "light")
     assert fb.animation_controller is not None
