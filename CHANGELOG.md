@@ -11,6 +11,17 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **CPS3 view (F3).** A fixed 384×224 viewport at 1:1 world pixels — the
+  arcade's window — scrolled after the fighters, clamped to the stage and
+  integer-upscaled with letterboxing, as an alternative to the dynamic zoom
+  camera (`GameConfig.native_view` sets the default). The feet line's row in
+  the viewport is provisional pending a ROM capture; stage art at native size
+  and the 384-px HUD layout are still open.
+- **Rip-session prep.** `dump_cels.lua` gains a `throw` P2 mode (P1 gets
+  thrown, for the thrown-reaction cels) and an effects capture: after any
+  connect it dumps every frame for 12 frames; `cel_decode.py --effects`
+  renders the non-fighter objects (hit sparks, dust) with their offsets from
+  the defender's axis into `fx_<key>.png` + `fx.json`.
 - **Sprites, axis and timing from the ROM.** `tools/rom_extract/dump_cels.lua`
   + `cel_decode.py` rip a character's cels pixel-exact out of the emulator
   (sprite list, tiles from a savestate's character RAM, palettes), keyed by ROM

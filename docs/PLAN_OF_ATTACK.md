@@ -136,7 +136,7 @@ Ground/damage effects are separate sprite objects in the ROM; the cel ripper alr
 - Catalogue: hit sparks (light/medium/heavy, block spark, parry flash), dust (landing, dash, wake-up), KO/dizzy stars.
 - Engine: an effect layer (`assets/vfx/` is the fallback) spawned at the ROM offset on hit/block/land/dash, ROM-timed.
 
-## Phase 8 — native-resolution view (M)
+## Phase 8 — native-resolution view (M) — **viewport done 2026-08-28; stage art + HUD re-layout open**
 
 CPS3 is **384×224**. The world buffer is already composed at native scale
 (`SCREEN_WIDTH 896`, dynamic zoom 0.7–1.0 of a crop). A "CPS3 view" mode:
@@ -144,6 +144,14 @@ CPS3 is **384×224**. The world buffer is already composed at native scale
 - a fixed 384×224 viewport at 1:1 world units, scrolled by the ROM camera rule (follow the midpoint, clamp to the stage), integer-upscaled ×2/×3 to the window; no zoom.
 - stage art at native size: the ROM's stage tilemaps can be ripped the same way as the cels (tilemap RAM + tiles); interim: downscale the izakaya background to 2 screens wide.
 - HUD re-laid out for 384 px.
+
+**Done:** `F3` (or `GameConfig.native_view`) switches to a fixed 384×224
+window at 1:1 world px, centred on the fighters' midpoint, clamped to the
+stage, feet line on `NATIVE_VIEW_GROUND_ROW` (192 — provisional, not a ROM
+capture yet), integer-upscaled (×2 on the 896×512 window) and letterboxed;
+`_world_to_screen` carries the letterbox offset so overlays stay aligned.
+The dynamic zoom camera remains the default. Open: stage art at native size
+(rip the tilemaps) and the HUD layout for 384 px.
 
 ## Order
 

@@ -8,6 +8,7 @@ kind (wrong sprite, bad position, off frame timing).
 | Key | Action |
 |-----|--------|
 | `F1` | Toggle the live debug overlay (per-player state panels + invariant status) |
+| `F3` | Toggle the **CPS3 view**: the arcade's 384×224 window at 1:1, scrolled after the fighters, integer-upscaled (the dynamic zoom camera is the default) |
 | `F10` | **Build an issue report** — bundle for handing to an assistant (see below) |
 | `F11` | **Save a clip** — the last ~10s (600 frames) of per-frame state as a timeline |
 | `F12` | Save a debug snapshot (PNG + JSON) to `debug_snapshots/` |

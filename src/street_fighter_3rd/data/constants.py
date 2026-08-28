@@ -20,6 +20,15 @@ CAMERA_MIN_ZOOM = 1.0     # most zoomed-out (whole field; fighters far apart)
 CAMERA_H_MARGIN = 140     # world px of breathing room kept beyond each fighter
 CAMERA_GROUND_Y = 430     # world-buffer ground line, kept low in the frame
 
+# Native (CPS3) view: the arcade draws a 384x224 window onto the stage at 1:1
+# and scrolls it after the fighters; F3 toggles this fixed viewport in place of
+# the dynamic zoom camera (integer-upscaled, letterboxed). The feet line's row
+# inside the viewport is PROVISIONAL (an estimate from the arcade layout, not
+# a ROM capture yet -- see docs/PLAN_OF_ATTACK.md Phase 8).
+NATIVE_VIEW_WIDTH = 384
+NATIVE_VIEW_HEIGHT = 224
+NATIVE_VIEW_GROUND_ROW = 192   # feet line row within the 224-px viewport (provisional)
+
 # Stage boundaries
 STAGE_LEFT_BOUND = 80
 STAGE_RIGHT_BOUND = SCREEN_WIDTH - 80

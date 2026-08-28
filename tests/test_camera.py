@@ -65,3 +65,47 @@ def test_render_runs_with_camera():
     for _ in range(3):
         g.update()
     g.render()  # must not raise; world buffer -> zoomed screen -> UI/overlays
+
+
+def test_native_view_is_a_fixed_384x224_window_scrolled_after_the_fighters():
+    from street_fighter_3rd.data.constants import (
+        NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT, NATIVE_VIEW_GROUND_ROW, CAMERA_GROUND_Y)
+    g = _game()
+    g.native_view = True
+    g.player1.x, g.player2.x = 400, 500
+    cx, cy, cw, ch = g._compute_camera()
+    assert (cw, ch) == (NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT)
+    assert cx == 450 - NATIVE_VIEW_WIDTH / 2                          # centred on the midpoint
+    assert cy == CAMERA_GROUND_Y - NATIVE_VIEW_GROUND_ROW              # feet line on its viewport row
+    g.player1.x, g.player2.x = 80, 120                                 # left corner: clamps to the stage edge
+    assert g._compute_camera()[0] == 0
+    g.player1.x, g.player2.x = 800, 816
+    assert g._compute_camera()[0] == SCREEN_WIDTH - NATIVE_VIEW_WIDTH
+
+
+def test_native_view_blits_at_an_integer_scale_and_maps_world_to_screen_with_the_letterbox():
+    from street_fighter_3rd.data.constants import NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT
+    g = _game()
+    g.native_view = True
+    g.player1.x, g.player2.x = 400, 500
+    g._blit_world_zoomed()
+    cx, cy, zoom = g._cam
+    k = g._native_scale()
+    assert zoom == k and k == min(SCREEN_WIDTH // NATIVE_VIEW_WIDTH, SCREEN_HEIGHT // NATIVE_VIEW_HEIGHT)
+    ox, oy = g._cam_off
+    assert ox == (SCREEN_WIDTH - NATIVE_VIEW_WIDTH * k) // 2 and oy == (SCREEN_HEIGHT - NATIVE_VIEW_HEIGHT * k) // 2
+    sx, sy = g._world_to_screen(cx, cy)
+    assert (sx, sy) == (ox, oy)
+    sx2, _ = g._world_to_screen(cx + 100, cy)
+    assert sx2 == ox + 100 * k
+    # the default camera still maps with no letterbox
+    g.native_view = False
+    g._blit_world_zoomed()
+    assert g._cam_off == (0, 0)
+
+
+def test_f3_toggles_the_native_view():
+    g = _game()
+    assert g.native_view is False
+    g.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F3))
+    assert g.native_view is True
