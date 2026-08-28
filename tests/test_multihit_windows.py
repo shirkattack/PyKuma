@@ -57,3 +57,27 @@ def test_combo_scaling_anchors_at_a_moves_first_hit():
     assert cs.register_hit(1, 2, 100, "normal", defender_in_hitstun=True, same_move=True) == 80    # B's 2nd window
     assert cs.player_combo_states[2].combo_count == 4
     assert cs.register_hit(1, 2, 100, "normal", defender_in_hitstun=False) == 100       # recovered: fresh combo
+
+
+@pytest.mark.parametrize("button,rise,total", [("MEDIUM_PUNCH", 88, 50), ("HEAVY_PUNCH", 125, 59), ("LIGHT_PUNCH", 56, 43)])
+def test_dp_follows_the_rom_chain_to_touchdown(game, button, rise, total):
+    """Phase 2: MP/HP DP scripts hand off to 84f8's fall rows and cels, then
+    the dp_land clip; the arc height and the state length are the ROM's."""
+    from street_fighter_3rd.data.enums import Button
+    from street_fighter_3rd.systems.animation import CelAnimation
+    p1 = game.player1
+    if not isinstance(p1.animation_controller.animations.get("stance"), CelAnimation):
+        pytest.skip("ROM cel clips not available on this machine")
+    game.player2.x = p1.x + 200
+    for _ in range(40):
+        game.update()
+    p1._execute_goshoryuken(getattr(Button, button)); p1.state_frame = -1
+    apex = p1.y
+    for i in range(120):
+        game.update(); apex = min(apex, p1.y)
+        if p1.state == CharacterState.STANDING and i > 5 and game.frame_lab.captures.get(1) is None and not game.frame_lab._watches:
+            break
+    r = game.frame_lab.last_reports[1]
+    assert round(p1.y - apex) == rise and r.total == total
+    assert "dp_land" in r.anims_seen
+    assert not [d for d in r.discrepancies if d["channel"].startswith("sprite")], r.discrepancies

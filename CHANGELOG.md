@@ -46,6 +46,15 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **Specials and jump normals follow the ROM's hand-offs.** The frame dumps
+  record what the game plays after a script ends: MP/HP Goshoryuken fall
+  through the LP DP script from its 5th cel (`84f8`, movement rows included, so
+  the arcs are the ROM's 88 / 125 / 56 px and the moves land on f42 / f51 /
+  f35), every tatsu lands with `645c`, jump normals with `5c7c`, jumps with
+  `5b7c`, the air fireball with `7684`. `rom_animations.json` carries those
+  links; the animation controller chains clips on completion and Akuma plays
+  the landing clip on touchdown and recovers for its ROM length. The Frame Lab
+  no longer flags hand-offs as held cels or wrong animations.
 - **Multi-hit moves no longer double-scale or false-flag.** The combo system
   stepped damage scaling down for every hit window of the same move (cl.HK's
   second hit 12 → 10, MP DP 8 → 7) although the ROM-captured per-window values

@@ -43,7 +43,7 @@ values):
 Test: `tests/test_multihit_windows.py` (cl.HK windows 21/35 then 12/19,
 scaled 21/12; scaling anchor unit test).
 
-## Phase 2 — move chains: follow-up animations from the dumps (M)
+## Phase 2 — move chains: follow-up animations from the dumps (M) — **done 2026-08-27**
 
 Warnings: `GOSHORYUKEN sprite_timing observed=19 expected=50 (held its last
 cel)`, `JUMP_MEDIUM_PUNCH recovery/total/sprite_timing`.
@@ -66,6 +66,20 @@ hand-off (`c1.anim` transitions):
   state at the ROM landing (Phase 0.4) so `total` matches the script + `5c7c`.
 - Jump physics: verify the engine's arc uses `physics.yaml` (ROM airborne frames / apex) so the jump normals' observed totals (15–19) approach the script totals (31) for the same reason.
 - Test: frame-lab audit clean for DP (all strengths) and one jump normal.
+
+**Done:** `build_rom_animations.py` records each script's hand-off (`next`:
+successor anim + the cel it is entered on; only ROM hand-offs — a tail that
+is not an attack, or a script entered mid-way — count, seen twice+) and the
+landing roles `dp_land 6a2c`, `tatsu_land 645c`, `jump_attack_land 5c7c`,
+`jump_land 5b7c`, `air_fireball_land 7684`. The controller chains a finished
+`CelAnimation` into its `next` from the entry cel; Akuma continues the ROM
+**movement** through the hand-off too (MP/HP DP fall on `84f8`'s rows: rises
+88 / 125 / 56 px, lands f42 / f51 / f35, totals 50 / 59 / 43 = Baston), plays
+the landing clip on touchdown and recovers for its ROM length (tatsu 38 + 9).
+Frame Lab: hand-offs and landings are not "wrong animations" or held cels,
+per-window expectations are keyed by ROM window, uncaptured windows are not
+diffed. Tests: `test_multihit_windows.py::test_dp_follows_the_rom_chain_to_touchdown`,
+controller chain unit test.
 
 ## Phase 3 — corner cross-up jitter/freeze (M)
 

@@ -181,7 +181,11 @@ class FolderAnimation:
 
 class CelAnimation(FolderAnimation):
     """A clip of ROM cels (CelAnimationFrame). Playback is FolderAnimation's;
-    the renderer places each frame by its own axis offset (cel_screen_rect)."""
+    the renderer places each frame by its own axis offset (cel_screen_rect).
+    `next_name`/`next_start`: the clip the ROM hands off to when this script
+    ends (MP DP -> 84f8's fall from its 5th cel), played by the controller."""
+    next_name: Optional[str] = None
+    next_start: int = 0
 
     def total_frames(self) -> int:
         return sum(f.duration for f in self.frames)
@@ -393,6 +397,15 @@ class AnimationController:
         """Update current animation."""
         if self.current_animation:
             self.current_animation.update()
+            anim = self.current_animation
+            nxt = getattr(anim, "next_name", None)
+            if nxt and anim.is_complete() and nxt in self.animations:
+                # ROM hand-off: continue with the next script from the cel the
+                # game enters it on (same update, so no held last cel)
+                self.play_animation(nxt, force_restart=True)
+                start = getattr(anim, "next_start", 0)
+                if 0 < start < len(self.current_animation.frames):
+                    self.current_animation.current_frame_index = start
 
     def get_current_sprite(self) -> Optional[pygame.Surface]:
         """Get current sprite surface to render."""

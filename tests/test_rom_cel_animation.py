@@ -206,3 +206,19 @@ def test_air_fireball_plays_the_air_clip_when_registered(display, tmp_path):
     assert ak.anim_name_for(CharacterState.GOHADOKEN) == "air_gohadoken"
     ak.pending_projectile_air = False
     assert ak.anim_name_for(CharacterState.GOHADOKEN) == "gohadoken"
+
+
+def test_controller_chains_to_the_next_clip_from_its_entry_cel(display, tmp_path):
+    _fake_cels(tmp_path)
+    ctl = AnimationController(SpriteManager(str(tmp_path)))
+    script = create_cel_animation(str(tmp_path), [[1, 2]], CELS)
+    tail = create_cel_animation(str(tmp_path), [[1, 3], [2, 3], [3, 3]], CELS)
+    ctl.add_animation("mp_dp", script); ctl.add_animation("lp_dp", tail)
+    script.next_name, script.next_start = "lp_dp", 2       # the ROM enters the tail at its 3rd cel
+    ctl.play_animation("mp_dp", force_restart=True)
+    seen = []
+    for _ in range(6):
+        seen.append((ctl.current_name, ctl.get_current_frame_info()["cel"]))
+        ctl.update()
+    assert seen[:2] == [("mp_dp", 1), ("mp_dp", 1)]
+    assert seen[2] == ("lp_dp", 3) and ctl.current_name == "lp_dp"   # no held last cel, tail from cel 3
