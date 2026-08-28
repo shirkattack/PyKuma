@@ -66,7 +66,7 @@ def state_block(state: bytes) -> bytes:
 PAL_SIZE = 0x40000          # 0x20000 x u16 colour RAM ("Palette" entry, right before the char RAM)
 
 
-def state_areas(path: Path, known_tiles: dict | None = None) -> dict:
+def state_areas(path: Path, known_tiles: dict | None = None, known_palettes: dict | None = None) -> dict:
     """{"cram": 8 MB character RAM, "pal": colour RAM or None} out of a state.
     Current FBNeo: hashed entries. Older forks (Fightcade) concatenate the
     areas without headers, so the char RAM is located by anchoring on a tile
@@ -101,7 +101,22 @@ def state_areas(path: Path, known_tiles: dict | None = None) -> dict:
         if n >= 2 or len(votes) == 1:
             return {"cram": blob[base:base + CRAM_SIZE],
                     "pal": blob[base - PAL_SIZE:base] if base >= PAL_SIZE else None}
-    raise ValueError("could not locate the character RAM in the state (no hashed entry, no usable bank-0 anchor tile)")
+    # second anchor: a palette the Lua read (CPU order) -- the state stores the
+    # colour RAM with adjacent words swapped, right before the char RAM
+    for k, hexdata in (known_palettes or {}).items():
+        words = [int(hexdata[i:i + 4], 16) for i in range(0, len(hexdata), 4)]
+        if len(set(words)) < 8:
+            continue
+        host = bytearray()
+        for i in range(0, len(words) - 1, 2):
+            host += words[i + 1].to_bytes(2, "little") + words[i].to_bytes(2, "little")
+        pos = blob.find(bytes(host))
+        if pos >= 0 and blob.find(bytes(host), pos + 1) < 0:
+            pal_base = pos - int(k) * 2
+            base = pal_base + PAL_SIZE
+            if pal_base >= 0 and base + CRAM_SIZE <= len(blob):
+                return {"cram": blob[base:base + CRAM_SIZE], "pal": blob[pal_base:base]}
+    raise ValueError("could not locate the character RAM in the state (no hashed entry, no usable bank-0 anchor tile or palette)")
 
 
 def cram_tiles_from_state(path: Path, known_tiles: dict | None = None) -> bytes:
@@ -243,6 +258,29 @@ def render_object(rec: dict, tiles: dict, palettes: dict, swizzle: bool = True):
     return img, (left, top)
 
 
+def player_palettes(d: dict) -> dict | None:
+    """{"p1": [[r,g,b]x64], "p2": [...]} from a dump where both players are on
+    screen: each player's body object (nearest many-tile object) names its
+    palette base; the palettes are the Lua-read ones (rendering order)."""
+    out = {}
+    for who in ("p1", "p2"):
+        pos = d[who]["pos_x"]
+        objs = [r for r in d["records"] if sum(len(part_tiles(r, p)) for p in r["parts"]) >= 10 and abs(r["xpos"] - pos) <= 40]
+        if not objs:
+            return None
+        r = min(objs, key=lambda r: abs(r["xpos"] - pos))
+        part = next(p for p in r["parts"] if p["xsize"])
+        usebpp = r["gbpp"] if r["whichbpp"] else part["bpp"]
+        actualpal = r["global_pal"] if r["whichpal"] else part["pal"]
+        palbase = (actualpal * (64 if usebpp else 256)) & 0x1FFFF
+        hexdata = d["palettes"].get(str(palbase))
+        if hexdata is None:
+            return None
+        cols = decode_palette(hexdata)[:64 if usebpp else 256]
+        out[who] = [list(c[:3]) for c in cols]
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dump", help="pykuma_cels.jsonl from dump_cels.lua")
@@ -254,9 +292,30 @@ def main(argv=None):
     ap.add_argument("--lua-tiles", action="store_true", help="use the tiles the Lua read through the bank window instead of the state")
     ap.add_argument("--p1", action="store_true",
                     help="render only P1's body object, named cel_<cel id>.png, and write cels.json (cel -> anim, bbox rel. axis)")
+    ap.add_argument("--redo", action="store_true", help="with --p1: re-render cels already in cels.json")
+    ap.add_argument("--palettes-out", default=None,
+                    help="write {p1, p2} palettes (RGB per pen) from the first dump showing both players, e.g. data/characters/akuma/rom_palettes.json")
     args = ap.parse_args(argv)
     manifest_path = Path(args.out) / "cels.json"
     manifest = json.loads(manifest_path.read_text()) if args.p1 and manifest_path.exists() else {}
+    # P1's body palette: learned from the stance dumps (anim 8800) of this file,
+    # used to tell Akuma apart from effect objects drawn at his position
+    p1_pal = None
+    if args.p1:
+        from collections import Counter
+        pals = Counter()
+        for line in Path(args.dump).read_text().splitlines():
+            if not line.strip():
+                continue
+            dd = json.loads(line)
+            if dd["p1"]["anim"] != "8800":
+                continue
+            for r in dd["records"]:
+                if abs(r["xpos"] - dd["p1"]["pos_x"]) <= 8 and sum(len(part_tiles(r, pp)) for pp in r["parts"]) >= 10:
+                    pals[(r["whichpal"], r["global_pal"])] += 1
+        if pals:
+            p1_pal = pals.most_common(1)[0][0]
+            print(f"   P1 body palette: whichpal={p1_pal[0]} global_pal={p1_pal[1]}")
     state_dir = Path(args.state_dir) if args.state_dir else Path(args.dump).resolve().parent
 
     out = Path(args.out)
@@ -266,12 +325,19 @@ def main(argv=None):
             continue
         d = json.loads(line)
         p1, p2 = d["p1"], d["p2"]
+        if args.palettes_out and not Path(args.palettes_out).exists():
+            pals = player_palettes(d)
+            if pals:
+                pals["_meta"] = {"source": "sfiii3nr1 colour RAM (dump_cels.lua), 5-5-5 RGB scaled to 8 bit; "
+                                           "pen 0 is transparent", "frame": d["f"]}
+                Path(args.palettes_out).write_text(json.dumps(pals, indent=0) + "\n")
+                print(f"   palettes -> {args.palettes_out}")
         tiles, swizzle = d["tiles"], not args.no_swizzle
         palettes = d["palettes"]
         if d.get("state") and not args.lua_tiles:
             spath = state_dir / d["state"]
             if spath.exists():
-                areas = state_areas(spath, d["tiles"])
+                areas = state_areas(spath, d["tiles"], d["palettes"])
                 st = StateTiles(areas["cram"])
                 if areas["pal"]:
                     palettes = StatePalettes(areas["pal"])
@@ -291,11 +357,18 @@ def main(argv=None):
               f"{len(d['records'])} objects, {len(d['tiles'])} tiles, {len(d['palettes'])} palettes")
         records = d["records"]
         if args.p1:
-            # P1's objects sit at xpos == pos_x; the body is the one with the most tiles (the other is the shadow)
-            mine = [r for r in records if r["xpos"] == p1["pos_x"] and any(pp["xsize"] for pp in r["parts"])]
-            mine.sort(key=lambda r: -sum(len(part_tiles(r, pp)) for pp in r["parts"]))
+            # P1's body: the many-tile object nearest P1's position (the sprite
+            # list can be a frame apart from pos_x/pos_y while P1 moves, and the
+            # object's ypos is pos_y + 40); the few-tile object there is the shadow
+            def _dist(r):
+                return abs(r["xpos"] - p1["pos_x"]) + abs(r["ypos"] - 40 - p1["pos_y"]) / 4
+            mine = [r for r in records
+                    if sum(len(part_tiles(r, pp)) for pp in r["parts"]) >= 10 and _dist(r) <= 40
+                    and abs(r["xpos"] - p1["pos_x"]) <= abs(r["xpos"] - p2["pos_x"])]
+            # Akuma's own palette first (effects at his position use others), then nearest
+            mine.sort(key=lambda r: (0 if p1_pal is None or (r["whichpal"], r["global_pal"]) == p1_pal else 1, _dist(r)))
             records = mine[:1]
-            if str(p1["cel"]) in manifest and not args.only:
+            if str(p1["cel"]) in manifest and not (args.only or args.redo):
                 print(f"   cel {p1['cel']} already in cels.json, skipping")
                 continue
         print(f"{'obj':>4} {'xpos':>5} {'ypos':>5} {'parts':>5} {'tiles':>5} {'size':>9}  bbox rel. origin (l,t,r,b)")
@@ -308,6 +381,12 @@ def main(argv=None):
                 print(f"{rec['i']:>4} {rec['xpos']:>5} {rec['ypos']:>5} {len(rec['parts']):>5} {ntiles:>5}  (nothing drawable)")
                 continue
             img, (left, top) = res
+            if args.p1 and p1["flip"] == 0:
+                # P1 faced LEFT on this frame (facing byte 0): the PPU drew the
+                # object mirrored. Store every cel right-facing: mirror back and
+                # reflect the bbox about the axis.
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                left = -(left + img.size[0])
             w, h = img.size
             print(f"{rec['i']:>4} {rec['xpos']:>5} {rec['ypos']:>5} {len(rec['parts']):>5} {ntiles:>5} {w:>4}x{h:<4}  "
                   f"({left},{top},{left + w},{top + h})")
@@ -315,7 +394,8 @@ def main(argv=None):
             img.save(f"{stem}.png")
             if args.p1:
                 manifest[str(p1["cel"])] = {"anim": p1["anim"], "flip": p1["flip"], "left": left, "top": top,
-                                            "width": w, "height": h, "frame": d["f"], "state": d.get("state")}
+                                            "width": w, "height": h, "frame": d["f"], "state": d.get("state"),
+                                            "mirrored_from_left": p1["flip"] == 0}
                 manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True))
             # axis preview: the object on a checker with a crosshair at its origin
             s = args.scale

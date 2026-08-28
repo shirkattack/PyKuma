@@ -24,6 +24,8 @@ They are theirs to use. Treat them as first-class:
 assets/
   characters/<name>/
     animations/      one PNG-sequence folder per move (frame_000.png, …)
+    rom_cels/        cel_<id>.png ripped from the ROM's memory (tools/rom_extract), used
+                     wherever data/characters/<name>/rom_animations.json is complete
     sprite_sheets/   numbered sprite frames (projectiles, fx, legacy numbered loader)
     raw_gifs/        source gifs the frames were extracted from
   stages/            stage backgrounds (e.g. ryu-stage.gif)

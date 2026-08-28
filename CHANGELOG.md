@@ -11,6 +11,19 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **Sprites, axis and timing from the ROM.** `tools/rom_extract/dump_cels.lua`
+  + `cel_decode.py` rip a character's cels pixel-exact out of the emulator
+  (sprite list, tiles from a savestate's character RAM, palettes), keyed by ROM
+  cel id and positioned on the character's own axis; `build_rom_animations.py`
+  joins them with the frame dumps' per-frame cel ids into per-move tables
+  (`data/characters/akuma/rom_animations.json`: cel sequence, ROM hold per cel,
+  bbox from the axis). Akuma now plays these `CelAnimation` clips for every
+  move whose sequence is complete — 44 clips: stance, walks, dashes, the three
+  jumps, all far and crouching normals, jump normals with their neutral-jump
+  variants, f+MP, the DPs and tatsus, both blocks — placed by exact axis offset
+  (no canvas centring, padding or body anchoring), and P2 renders in the game's
+  own alternate palette (`rom_palettes.json`, pen-for-pen). Incomplete
+  sequences (close normals, reactions) keep the zweifuss folder clips.
 - **On-block ROM data + a self-sufficient capture script.** `dump_framedata.lua`
   now pins the round timer, refills life while idle and drives the dummy itself
   (`B` cycles stand / block / block_always / crouch_block / jump — the arcade
@@ -33,6 +46,13 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **Multi-hit moves no longer double-scale or false-flag.** The combo system
+  stepped damage scaling down for every hit window of the same move (cl.HK's
+  second hit 12 → 10, MP DP 8 → 7) although the ROM-captured per-window values
+  already are what the game applies inside the move; scaling is now anchored at
+  a move's first hit and only a new move steps it down. The Frame Lab diffed
+  every hit against the first window's expectation; it now diffs each hit
+  against its own ROM window (`window` on hit events, `Expected.rom_hits`).
 - **Multi-hit ROM combat windows.** Session 1's vendored raw samples had `frame`
   = the ROM cel id (`22047` reached `hitboxes.yaml`) and a multi-hit move's later
   connects were placed by a frame the defender's hitstop cannot pin, collapsing

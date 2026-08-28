@@ -303,6 +303,8 @@ def unique_frames_in_order(anim):
             key = f.sprite_number
             info = ("numbered", f.sprite_number)
         else:
+            if not hasattr(f, "folder_path"):
+                continue  # ROM cel frame (rom_animations.json); not a folder frame
             key = (f.folder_path, f.frame_index)
             info = ("folder", f.folder_path, f.frame_index)
         if key not in seen:

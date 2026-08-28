@@ -1,0 +1,5169 @@
+{
+ "anims": {
+  "13a8": {
+   "loop": false,
+   "sequence": [
+    [
+     21888,
+     2
+    ],
+    [
+     21889,
+     1
+    ],
+    [
+     21890,
+     1
+    ],
+    [
+     21891,
+     4
+    ],
+    [
+     21892,
+     2
+    ],
+    [
+     21894,
+     5
+    ]
+   ],
+   "total": 15,
+   "rom_total": 15,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 2
+   },
+   "complete": false,
+   "missing_cels": [
+    21890
+   ],
+   "state": "LIGHT_PUNCH",
+   "variant": "close"
+  },
+  "1438": {
+   "loop": false,
+   "sequence": [
+    [
+     21856,
+     4
+    ],
+    [
+     21857,
+     1
+    ],
+    [
+     21858,
+     3
+    ],
+    [
+     21859,
+     2
+    ],
+    [
+     21860,
+     4
+    ]
+   ],
+   "total": 14,
+   "rom_total": 14,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "LIGHT_PUNCH",
+   "variant": null,
+   "equals_variant": "far"
+  },
+  "14e8": {
+   "loop": false,
+   "sequence": [
+    [
+     21895,
+     1
+    ],
+    [
+     21896,
+     2
+    ],
+    [
+     21897,
+     2
+    ],
+    [
+     21898,
+     2
+    ],
+    [
+     21899,
+     2
+    ],
+    [
+     21915,
+     5
+    ],
+    [
+     21900,
+     4
+    ],
+    [
+     21621,
+     4
+    ]
+   ],
+   "total": 22,
+   "rom_total": 22,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 1
+   },
+   "complete": false,
+   "missing_cels": [
+    21898
+   ],
+   "state": "MEDIUM_PUNCH",
+   "variant": null,
+   "equals_variant": "close"
+  },
+  "1598": {
+   "loop": false,
+   "sequence": [
+    [
+     21862,
+     3
+    ],
+    [
+     21863,
+     2
+    ],
+    [
+     21864,
+     1
+    ],
+    [
+     21865,
+     3
+    ],
+    [
+     21883,
+     6
+    ],
+    [
+     21866,
+     2
+    ],
+    [
+     21867,
+     3
+    ],
+    [
+     21651,
+     4
+    ]
+   ],
+   "total": 24,
+   "rom_total": 24,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "MEDIUM_PUNCH",
+   "variant": "far"
+  },
+  "1638": {
+   "loop": false,
+   "sequence": [
+    [
+     22310,
+     3
+    ],
+    [
+     22311,
+     5
+    ],
+    [
+     22312,
+     4
+    ],
+    [
+     22313,
+     2
+    ],
+    [
+     22314,
+     1
+    ],
+    [
+     22315,
+     1
+    ],
+    [
+     22316,
+     2
+    ],
+    [
+     22315,
+     3
+    ],
+    [
+     22316,
+     8
+    ],
+    [
+     22317,
+     4
+    ],
+    [
+     22318,
+     4
+    ],
+    [
+     21651,
+     5
+    ]
+   ],
+   "total": 42,
+   "rom_total": 42,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "FORWARD_MP",
+   "variant": null
+  },
+  "1728": {
+   "loop": false,
+   "sequence": [
+    [
+     21901,
+     1
+    ],
+    [
+     21902,
+     2
+    ],
+    [
+     21903,
+     1
+    ],
+    [
+     21904,
+     1
+    ],
+    [
+     21905,
+     1
+    ],
+    [
+     21906,
+     2
+    ],
+    [
+     21907,
+     3
+    ],
+    [
+     21908,
+     6
+    ],
+    [
+     21909,
+     4
+    ],
+    [
+     21910,
+     3
+    ],
+    [
+     21911,
+     3
+    ],
+    [
+     21912,
+     3
+    ],
+    [
+     21913,
+     4
+    ]
+   ],
+   "total": 34,
+   "rom_total": 34,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": false,
+   "missing_cels": [
+    21904,
+    21912,
+    21913
+   ],
+   "state": "HEAVY_PUNCH",
+   "variant": "close"
+  },
+  "1818": {
+   "loop": false,
+   "sequence": [
+    [
+     21505,
+     1
+    ],
+    [
+     21869,
+     2
+    ],
+    [
+     21870,
+     3
+    ],
+    [
+     21871,
+     2
+    ],
+    [
+     21872,
+     1
+    ],
+    [
+     21873,
+     2
+    ],
+    [
+     21874,
+     2
+    ],
+    [
+     21873,
+     3
+    ],
+    [
+     21874,
+     8
+    ],
+    [
+     21875,
+     4
+    ],
+    [
+     21876,
+     3
+    ],
+    [
+     21877,
+     3
+    ],
+    [
+     21651,
+     4
+    ]
+   ],
+   "total": 38,
+   "rom_total": 38,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 7
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "HEAVY_PUNCH",
+   "variant": null,
+   "equals_variant": "far"
+  },
+  "1908": {
+   "loop": false,
+   "sequence": [
+    [
+     21952,
+     2
+    ],
+    [
+     21953,
+     2
+    ],
+    [
+     21954,
+     4
+    ],
+    [
+     21955,
+     3
+    ],
+    [
+     21956,
+     3
+    ],
+    [
+     21651,
+     5
+    ]
+   ],
+   "total": 19,
+   "rom_total": 19,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 11
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "LIGHT_KICK",
+   "variant": null
+  },
+  "1988": {
+   "loop": false,
+   "sequence": [
+    [
+     21952,
+     2
+    ],
+    [
+     21960,
+     1
+    ],
+    [
+     21961,
+     1
+    ],
+    [
+     21962,
+     2
+    ],
+    [
+     21963,
+     3
+    ],
+    [
+     21964,
+     5
+    ],
+    [
+     21965,
+     2
+    ],
+    [
+     21957,
+     3
+    ],
+    [
+     21958,
+     4
+    ]
+   ],
+   "total": 23,
+   "rom_total": 23,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": false,
+   "missing_cels": [
+    21962
+   ],
+   "state": "MEDIUM_KICK",
+   "variant": null,
+   "equals_variant": "close"
+  },
+  "1a38": {
+   "loop": false,
+   "sequence": [
+    [
+     21928,
+     2
+    ],
+    [
+     21929,
+     3
+    ],
+    [
+     21930,
+     2
+    ],
+    [
+     21931,
+     3
+    ],
+    [
+     21949,
+     4
+    ],
+    [
+     21932,
+     3
+    ],
+    [
+     21935,
+     4
+    ],
+    [
+     21933,
+     3
+    ],
+    [
+     21934,
+     2
+    ],
+    [
+     21551,
+     4
+    ]
+   ],
+   "total": 30,
+   "rom_total": 30,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "MEDIUM_KICK",
+   "variant": "far"
+  },
+  "1b08": {
+   "loop": false,
+   "sequence": [
+    [
+     22439,
+     3
+    ],
+    [
+     22440,
+     2
+    ],
+    [
+     22441,
+     1
+    ],
+    [
+     22442,
+     4
+    ],
+    [
+     22443,
+     3
+    ],
+    [
+     22444,
+     2
+    ],
+    [
+     22445,
+     3
+    ],
+    [
+     22446,
+     4
+    ],
+    [
+     22447,
+     4
+    ],
+    [
+     22448,
+     4
+    ],
+    [
+     22449,
+     3
+    ],
+    [
+     22450,
+     4
+    ]
+   ],
+   "total": 37,
+   "rom_total": 39,
+   "source": {
+    "side": "c1",
+    "whiff": false,
+    "runs": 5
+   },
+   "complete": false,
+   "missing_cels": [
+    22441
+   ],
+   "state": "HEAVY_KICK",
+   "variant": null,
+   "equals_variant": "close"
+  },
+  "1bf8": {
+   "loop": false,
+   "sequence": [
+    [
+     21936,
+     2
+    ],
+    [
+     21937,
+     2
+    ],
+    [
+     21938,
+     2
+    ],
+    [
+     21939,
+     1
+    ],
+    [
+     21940,
+     1
+    ],
+    [
+     21941,
+     1
+    ],
+    [
+     21942,
+     2
+    ],
+    [
+     21943,
+     3
+    ],
+    [
+     21944,
+     3
+    ],
+    [
+     21950,
+     3
+    ],
+    [
+     21945,
+     4
+    ],
+    [
+     21946,
+     4
+    ],
+    [
+     21947,
+     3
+    ],
+    [
+     21948,
+     4
+    ],
+    [
+     21651,
+     5
+    ]
+   ],
+   "total": 40,
+   "rom_total": 40,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 9
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "HEAVY_KICK",
+   "variant": "far"
+  },
+  "1d28": {
+   "loop": false,
+   "sequence": [
+    [
+     22000,
+     4
+    ],
+    [
+     22001,
+     1
+    ],
+    [
+     22002,
+     2
+    ],
+    [
+     22004,
+     2
+    ],
+    [
+     22003,
+     2
+    ],
+    [
+     21547,
+     4
+    ]
+   ],
+   "total": 15,
+   "rom_total": 15,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 7
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_LIGHT_PUNCH",
+   "variant": null
+  },
+  "1dd8": {
+   "loop": false,
+   "sequence": [
+    [
+     22000,
+     5
+    ],
+    [
+     22001,
+     1
+    ],
+    [
+     22002,
+     5
+    ],
+    [
+     22004,
+     2
+    ],
+    [
+     22003,
+     2
+    ],
+    [
+     22000,
+     3
+    ],
+    [
+     21547,
+     4
+    ]
+   ],
+   "total": 22,
+   "rom_total": 22,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_MEDIUM_PUNCH",
+   "variant": null
+  },
+  "1e88": {
+   "loop": false,
+   "sequence": [
+    [
+     22012,
+     3
+    ],
+    [
+     22013,
+     2
+    ],
+    [
+     22014,
+     1
+    ],
+    [
+     22015,
+     2
+    ],
+    [
+     22016,
+     8
+    ],
+    [
+     22017,
+     3
+    ],
+    [
+     22018,
+     3
+    ],
+    [
+     22019,
+     3
+    ],
+    [
+     22020,
+     3
+    ],
+    [
+     21546,
+     3
+    ],
+    [
+     21547,
+     4
+    ]
+   ],
+   "total": 35,
+   "rom_total": 35,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_HEAVY_PUNCH",
+   "variant": null
+  },
+  "1f68": {
+   "loop": false,
+   "sequence": [
+    [
+     22033,
+     5
+    ],
+    [
+     22034,
+     1
+    ],
+    [
+     22035,
+     2
+    ],
+    [
+     22036,
+     3
+    ],
+    [
+     22033,
+     3
+    ],
+    [
+     22032,
+     4
+    ],
+    [
+     22037,
+     1
+    ]
+   ],
+   "total": 19,
+   "rom_total": 19,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_LIGHT_KICK",
+   "variant": null
+  },
+  "2008": {
+   "loop": false,
+   "sequence": [
+    [
+     22038,
+     2
+    ],
+    [
+     22052,
+     2
+    ],
+    [
+     22039,
+     2
+    ],
+    [
+     22040,
+     1
+    ],
+    [
+     22041,
+     2
+    ],
+    [
+     22042,
+     5
+    ],
+    [
+     22043,
+     4
+    ],
+    [
+     22052,
+     4
+    ],
+    [
+     22053,
+     4
+    ],
+    [
+     21547,
+     5
+    ]
+   ],
+   "total": 31,
+   "rom_total": 31,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_MEDIUM_KICK",
+   "variant": null
+  },
+  "20d8": {
+   "loop": false,
+   "sequence": [
+    [
+     22038,
+     3
+    ],
+    [
+     22044,
+     2
+    ],
+    [
+     22045,
+     2
+    ],
+    [
+     22046,
+     2
+    ],
+    [
+     22047,
+     3
+    ],
+    [
+     22048,
+     4
+    ],
+    [
+     22049,
+     4
+    ],
+    [
+     22050,
+     4
+    ],
+    [
+     22051,
+     4
+    ],
+    [
+     22052,
+     4
+    ],
+    [
+     22053,
+     4
+    ],
+    [
+     21547,
+     1
+    ]
+   ],
+   "total": 37,
+   "rom_total": 41,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 2
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "CROUCH_HEAVY_KICK",
+   "variant": null
+  },
+  "21c8": {
+   "loop": false,
+   "sequence": [
+    [
+     22064,
+     2
+    ],
+    [
+     22065,
+     2
+    ],
+    [
+     22066,
+     2
+    ],
+    [
+     22067,
+     4
+    ],
+    [
+     22068,
+     4
+    ],
+    [
+     22069,
+     4
+    ],
+    [
+     22067,
+     3
+    ]
+   ],
+   "total": 21,
+   "rom_total": 30,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_LIGHT_PUNCH",
+   "variant": "neutral"
+  },
+  "22a8": {
+   "loop": false,
+   "sequence": [
+    [
+     22081,
+     3
+    ],
+    [
+     22082,
+     2
+    ],
+    [
+     22083,
+     1
+    ],
+    [
+     22084,
+     2
+    ],
+    [
+     22088,
+     2
+    ],
+    [
+     22085,
+     3
+    ],
+    [
+     22086,
+     3
+    ],
+    [
+     22087,
+     4
+    ],
+    [
+     21590,
+     4
+    ],
+    [
+     21591,
+     1
+    ]
+   ],
+   "total": 25,
+   "rom_total": 31,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_MEDIUM_PUNCH",
+   "variant": null
+  },
+  "2388": {
+   "loop": false,
+   "sequence": [
+    [
+     22094,
+     3
+    ],
+    [
+     22095,
+     3
+    ],
+    [
+     22096,
+     1
+    ],
+    [
+     22097,
+     2
+    ],
+    [
+     22099,
+     3
+    ],
+    [
+     22100,
+     4
+    ],
+    [
+     21578,
+     4
+    ],
+    [
+     21577,
+     4
+    ]
+   ],
+   "total": 24,
+   "rom_total": 39,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_HEAVY_PUNCH",
+   "variant": "neutral"
+  },
+  "2448": {
+   "loop": false,
+   "sequence": [
+    [
+     22117,
+     2
+    ],
+    [
+     22118,
+     2
+    ],
+    [
+     22112,
+     1
+    ],
+    [
+     22113,
+     3
+    ],
+    [
+     22114,
+     3
+    ],
+    [
+     22115,
+     3
+    ],
+    [
+     22113,
+     3
+    ],
+    [
+     22114,
+     3
+    ]
+   ],
+   "total": 20,
+   "rom_total": 35,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_LIGHT_KICK",
+   "variant": "neutral"
+  },
+  "2558": {
+   "loop": false,
+   "sequence": [
+    [
+     22125,
+     5
+    ],
+    [
+     22126,
+     1
+    ],
+    [
+     22127,
+     2
+    ],
+    [
+     22128,
+     5
+    ],
+    [
+     22129,
+     1
+    ]
+   ],
+   "total": 14,
+   "rom_total": 22,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_MEDIUM_KICK",
+   "variant": "neutral"
+  },
+  "2628": {
+   "loop": false,
+   "sequence": [
+    [
+     22131,
+     3
+    ],
+    [
+     22132,
+     3
+    ],
+    [
+     22133,
+     2
+    ],
+    [
+     22134,
+     3
+    ],
+    [
+     22135,
+     5
+    ]
+   ],
+   "total": 16,
+   "rom_total": 31,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_HEAVY_KICK",
+   "variant": "neutral"
+  },
+  "2708": {
+   "loop": false,
+   "sequence": [
+    [
+     22064,
+     2
+    ],
+    [
+     22065,
+     2
+    ],
+    [
+     22066,
+     2
+    ],
+    [
+     22067,
+     4
+    ],
+    [
+     22068,
+     4
+    ],
+    [
+     22069,
+     3
+    ]
+   ],
+   "total": 17,
+   "rom_total": 32,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 2
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_LIGHT_PUNCH",
+   "variant": null
+  },
+  "2800": {
+   "loop": false,
+   "sequence": [
+    [
+     22081,
+     3
+    ],
+    [
+     22082,
+     3
+    ],
+    [
+     22083,
+     1
+    ],
+    [
+     22084,
+     1
+    ],
+    [
+     22088,
+     2
+    ],
+    [
+     22085,
+     2
+    ],
+    [
+     22086,
+     4
+    ],
+    [
+     22087,
+     3
+    ]
+   ],
+   "total": 19,
+   "rom_total": 24,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 3
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_HEAVY_PUNCH",
+   "variant": null
+  },
+  "28e0": {
+   "loop": false,
+   "sequence": [
+    [
+     22117,
+     2
+    ],
+    [
+     22118,
+     2
+    ],
+    [
+     22112,
+     1
+    ],
+    [
+     22113,
+     3
+    ],
+    [
+     22114,
+     3
+    ],
+    [
+     22115,
+     3
+    ],
+    [
+     22116,
+     2
+    ]
+   ],
+   "total": 16,
+   "rom_total": 18,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_LIGHT_KICK",
+   "variant": null
+  },
+  "29c0": {
+   "loop": false,
+   "sequence": [
+    [
+     22117,
+     3
+    ],
+    [
+     22118,
+     2
+    ],
+    [
+     22119,
+     1
+    ],
+    [
+     22120,
+     2
+    ],
+    [
+     22121,
+     3
+    ],
+    [
+     22122,
+     2
+    ],
+    [
+     22123,
+     2
+    ]
+   ],
+   "total": 15,
+   "rom_total": 21,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_MEDIUM_KICK",
+   "variant": null
+  },
+  "2b30": {
+   "loop": false,
+   "sequence": [
+    [
+     22117,
+     2
+    ],
+    [
+     22118,
+     4
+    ],
+    [
+     22119,
+     1
+    ],
+    [
+     22120,
+     1
+    ],
+    [
+     22121,
+     2
+    ],
+    [
+     22122,
+     2
+    ],
+    [
+     22123,
+     3
+    ],
+    [
+     22124,
+     1
+    ]
+   ],
+   "total": 16,
+   "rom_total": 22,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 2
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "JUMP_HEAVY_KICK",
+   "variant": null
+  },
+  "5cec": {
+   "loop": true,
+   "sequence": [
+    [
+     21736,
+     2
+    ],
+    [
+     21737,
+     2
+    ],
+    [
+     21738,
+     1
+    ],
+    [
+     21739,
+     1
+    ],
+    [
+     21740,
+     1
+    ],
+    [
+     21741,
+     2
+    ],
+    [
+     21742,
+     1
+    ],
+    [
+     21743,
+     3
+    ],
+    [
+     21744,
+     3
+    ],
+    [
+     21745,
+     3
+    ],
+    [
+     21746,
+     2
+    ],
+    [
+     21747,
+     2
+    ],
+    [
+     21748,
+     2
+    ],
+    [
+     21749,
+     2
+    ],
+    [
+     21750,
+     2
+    ],
+    [
+     21751,
+     2
+    ],
+    [
+     21752,
+     3
+    ]
+   ],
+   "total": 34,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 28
+   },
+   "complete": false,
+   "missing_cels": [
+    21736,
+    21737,
+    21738,
+    21739,
+    21740,
+    21743,
+    21744,
+    21745,
+    21746,
+    21747
+   ],
+   "role": "lying",
+   "signature": "dummy posture 38, long"
+  },
+  "8210": {
+   "loop": false,
+   "sequence": [
+    [
+     22176,
+     1
+    ],
+    [
+     22188,
+     1
+    ],
+    [
+     22177,
+     2
+    ],
+    [
+     22178,
+     3
+    ],
+    [
+     22179,
+     1
+    ],
+    [
+     22180,
+     2
+    ],
+    [
+     22181,
+     3
+    ],
+    [
+     22182,
+     3
+    ],
+    [
+     22183,
+     4
+    ],
+    [
+     22184,
+     5
+    ],
+    [
+     22185,
+     6
+    ],
+    [
+     22189,
+     7
+    ],
+    [
+     22186,
+     3
+    ],
+    [
+     22187,
+     4
+    ],
+    [
+     21551,
+     4
+    ],
+    [
+     21651,
+     5
+    ]
+   ],
+   "total": 54,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 11
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "gohadoken",
+   "signature": "P1 fireball launch, 14 cels; hits at f24+ (the projectile)"
+  },
+  "84f8": {
+   "loop": false,
+   "sequence": [
+    [
+     22193,
+     3
+    ],
+    [
+     22194,
+     2
+    ],
+    [
+     22196,
+     2
+    ],
+    [
+     22197,
+     10
+    ],
+    [
+     22198,
+     4
+    ],
+    [
+     22199,
+     4
+    ],
+    [
+     22200,
+     2
+    ],
+    [
+     22201,
+     3
+    ],
+    [
+     22202,
+     4
+    ],
+    [
+     22219,
+     1
+    ]
+   ],
+   "total": 35,
+   "rom_total": 35,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 15
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "GOSHORYUKEN",
+   "variant": "light"
+  },
+  "85c8": {
+   "loop": false,
+   "sequence": [
+    [
+     22193,
+     2
+    ],
+    [
+     22194,
+     2
+    ],
+    [
+     22196,
+     3
+    ],
+    [
+     22197,
+     12
+    ]
+   ],
+   "total": 19,
+   "rom_total": 19,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "GOSHORYUKEN",
+   "variant": "medium"
+  },
+  "8658": {
+   "loop": false,
+   "sequence": [
+    [
+     22192,
+     1
+    ],
+    [
+     22193,
+     2
+    ],
+    [
+     22194,
+     2
+    ],
+    [
+     22195,
+     2
+    ],
+    [
+     22196,
+     5
+    ],
+    [
+     22197,
+     12
+    ]
+   ],
+   "total": 24,
+   "rom_total": 24,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "GOSHORYUKEN",
+   "variant": "heavy"
+  },
+  "86e8": {
+   "loop": false,
+   "sequence": [
+    [
+     21879,
+     1
+    ],
+    [
+     22204,
+     1
+    ],
+    [
+     22205,
+     2
+    ],
+    [
+     22206,
+     4
+    ],
+    [
+     22207,
+     3
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     2
+    ],
+    [
+     22304,
+     3
+    ],
+    [
+     22215,
+     3
+    ]
+   ],
+   "total": 24,
+   "rom_total": 24,
+   "source": {
+    "side": "c1",
+    "whiff": false,
+    "runs": 5
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "light"
+  },
+  "87f8": {
+   "loop": false,
+   "sequence": [
+    [
+     21879,
+     1
+    ],
+    [
+     22204,
+     1
+    ],
+    [
+     22205,
+     2
+    ],
+    [
+     22206,
+     4
+    ],
+    [
+     22207,
+     3
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     2
+    ],
+    [
+     22304,
+     3
+    ],
+    [
+     22215,
+     2
+    ]
+   ],
+   "total": 30,
+   "rom_total": 30,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "medium"
+  },
+  "8800": {
+   "loop": true,
+   "sequence": [
+    [
+     21506,
+     5
+    ],
+    [
+     21507,
+     5
+    ],
+    [
+     21508,
+     5
+    ],
+    [
+     21509,
+     6
+    ],
+    [
+     21510,
+     6
+    ],
+    [
+     21511,
+     5
+    ],
+    [
+     21512,
+     4
+    ],
+    [
+     21513,
+     4
+    ],
+    [
+     21514,
+     4
+    ],
+    [
+     21505,
+     5
+    ]
+   ],
+   "total": 49,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 440
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "stance",
+   "signature": "posture 0, no motion"
+  },
+  "8910": {
+   "loop": true,
+   "sequence": [
+    [
+     21520,
+     2
+    ],
+    [
+     21521,
+     4
+    ],
+    [
+     21522,
+     2
+    ],
+    [
+     21523,
+     2
+    ],
+    [
+     21524,
+     2
+    ],
+    [
+     21525,
+     3
+    ],
+    [
+     21526,
+     4
+    ],
+    [
+     21527,
+     4
+    ],
+    [
+     21528,
+     4
+    ],
+    [
+     21529,
+     5
+    ],
+    [
+     21530,
+     3
+    ]
+   ],
+   "total": 35,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 251
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "walk_forward",
+   "signature": "dx +2.4/f, posture 6"
+  },
+  "8968": {
+   "loop": false,
+   "sequence": [
+    [
+     21879,
+     1
+    ],
+    [
+     22204,
+     1
+    ],
+    [
+     22205,
+     2
+    ],
+    [
+     22206,
+     4
+    ],
+    [
+     22207,
+     3
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     2
+    ],
+    [
+     22309,
+     1
+    ]
+   ],
+   "total": 38,
+   "rom_total": 38,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "heavy"
+  },
+  "89e0": {
+   "loop": true,
+   "sequence": [
+    [
+     21532,
+     3
+    ],
+    [
+     21533,
+     3
+    ],
+    [
+     21534,
+     5
+    ],
+    [
+     21535,
+     2
+    ],
+    [
+     21536,
+     3
+    ],
+    [
+     21537,
+     3
+    ],
+    [
+     21538,
+     3
+    ],
+    [
+     21539,
+     2
+    ],
+    [
+     21540,
+     2
+    ],
+    [
+     21541,
+     5
+    ],
+    [
+     21542,
+     3
+    ]
+   ],
+   "total": 34,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 255
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "walk_backward",
+   "signature": "dx -1.7/f, posture 8"
+  },
+  "8ab0": {
+   "loop": false,
+   "sequence": [
+    [
+     21545,
+     2
+    ],
+    [
+     21616,
+     4
+    ],
+    [
+     21617,
+     4
+    ],
+    [
+     21618,
+     2
+    ],
+    [
+     21619,
+     4
+    ],
+    [
+     21620,
+     2
+    ]
+   ],
+   "total": 18,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 8
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "dash_forward",
+   "signature": "dx +2.4/f, posture 10, busy"
+  },
+  "8b60": {
+   "loop": false,
+   "sequence": [
+    [
+     21545,
+     2
+    ],
+    [
+     21622,
+     2
+    ],
+    [
+     21623,
+     2
+    ],
+    [
+     21624,
+     2
+    ],
+    [
+     21625,
+     2
+    ],
+    [
+     21626,
+     6
+    ],
+    [
+     21627,
+     2
+    ]
+   ],
+   "total": 18,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "dash_backward",
+   "signature": "dx -1.9/f, posture 12, busy"
+  },
+  "8c20": {
+   "loop": false,
+   "sequence": [
+    [
+     21544,
+     1
+    ],
+    [
+     21545,
+     2
+    ],
+    [
+     21546,
+     2
+    ],
+    [
+     21547,
+     2
+    ],
+    [
+     21548,
+     4
+    ]
+   ],
+   "total": 11,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 124
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "crouch_down",
+   "signature": "posture 32, 3 cels, from stand"
+  },
+  "8c90": {
+   "loop": true,
+   "sequence": [
+    [
+     21548,
+     12
+    ],
+    [
+     21552,
+     11
+    ],
+    [
+     21553,
+     10
+    ],
+    [
+     21554,
+     9
+    ],
+    [
+     21555,
+     11
+    ]
+   ],
+   "total": 53,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 42
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "crouch_hold",
+   "signature": "posture 32, held cels (idle)"
+  },
+  "8d60": {
+   "loop": false,
+   "sequence": [
+    [
+     21549,
+     3
+    ],
+    [
+     21550,
+     4
+    ],
+    [
+     21551,
+     4
+    ]
+   ],
+   "total": 11,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 102
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "crouch_up",
+   "signature": "posture 32 -> stand"
+  },
+  "8e20": {
+   "loop": false,
+   "sequence": [
+    [
+     21580,
+     10
+    ],
+    [
+     21581,
+     4
+    ],
+    [
+     21582,
+     3
+    ],
+    [
+     21583,
+     3
+    ],
+    [
+     21584,
+     3
+    ],
+    [
+     21585,
+     2
+    ],
+    [
+     21586,
+     2
+    ],
+    [
+     21587,
+     2
+    ],
+    [
+     21588,
+     3
+    ],
+    [
+     21589,
+     3
+    ]
+   ],
+   "total": 35,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 48
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "jump_forward",
+   "signature": "airborne, dx +3.6/f, posture 20"
+  },
+  "8f20": {
+   "loop": false,
+   "sequence": [
+    [
+     21568,
+     2
+    ],
+    [
+     21569,
+     2
+    ],
+    [
+     21568,
+     1
+    ],
+    [
+     21569,
+     1
+    ],
+    [
+     21570,
+     3
+    ],
+    [
+     21571,
+     3
+    ],
+    [
+     21572,
+     3
+    ],
+    [
+     21573,
+     3
+    ],
+    [
+     21574,
+     3
+    ],
+    [
+     21575,
+     3
+    ],
+    [
+     21576,
+     3
+    ],
+    [
+     21577,
+     3
+    ],
+    [
+     21578,
+     3
+    ],
+    [
+     21577,
+     1
+    ]
+   ],
+   "total": 34,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 87
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "jump_up",
+   "signature": "airborne, dx 0, posture 22"
+  },
+  "9030": {
+   "loop": false,
+   "sequence": [
+    [
+     21588,
+     10
+    ],
+    [
+     21587,
+     4
+    ],
+    [
+     21586,
+     3
+    ],
+    [
+     21585,
+     3
+    ],
+    [
+     21584,
+     3
+    ],
+    [
+     21583,
+     2
+    ],
+    [
+     21582,
+     2
+    ],
+    [
+     21581,
+     2
+    ],
+    [
+     21580,
+     3
+    ],
+    [
+     21592,
+     3
+    ],
+    [
+     21590,
+     1
+    ]
+   ],
+   "total": 36,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "jump_backward",
+   "signature": "airborne, dx -0.7/f, posture 24"
+  },
+  "9618": {
+   "loop": false,
+   "sequence": [
+    [
+     22416,
+     1
+    ],
+    [
+     22417,
+     2
+    ],
+    [
+     22418,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22306,
+     1
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     1
+    ],
+    [
+     22309,
+     2
+    ],
+    [
+     22215,
+     3
+    ],
+    [
+     21574,
+     3
+    ],
+    [
+     21575,
+     3
+    ],
+    [
+     21576,
+     1
+    ]
+   ],
+   "total": 22,
+   "rom_total": 18,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 8
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "air_light"
+  },
+  "9738": {
+   "loop": false,
+   "sequence": [
+    [
+     22416,
+     1
+    ],
+    [
+     22417,
+     2
+    ],
+    [
+     22418,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22306,
+     1
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     1
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22306,
+     1
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     1
+    ],
+    [
+     22309,
+     1
+    ]
+   ],
+   "total": 18,
+   "rom_total": 18,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "air_medium"
+  },
+  "9818": {
+   "loop": false,
+   "sequence": [
+    [
+     22416,
+     1
+    ],
+    [
+     22417,
+     2
+    ],
+    [
+     22418,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22306,
+     1
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     1
+    ],
+    [
+     22309,
+     1
+    ],
+    [
+     22304,
+     1
+    ],
+    [
+     22305,
+     2
+    ],
+    [
+     22306,
+     1
+    ],
+    [
+     22307,
+     1
+    ],
+    [
+     22308,
+     1
+    ]
+   ],
+   "total": 17,
+   "rom_total": 26,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 4
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "TATSUMAKI",
+   "variant": "air_heavy"
+  },
+  "9fdc": {
+   "loop": false,
+   "sequence": [
+    [
+     21601,
+     1
+    ],
+    [
+     21602,
+     6
+    ],
+    [
+     21600,
+     1
+    ]
+   ],
+   "total": 8,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": false,
+    "runs": 39
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "block_high",
+   "signature": "dummy blocking_id set, posture 0"
+  },
+  "a05c": {
+   "loop": false,
+   "sequence": [
+    [
+     21606,
+     1
+    ],
+    [
+     21607,
+     6
+    ],
+    [
+     21605,
+     8
+    ],
+    [
+     21603,
+     5
+    ]
+   ],
+   "total": 20,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": false,
+    "runs": 6
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "block_crouch",
+   "signature": "dummy blocking_id set, posture 32"
+  },
+  "a130": {
+   "loop": false,
+   "sequence": [
+    [
+     22081,
+     3
+    ],
+    [
+     22082,
+     1
+    ],
+    [
+     22272,
+     1
+    ],
+    [
+     22273,
+     4
+    ],
+    [
+     22274,
+     2
+    ],
+    [
+     22275,
+     1
+    ],
+    [
+     22276,
+     6
+    ],
+    [
+     22274,
+     4
+    ],
+    [
+     21577,
+     3
+    ]
+   ],
+   "total": 25,
+   "rom_total": null,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 12
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "air_gohadoken",
+   "signature": "airborne (posture 22), dx +2.3/f, busy: the air fireball"
+  },
+  "a2ec": {
+   "loop": false,
+   "sequence": [
+    [
+     21649,
+     3
+    ],
+    [
+     21653,
+     6
+    ],
+    [
+     21654,
+     4
+    ],
+    [
+     21650,
+     3
+    ],
+    [
+     21551,
+     3
+    ],
+    [
+     21651,
+     5
+    ]
+   ],
+   "total": 24,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": false,
+    "runs": 12
+   },
+   "complete": false,
+   "missing_cels": [
+    21649,
+    21653,
+    21654
+   ],
+   "role": "hit_medium",
+   "signature": "dummy stand reel, most frequent"
+  },
+  "adfc": {
+   "loop": false,
+   "sequence": [
+    [
+     21710,
+     1
+    ],
+    [
+     21706,
+     4
+    ],
+    [
+     21711,
+     10
+    ],
+    [
+     21712,
+     4
+    ],
+    [
+     21562,
+     2
+    ],
+    [
+     21563,
+     2
+    ],
+    [
+     21564,
+     1
+    ],
+    [
+     21565,
+     2
+    ]
+   ],
+   "total": 26,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": false,
+    "runs": 1
+   },
+   "complete": false,
+   "missing_cels": [
+    21563,
+    21564,
+    21565
+   ],
+   "role": "crouch_hit",
+   "signature": "dummy reel, posture 32"
+  },
+  "afec": {
+   "loop": false,
+   "sequence": [
+    [
+     21752,
+     13
+    ],
+    [
+     21741,
+     2
+    ],
+    [
+     21824,
+     2
+    ],
+    [
+     21825,
+     2
+    ],
+    [
+     21826,
+     4
+    ],
+    [
+     21827,
+     3
+    ],
+    [
+     21828,
+     4
+    ],
+    [
+     21829,
+     4
+    ],
+    [
+     21830,
+     6
+    ],
+    [
+     21831,
+     3
+    ],
+    [
+     21832,
+     3
+    ],
+    [
+     21833,
+     2
+    ],
+    [
+     21834,
+     5
+    ]
+   ],
+   "total": 53,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": true,
+    "runs": 32
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "knockdown",
+   "signature": "dummy posture 38 -> 0 (wake-up)"
+  },
+  "c4b0": {
+   "loop": false,
+   "sequence": [
+    [
+     22290,
+     1
+    ],
+    [
+     22291,
+     2
+    ],
+    [
+     22292,
+     3
+    ],
+    [
+     22293,
+     3
+    ],
+    [
+     21728,
+     3
+    ],
+    [
+     21729,
+     3
+    ],
+    [
+     21730,
+     3
+    ],
+    [
+     21731,
+     3
+    ],
+    [
+     21732,
+     3
+    ],
+    [
+     21733,
+     3
+    ],
+    [
+     21734,
+     4
+    ],
+    [
+     21735,
+     10
+    ]
+   ],
+   "total": 41,
+   "rom_total": null,
+   "source": {
+    "side": "c2",
+    "whiff": false,
+    "runs": 4
+   },
+   "complete": false,
+   "missing_cels": [
+    21728,
+    21729,
+    21730,
+    21731,
+    21732,
+    21733,
+    21734,
+    21735,
+    22290,
+    22291,
+    22292,
+    22293
+   ],
+   "role": "launch_spin",
+   "signature": "dummy launched, posture 24 (after DP)"
+  }
+ },
+ "cels": {
+  "21505": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21506": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21507": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21508": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21509": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21510": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21511": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21512": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21513": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21514": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21520": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21521": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21522": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21523": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21524": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21525": {
+   "left": -51,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21526": {
+   "left": -35,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21527": {
+   "left": -35,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21528": {
+   "left": -49,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21529": {
+   "left": -49,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21530": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21532": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21533": {
+   "left": -49,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21534": {
+   "left": -33,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21535": {
+   "left": -33,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21536": {
+   "left": -33,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21537": {
+   "left": -33,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21538": {
+   "left": -33,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "21539": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21540": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21541": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21542": {
+   "left": -49,
+   "top": -122,
+   "width": 96,
+   "height": 128
+  },
+  "21544": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21545": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21546": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21547": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "21548": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "21549": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "21550": {
+   "left": -56,
+   "top": -91,
+   "width": 112,
+   "height": 112
+  },
+  "21551": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21552": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "21553": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "21554": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "21555": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "21562": {
+   "left": -64,
+   "top": -76,
+   "width": 112,
+   "height": 80
+  },
+  "21568": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21569": {
+   "left": -39,
+   "top": -132,
+   "width": 80,
+   "height": 144
+  },
+  "21570": {
+   "left": -39,
+   "top": -132,
+   "width": 80,
+   "height": 144
+  },
+  "21571": {
+   "left": -39,
+   "top": -132,
+   "width": 80,
+   "height": 128
+  },
+  "21572": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 112
+  },
+  "21573": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "21574": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "21575": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "21576": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 112
+  },
+  "21577": {
+   "left": -39,
+   "top": -132,
+   "width": 80,
+   "height": 144
+  },
+  "21578": {
+   "left": -39,
+   "top": -132,
+   "width": 80,
+   "height": 144
+  },
+  "21580": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21581": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21582": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21583": {
+   "left": -29,
+   "top": -94,
+   "width": 80,
+   "height": 64
+  },
+  "21584": {
+   "left": -46,
+   "top": -96,
+   "width": 96,
+   "height": 64
+  },
+  "21585": {
+   "left": -32,
+   "top": -99,
+   "width": 64,
+   "height": 64
+  },
+  "21586": {
+   "left": -37,
+   "top": -103,
+   "width": 64,
+   "height": 64
+  },
+  "21587": {
+   "left": -53,
+   "top": -105,
+   "width": 96,
+   "height": 64
+  },
+  "21588": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21589": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21590": {
+   "left": -35,
+   "top": -132,
+   "width": 80,
+   "height": 128
+  },
+  "21591": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21592": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21600": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21601": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21602": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21603": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21605": {
+   "left": -56,
+   "top": -91,
+   "width": 112,
+   "height": 96
+  },
+  "21606": {
+   "left": -56,
+   "top": -91,
+   "width": 112,
+   "height": 96
+  },
+  "21607": {
+   "left": -56,
+   "top": -91,
+   "width": 112,
+   "height": 96
+  },
+  "21616": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21617": {
+   "left": -55,
+   "top": -108,
+   "width": 112,
+   "height": 112
+  },
+  "21618": {
+   "left": -71,
+   "top": -108,
+   "width": 128,
+   "height": 112
+  },
+  "21619": {
+   "left": -55,
+   "top": -108,
+   "width": 112,
+   "height": 112
+  },
+  "21620": {
+   "left": -55,
+   "top": -108,
+   "width": 112,
+   "height": 112
+  },
+  "21621": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 128
+  },
+  "21622": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21623": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21624": {
+   "left": -39,
+   "top": -108,
+   "width": 112,
+   "height": 112
+  },
+  "21625": {
+   "left": -39,
+   "top": -108,
+   "width": 112,
+   "height": 112
+  },
+  "21626": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21627": {
+   "left": -55,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21650": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21651": {
+   "left": -51,
+   "top": -107,
+   "width": 96,
+   "height": 112
+  },
+  "21706": {
+   "left": -64,
+   "top": -76,
+   "width": 112,
+   "height": 96
+  },
+  "21710": {
+   "left": -64,
+   "top": -92,
+   "width": 112,
+   "height": 112
+  },
+  "21711": {
+   "left": -64,
+   "top": -76,
+   "width": 112,
+   "height": 96
+  },
+  "21712": {
+   "left": -80,
+   "top": -60,
+   "width": 128,
+   "height": 80
+  },
+  "21741": {
+   "left": -84,
+   "top": -54,
+   "width": 176,
+   "height": 64
+  },
+  "21742": {
+   "left": -100,
+   "top": -38,
+   "width": 208,
+   "height": 48
+  },
+  "21748": {
+   "left": -71,
+   "top": -70,
+   "width": 160,
+   "height": 80
+  },
+  "21749": {
+   "left": -84,
+   "top": -38,
+   "width": 192,
+   "height": 48
+  },
+  "21750": {
+   "left": -84,
+   "top": -22,
+   "width": 192,
+   "height": 32
+  },
+  "21751": {
+   "left": -84,
+   "top": -38,
+   "width": 192,
+   "height": 48
+  },
+  "21752": {
+   "left": -100,
+   "top": -38,
+   "width": 208,
+   "height": 48
+  },
+  "21824": {
+   "left": -84,
+   "top": -86,
+   "width": 128,
+   "height": 96
+  },
+  "21825": {
+   "left": -83,
+   "top": -72,
+   "width": 96,
+   "height": 80
+  },
+  "21826": {
+   "left": -99,
+   "top": -56,
+   "width": 112,
+   "height": 64
+  },
+  "21827": {
+   "left": -84,
+   "top": -72,
+   "width": 96,
+   "height": 80
+  },
+  "21828": {
+   "left": -83,
+   "top": -104,
+   "width": 112,
+   "height": 112
+  },
+  "21829": {
+   "left": -71,
+   "top": -72,
+   "width": 128,
+   "height": 80
+  },
+  "21830": {
+   "left": -57,
+   "top": -74,
+   "width": 112,
+   "height": 80
+  },
+  "21831": {
+   "left": -42,
+   "top": -90,
+   "width": 96,
+   "height": 96
+  },
+  "21832": {
+   "left": -44,
+   "top": -92,
+   "width": 96,
+   "height": 96
+  },
+  "21833": {
+   "left": -39,
+   "top": -92,
+   "width": 96,
+   "height": 112
+  },
+  "21834": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21856": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21857": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21858": {
+   "left": -55,
+   "top": -124,
+   "width": 144,
+   "height": 128
+  },
+  "21859": {
+   "left": -39,
+   "top": -124,
+   "width": 128,
+   "height": 128
+  },
+  "21860": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21862": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21863": {
+   "left": -55,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21864": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21865": {
+   "left": -55,
+   "top": -108,
+   "width": 160,
+   "height": 112
+  },
+  "21866": {
+   "left": -55,
+   "top": -108,
+   "width": 144,
+   "height": 112
+  },
+  "21867": {
+   "left": -55,
+   "top": -124,
+   "width": 128,
+   "height": 128
+  },
+  "21869": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21870": {
+   "left": -54,
+   "top": -107,
+   "width": 112,
+   "height": 112
+  },
+  "21871": {
+   "left": -58,
+   "top": -107,
+   "width": 128,
+   "height": 112
+  },
+  "21872": {
+   "left": -75,
+   "top": -107,
+   "width": 128,
+   "height": 112
+  },
+  "21873": {
+   "left": -79,
+   "top": -106,
+   "width": 176,
+   "height": 112
+  },
+  "21874": {
+   "left": -79,
+   "top": -107,
+   "width": 176,
+   "height": 112
+  },
+  "21875": {
+   "left": -79,
+   "top": -107,
+   "width": 176,
+   "height": 112
+  },
+  "21876": {
+   "left": -69,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "21877": {
+   "left": -45,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21879": {
+   "left": -49,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21883": {
+   "left": -55,
+   "top": -108,
+   "width": 144,
+   "height": 112
+  },
+  "21888": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21889": {
+   "left": -55,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21891": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21892": {
+   "left": -55,
+   "top": -124,
+   "width": 112,
+   "height": 144
+  },
+  "21894": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21895": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21896": {
+   "left": -38,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21897": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21899": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21900": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 128
+  },
+  "21901": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21902": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 128
+  },
+  "21903": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 128
+  },
+  "21905": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "21906": {
+   "left": -39,
+   "top": -108,
+   "width": 112,
+   "height": 128
+  },
+  "21907": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21908": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "21909": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21910": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21911": {
+   "left": -39,
+   "top": -124,
+   "width": 96,
+   "height": 144
+  },
+  "21915": {
+   "left": -39,
+   "top": -108,
+   "width": 96,
+   "height": 128
+  },
+  "21928": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21929": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21930": {
+   "left": -55,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21931": {
+   "left": -62,
+   "top": -108,
+   "width": 176,
+   "height": 112
+  },
+  "21932": {
+   "left": -62,
+   "top": -108,
+   "width": 160,
+   "height": 112
+  },
+  "21933": {
+   "left": -59,
+   "top": -108,
+   "width": 128,
+   "height": 112
+  },
+  "21934": {
+   "left": -59,
+   "top": -124,
+   "width": 112,
+   "height": 128
+  },
+  "21935": {
+   "left": -62,
+   "top": -108,
+   "width": 144,
+   "height": 112
+  },
+  "21936": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21937": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21938": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21939": {
+   "left": -43,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21940": {
+   "left": -47,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21941": {
+   "left": -51,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21942": {
+   "left": -41,
+   "top": -124,
+   "width": 112,
+   "height": 128
+  },
+  "21943": {
+   "left": -43,
+   "top": -124,
+   "width": 128,
+   "height": 128
+  },
+  "21944": {
+   "left": -44,
+   "top": -124,
+   "width": 144,
+   "height": 128
+  },
+  "21945": {
+   "left": -39,
+   "top": -108,
+   "width": 128,
+   "height": 112
+  },
+  "21946": {
+   "left": -33,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21947": {
+   "left": -27,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21948": {
+   "left": -41,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21949": {
+   "left": -62,
+   "top": -108,
+   "width": 160,
+   "height": 112
+  },
+  "21950": {
+   "left": -25,
+   "top": -108,
+   "width": 128,
+   "height": 112
+  },
+  "21952": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "21953": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21954": {
+   "left": -23,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21955": {
+   "left": -23,
+   "top": -124,
+   "width": 112,
+   "height": 128
+  },
+  "21956": {
+   "left": -23,
+   "top": -124,
+   "width": 112,
+   "height": 128
+  },
+  "21957": {
+   "left": -31,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21958": {
+   "left": -43,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21960": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "21961": {
+   "left": -43,
+   "top": -108,
+   "width": 96,
+   "height": 112
+  },
+  "21963": {
+   "left": -15,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "21964": {
+   "left": -20,
+   "top": -124,
+   "width": 96,
+   "height": 128
+  },
+  "21965": {
+   "left": -20,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "22000": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22001": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "22002": {
+   "left": -40,
+   "top": -75,
+   "width": 128,
+   "height": 96
+  },
+  "22003": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "22004": {
+   "left": -40,
+   "top": -75,
+   "width": 112,
+   "height": 96
+  },
+  "22012": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22013": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22014": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22015": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 96
+  },
+  "22016": {
+   "left": -40,
+   "top": -139,
+   "width": 96,
+   "height": 144
+  },
+  "22017": {
+   "left": -40,
+   "top": -123,
+   "width": 96,
+   "height": 128
+  },
+  "22018": {
+   "left": -40,
+   "top": -123,
+   "width": 96,
+   "height": 128
+  },
+  "22019": {
+   "left": -40,
+   "top": -107,
+   "width": 96,
+   "height": 112
+  },
+  "22020": {
+   "left": -40,
+   "top": -107,
+   "width": 96,
+   "height": 112
+  },
+  "22032": {
+   "left": -56,
+   "top": -75,
+   "width": 96,
+   "height": 80
+  },
+  "22033": {
+   "left": -40,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22034": {
+   "left": -56,
+   "top": -75,
+   "width": 96,
+   "height": 80
+  },
+  "22035": {
+   "left": -56,
+   "top": -75,
+   "width": 160,
+   "height": 80
+  },
+  "22036": {
+   "left": -56,
+   "top": -75,
+   "width": 144,
+   "height": 80
+  },
+  "22037": {
+   "left": -56,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "22038": {
+   "left": -40,
+   "top": -75,
+   "width": 96,
+   "height": 96
+  },
+  "22039": {
+   "left": -52,
+   "top": -91,
+   "width": 96,
+   "height": 96
+  },
+  "22040": {
+   "left": -52,
+   "top": -75,
+   "width": 112,
+   "height": 80
+  },
+  "22041": {
+   "left": -71,
+   "top": -75,
+   "width": 176,
+   "height": 80
+  },
+  "22042": {
+   "left": -71,
+   "top": -75,
+   "width": 176,
+   "height": 80
+  },
+  "22043": {
+   "left": -71,
+   "top": -75,
+   "width": 160,
+   "height": 80
+  },
+  "22044": {
+   "left": -55,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22045": {
+   "left": -71,
+   "top": -91,
+   "width": 128,
+   "height": 96
+  },
+  "22046": {
+   "left": -27,
+   "top": -91,
+   "width": 80,
+   "height": 96
+  },
+  "22047": {
+   "left": -43,
+   "top": -91,
+   "width": 144,
+   "height": 96
+  },
+  "22048": {
+   "left": -43,
+   "top": -91,
+   "width": 144,
+   "height": 96
+  },
+  "22049": {
+   "left": -31,
+   "top": -91,
+   "width": 128,
+   "height": 96
+  },
+  "22050": {
+   "left": -31,
+   "top": -75,
+   "width": 112,
+   "height": 80
+  },
+  "22051": {
+   "left": -31,
+   "top": -75,
+   "width": 96,
+   "height": 80
+  },
+  "22052": {
+   "left": -55,
+   "top": -91,
+   "width": 96,
+   "height": 112
+  },
+  "22053": {
+   "left": -52,
+   "top": -91,
+   "width": 96,
+   "height": 96
+  },
+  "22064": {
+   "left": -46,
+   "top": -96,
+   "width": 96,
+   "height": 64
+  },
+  "22065": {
+   "left": -41,
+   "top": -126,
+   "width": 96,
+   "height": 112
+  },
+  "22066": {
+   "left": -41,
+   "top": -126,
+   "width": 96,
+   "height": 96
+  },
+  "22067": {
+   "left": -41,
+   "top": -110,
+   "width": 96,
+   "height": 96
+  },
+  "22068": {
+   "left": -41,
+   "top": -110,
+   "width": 96,
+   "height": 80
+  },
+  "22069": {
+   "left": -41,
+   "top": -110,
+   "width": 96,
+   "height": 80
+  },
+  "22081": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 128
+  },
+  "22082": {
+   "left": -51,
+   "top": -132,
+   "width": 112,
+   "height": 112
+  },
+  "22083": {
+   "left": -51,
+   "top": -116,
+   "width": 96,
+   "height": 96
+  },
+  "22084": {
+   "left": -51,
+   "top": -116,
+   "width": 144,
+   "height": 96
+  },
+  "22085": {
+   "left": -51,
+   "top": -116,
+   "width": 128,
+   "height": 96
+  },
+  "22086": {
+   "left": -51,
+   "top": -116,
+   "width": 128,
+   "height": 96
+  },
+  "22087": {
+   "left": -51,
+   "top": -116,
+   "width": 112,
+   "height": 112
+  },
+  "22088": {
+   "left": -67,
+   "top": -116,
+   "width": 160,
+   "height": 96
+  },
+  "22094": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22095": {
+   "left": -45,
+   "top": -127,
+   "width": 96,
+   "height": 96
+  },
+  "22096": {
+   "left": -45,
+   "top": -127,
+   "width": 96,
+   "height": 96
+  },
+  "22097": {
+   "left": -45,
+   "top": -127,
+   "width": 144,
+   "height": 96
+  },
+  "22099": {
+   "left": -45,
+   "top": -127,
+   "width": 144,
+   "height": 96
+  },
+  "22100": {
+   "left": -38,
+   "top": -127,
+   "width": 112,
+   "height": 112
+  },
+  "22112": {
+   "left": -34,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22113": {
+   "left": -34,
+   "top": -116,
+   "width": 96,
+   "height": 96
+  },
+  "22114": {
+   "left": -34,
+   "top": -116,
+   "width": 80,
+   "height": 80
+  },
+  "22115": {
+   "left": -34,
+   "top": -116,
+   "width": 80,
+   "height": 80
+  },
+  "22116": {
+   "left": -34,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22117": {
+   "left": -46,
+   "top": -96,
+   "width": 96,
+   "height": 64
+  },
+  "22118": {
+   "left": -36,
+   "top": -115,
+   "width": 80,
+   "height": 80
+  },
+  "22119": {
+   "left": -34,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22120": {
+   "left": -37,
+   "top": -115,
+   "width": 128,
+   "height": 80
+  },
+  "22121": {
+   "left": -36,
+   "top": -130,
+   "width": 128,
+   "height": 96
+  },
+  "22122": {
+   "left": -36,
+   "top": -130,
+   "width": 128,
+   "height": 96
+  },
+  "22123": {
+   "left": -36,
+   "top": -114,
+   "width": 128,
+   "height": 80
+  },
+  "22124": {
+   "left": -37,
+   "top": -130,
+   "width": 112,
+   "height": 112
+  },
+  "22125": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22126": {
+   "left": -39,
+   "top": -133,
+   "width": 112,
+   "height": 112
+  },
+  "22127": {
+   "left": -55,
+   "top": -132,
+   "width": 160,
+   "height": 96
+  },
+  "22128": {
+   "left": -55,
+   "top": -132,
+   "width": 160,
+   "height": 112
+  },
+  "22129": {
+   "left": -55,
+   "top": -132,
+   "width": 160,
+   "height": 112
+  },
+  "22131": {
+   "left": -39,
+   "top": -116,
+   "width": 80,
+   "height": 96
+  },
+  "22132": {
+   "left": -43,
+   "top": -132,
+   "width": 96,
+   "height": 112
+  },
+  "22133": {
+   "left": -31,
+   "top": -132,
+   "width": 80,
+   "height": 112
+  },
+  "22134": {
+   "left": -38,
+   "top": -132,
+   "width": 128,
+   "height": 112
+  },
+  "22135": {
+   "left": -36,
+   "top": -132,
+   "width": 128,
+   "height": 112
+  },
+  "22176": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 128
+  },
+  "22177": {
+   "left": -55,
+   "top": -124,
+   "width": 128,
+   "height": 128
+  },
+  "22178": {
+   "left": -65,
+   "top": -107,
+   "width": 128,
+   "height": 112
+  },
+  "22179": {
+   "left": -68,
+   "top": -107,
+   "width": 128,
+   "height": 112
+  },
+  "22180": {
+   "left": -72,
+   "top": -91,
+   "width": 160,
+   "height": 96
+  },
+  "22181": {
+   "left": -73,
+   "top": -91,
+   "width": 160,
+   "height": 96
+  },
+  "22182": {
+   "left": -73,
+   "top": -91,
+   "width": 160,
+   "height": 96
+  },
+  "22183": {
+   "left": -73,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22184": {
+   "left": -73,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22185": {
+   "left": -73,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22186": {
+   "left": -73,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22187": {
+   "left": -54,
+   "top": -107,
+   "width": 112,
+   "height": 112
+  },
+  "22188": {
+   "left": -43,
+   "top": -107,
+   "width": 112,
+   "height": 112
+  },
+  "22189": {
+   "left": -73,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22192": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "22193": {
+   "left": -56,
+   "top": -91,
+   "width": 112,
+   "height": 112
+  },
+  "22194": {
+   "left": -39,
+   "top": -91,
+   "width": 96,
+   "height": 96
+  },
+  "22195": {
+   "left": -39,
+   "top": -107,
+   "width": 96,
+   "height": 112
+  },
+  "22196": {
+   "left": -39,
+   "top": -107,
+   "width": 96,
+   "height": 112
+  },
+  "22197": {
+   "left": -47,
+   "top": -147,
+   "width": 96,
+   "height": 160
+  },
+  "22198": {
+   "left": -47,
+   "top": -147,
+   "width": 96,
+   "height": 160
+  },
+  "22199": {
+   "left": -47,
+   "top": -147,
+   "width": 80,
+   "height": 160
+  },
+  "22200": {
+   "left": -47,
+   "top": -147,
+   "width": 80,
+   "height": 144
+  },
+  "22201": {
+   "left": -48,
+   "top": -131,
+   "width": 80,
+   "height": 144
+  },
+  "22202": {
+   "left": -48,
+   "top": -131,
+   "width": 80,
+   "height": 144
+  },
+  "22204": {
+   "left": -39,
+   "top": -108,
+   "width": 80,
+   "height": 112
+  },
+  "22205": {
+   "left": -52,
+   "top": -123,
+   "width": 96,
+   "height": 144
+  },
+  "22206": {
+   "left": -37,
+   "top": -123,
+   "width": 80,
+   "height": 128
+  },
+  "22207": {
+   "left": -30,
+   "top": -122,
+   "width": 80,
+   "height": 128
+  },
+  "22215": {
+   "left": -41,
+   "top": -134,
+   "width": 64,
+   "height": 144
+  },
+  "22219": {
+   "left": -33,
+   "top": -131,
+   "width": 64,
+   "height": 144
+  },
+  "22272": {
+   "left": -51,
+   "top": -116,
+   "width": 96,
+   "height": 96
+  },
+  "22273": {
+   "left": -51,
+   "top": -137,
+   "width": 144,
+   "height": 112
+  },
+  "22274": {
+   "left": -51,
+   "top": -137,
+   "width": 128,
+   "height": 112
+  },
+  "22275": {
+   "left": -35,
+   "top": -137,
+   "width": 96,
+   "height": 128
+  },
+  "22276": {
+   "left": -35,
+   "top": -137,
+   "width": 112,
+   "height": 128
+  },
+  "22304": {
+   "left": -73,
+   "top": -134,
+   "width": 112,
+   "height": 128
+  },
+  "22305": {
+   "left": -57,
+   "top": -118,
+   "width": 96,
+   "height": 112
+  },
+  "22306": {
+   "left": -41,
+   "top": -134,
+   "width": 128,
+   "height": 128
+  },
+  "22307": {
+   "left": -41,
+   "top": -134,
+   "width": 128,
+   "height": 128
+  },
+  "22308": {
+   "left": -57,
+   "top": -134,
+   "width": 96,
+   "height": 128
+  },
+  "22309": {
+   "left": -89,
+   "top": -134,
+   "width": 128,
+   "height": 128
+  },
+  "22310": {
+   "left": -65,
+   "top": -122,
+   "width": 112,
+   "height": 128
+  },
+  "22311": {
+   "left": -61,
+   "top": -123,
+   "width": 112,
+   "height": 128
+  },
+  "22312": {
+   "left": -67,
+   "top": -123,
+   "width": 112,
+   "height": 128
+  },
+  "22313": {
+   "left": -67,
+   "top": -123,
+   "width": 112,
+   "height": 128
+  },
+  "22314": {
+   "left": -51,
+   "top": -123,
+   "width": 96,
+   "height": 128
+  },
+  "22315": {
+   "left": -51,
+   "top": -107,
+   "width": 144,
+   "height": 112
+  },
+  "22316": {
+   "left": -51,
+   "top": -91,
+   "width": 144,
+   "height": 96
+  },
+  "22317": {
+   "left": -51,
+   "top": -91,
+   "width": 144,
+   "height": 96
+  },
+  "22318": {
+   "left": -51,
+   "top": -107,
+   "width": 128,
+   "height": 112
+  },
+  "22416": {
+   "left": -29,
+   "top": -94,
+   "width": 80,
+   "height": 64
+  },
+  "22417": {
+   "left": -71,
+   "top": -118,
+   "width": 128,
+   "height": 112
+  },
+  "22418": {
+   "left": -87,
+   "top": -118,
+   "width": 144,
+   "height": 112
+  },
+  "22439": {
+   "left": -39,
+   "top": -124,
+   "width": 80,
+   "height": 144
+  },
+  "22440": {
+   "left": -52,
+   "top": -115,
+   "width": 112,
+   "height": 128
+  },
+  "22442": {
+   "left": -37,
+   "top": -131,
+   "width": 80,
+   "height": 144
+  },
+  "22443": {
+   "left": -38,
+   "top": -147,
+   "width": 80,
+   "height": 160
+  },
+  "22444": {
+   "left": -38,
+   "top": -131,
+   "width": 80,
+   "height": 144
+  },
+  "22445": {
+   "left": -42,
+   "top": -115,
+   "width": 128,
+   "height": 128
+  },
+  "22446": {
+   "left": -42,
+   "top": -115,
+   "width": 112,
+   "height": 128
+  },
+  "22447": {
+   "left": -33,
+   "top": -115,
+   "width": 80,
+   "height": 128
+  },
+  "22448": {
+   "left": -43,
+   "top": -115,
+   "width": 112,
+   "height": 128
+  },
+  "22449": {
+   "left": -33,
+   "top": -115,
+   "width": 80,
+   "height": 128
+  },
+  "22450": {
+   "left": -43,
+   "top": -115,
+   "width": 80,
+   "height": 128
+  }
+ },
+ "_meta": {
+  "source": "sfiii3nr1 memory: cel per frame from the frame dumps (whiffed runs), cel sprites/axis from dump_cels.lua + cel_decode.py; see tools/rom_extract/README.md",
+  "dumps": [
+   "session3_dump.jsonl.gz",
+   "session2_dump.jsonl.gz"
+  ],
+  "cels_ripped": 458,
+  "status": "verified",
+  "axis": "cel bbox left/top are px from the character's axis (between the feet), y down; sprites face right"
+ }
+}

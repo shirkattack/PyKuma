@@ -10,12 +10,20 @@ from street_fighter_3rd.data.enums import (
 from street_fighter_3rd.systems.animation import (
     SpriteManager,
     AnimationController,
+    CelAnimation,
+    cel_screen_rect,
+    create_cel_animation,
     create_folder_animation,
 )
+import dataclasses
+import json
+import os
+from pathlib import Path as _Path
+from street_fighter_3rd.util.assets import REPO_ROOT as _REPO_ROOT, resolve_asset as _resolve_asset
 from street_fighter_3rd.core.projectile import Gohadoken
 from street_fighter_3rd.data.constants import GRAVITY, STAGE_FLOOR
 from street_fighter_3rd.data.hitbox_repository import HitboxRepository
-from street_fighter_3rd.graphics.palette import player_recolor
+from street_fighter_3rd.graphics.palette import player_recolor, cel_recolor
 from street_fighter_3rd.data.community import community_damage
 
 log = get_logger(__name__)
@@ -138,6 +146,57 @@ def _rom_total_for(state: CharacterState, variant=None):
 # owns the horizontal travel and the body doesn't lurch. See Akuma.render().
 _BODY_ANCHORED_ANIMS = frozenset({"jump_forward", "jump_backward"})
 
+# ROM cel clips (data/characters/akuma/rom_animations.json + the ripped cels in
+# assets/characters/akuma/rom_cels/): every cel of a clip is the sprite the
+# game draws, placed by its exact offset from the axis and held for the ROM's
+# own frame count. A ROM clip replaces the folder clip of the same name
+# whenever its sequence is complete and the PNGs are present; otherwise the
+# folder clip stays. Non-attack roles the engine plays by name:
+_ROM_ROLE_ANIMS = frozenset({
+    "stance", "walk_forward", "walk_backward", "crouch_hold", "jump_up", "jump_forward",
+    "jump_backward", "dash_forward", "dash_backward", "taunt", "block_high", "block_crouch",
+    "gohadoken", "air_gohadoken",
+})
+# folder clips that loop while the state is held; their ROM replacements loop too
+_HELD_LOOP_ANIMS = frozenset({"block_high", "block_crouch"})
+_ROM_ANIMATIONS_JSON = _REPO_ROOT / "data" / "characters" / "akuma" / "rom_animations.json"
+_ROM_CELS_DIR = "assets/characters/akuma/rom_cels"
+
+
+def rom_clip_names(doc: dict, state_anim: dict, cel_exists=None) -> dict:
+    """animation name -> rom_animations.json entry for every clip the engine
+    can take from the ROM: complete sequences (all cels ripped and, when
+    `cel_exists(cel)` is given, present on disk), named by role or by
+    state + variant (`close_medium_punch`, `light_goshoryuken`, ...)."""
+    out = {}
+    for anim_id, e in doc.get("anims", {}).items():
+        if not e.get("complete"):
+            continue
+        if cel_exists is not None and not all(cel_exists(c) for c, _ in e["sequence"]):
+            continue
+        name = None
+        if e.get("role") in _ROM_ROLE_ANIMS:
+            name = e["role"]
+        elif e.get("state"):
+            base = state_anim.get(e["state"])
+            if base:
+                name = f"{e['variant']}_{base}" if e.get("variant") else base
+        if name:
+            out[name] = e
+    return out
+
+
+def resolve_variant_anim(base: str, variant, rom_names, all_names) -> str:
+    """Which registered clip plays for a state's base animation name and move
+    variant, most faithful first: the ROM clip of that variant, the folder
+    clip of that variant (`close_<base>`), the ROM base clip, the folder base."""
+    if variant:
+        if f"{variant}_{base}" in rom_names:
+            return f"{variant}_{base}"
+        if f"{variant}_{base}" in all_names:
+            return f"{variant}_{base}"
+    return base
+
 # Ashura Senku (teleport). Strike-invulnerable reposition; no hitbox/damage.
 # Distances/durations are provisional (game-feel), tagged pending ROM calibration.
 TELEPORT_SPEED = 12.0          # px/frame during the travel window
@@ -238,7 +297,8 @@ class Akuma(Character):
         # by Akuma now); folder animations resolve their own paths.
         # P2 gets a palette swap at load time so the two Akumas can be told apart.
         self.sprite_manager = SpriteManager("assets/characters/akuma/sprite_sheets",
-                                            recolor=player_recolor("akuma", player_number))
+                                            recolor=player_recolor("akuma", player_number),
+                                            cel_recolor=cel_recolor("akuma", player_number))
         self.animation_controller = AnimationController(self.sprite_manager)
         self._move_total = None  # full length of the current ROM-driven special
         self._landed_frame = None  # state_frame at touchdown of a ROM-driven air move
@@ -401,6 +461,50 @@ class Akuma(Character):
             "jump_forward", f(f"{base}/akuma-jumpf", 37, frame_duration=1, loop=False))
         self.animation_controller.add_animation(
             "jump_backward", f(f"{base}/akuma-jumpb", 38, frame_duration=1, loop=False))
+        # ROM cel clips override the folder clips above wherever complete.
+        self._rom_anim_names = set()
+        self._register_rom_animations()
+
+    def _register_rom_animations(self, json_path=_ROM_ANIMATIONS_JSON, cel_dir=_ROM_CELS_DIR):
+        """Swap in the ROM cel clips (see _ROM_ROLE_ANIMS) when the tables and
+        the ripped cel PNGs are present; a missing file just keeps the folder clip."""
+        json_path = _Path(json_path)
+        cel_root = _resolve_asset(cel_dir)
+        if not json_path.exists() or not os.path.isdir(cel_root):
+            return
+        try:
+            doc = json.loads(json_path.read_text())
+        except (OSError, ValueError) as e:
+            log_once(log, ("rom_anim_load",), logging.WARNING, "rom_animations.json unreadable: %s", e)
+            return
+        state_anim = {state.name: name for state, name in self._STATE_ANIM.items()}
+        clips = rom_clip_names(doc, state_anim,
+                               cel_exists=lambda c: os.path.exists(os.path.join(cel_root, f"cel_{c}.png")))
+        for name, entry in clips.items():
+            loop = bool(entry.get("loop")) or name in _HELD_LOOP_ANIMS
+            names = [name]
+            state = entry.get("state")
+            if state and entry.get("equals_variant"):
+                # the un-varianted record is itself one of the variants (st.MP's
+                # base is the close version): alias the clip under that name too
+                names.append(f"{entry['equals_variant']}_{name}")
+            for n in names:
+                self.animation_controller.add_animation(
+                    n, create_cel_animation(cel_dir, entry["sequence"], doc["cels"], loop=loop))
+                self._rom_anim_names.add(n)
+            # ROM-timed states: hold the last cel to / trim at the ROM total so the
+            # clip and the state machine end together (audit: sprite_timing)
+            if state:
+                try:
+                    st = CharacterState[state]
+                except KeyError:
+                    continue
+                total = _rom_total_for(st, entry.get("variant"))
+                if total:
+                    for n in names:
+                        self._fit_animation(n, total)
+        log_once(log, ("rom_anim_summary",), logging.INFO, "ROM cel clips: %d registered (%s)",
+                 len(clips), ", ".join(sorted(clips)))
 
     def reset(self, x: float, y: float):
         """Reset Akuma to a clean round-start state.
@@ -611,13 +715,34 @@ class Akuma(Character):
         n = len(source)
         if not n:
             return
+        if isinstance(anim, CelAnimation):
+            # ROM holds are exact: never re-spread them. A clip shorter than the
+            # state holds its last cel through the remaining frames; a longer one
+            # (an air move animating past its script) is cut where the state ends.
+            frames = [dataclasses.replace(f) for f in source]
+            have = sum(f.duration for f in frames)
+            if total >= have:
+                frames[-1].duration += total - have
+            else:
+                kept, acc = [], 0
+                for f in frames:
+                    if acc + f.duration >= total:
+                        kept.append(dataclasses.replace(f, duration=total - acc))
+                        break
+                    kept.append(f)
+                    acc += f.duration
+                frames = kept
+            anim.frames = frames
+            if anim.current_frame_index >= len(anim.frames):
+                anim.current_frame_index = len(anim.frames) - 1
+            return
         if total >= n:
             anim.frames = list(source)
             for i, frame in enumerate(anim.frames):
                 frame.duration = (i + 1) * total // n - i * total // n
         else:
             picked = [source[i * n // total] for i in range(total)]
-            anim.frames = [type(f)(f.folder_path, f.frame_index, 1) for f in picked]
+            anim.frames = [dataclasses.replace(f, duration=1) for f in picked]
         if anim.current_frame_index >= len(anim.frames):
             anim.current_frame_index = len(anim.frames) - 1
 
@@ -872,17 +997,28 @@ class Akuma(Character):
             # miss animation the same frame (the grab resolves in update()).
             play("throw_back" if self.throw_is_back else "throw_forward", force_restart=True)
         else:
-            name = self._STATE_ANIM.get(new_state)
+            name = self.anim_name_for(new_state)
             if name:
-                # A close proximity normal plays its own clip when one exists.
-                if self.move_variant == "close" and f"close_{name}" in self.animation_controller.animations:
-                    name = f"close_{name}"
                 # ROM-timed states: fit the clip to THIS variant's ROM total
                 # (close/far and neutral-jump variants differ in length).
                 total = _rom_total_for(new_state, self.move_variant)
                 if total:
                     self._fit_animation(name, total)
                 play(name, force_restart=True)
+
+    def anim_name_for(self, state: CharacterState):
+        """The clip that plays for `state` right now: the ROM clip for this
+        variant when it exists (close/far/neutral normals, light/medium/heavy
+        specials, the air fireball), else the folder convention. Shared with
+        the Frame Lab so its expectation is the engine's own choice."""
+        name = self._STATE_ANIM.get(state)
+        if not name:
+            return None
+        if state == CharacterState.GOHADOKEN and self.pending_projectile_air \
+                and "air_gohadoken" in self.animation_controller.animations:
+            return "air_gohadoken"
+        return resolve_variant_anim(name, self.move_variant, self._rom_anim_names,
+                                    self.animation_controller.animations)
 
     def _on_throw_whiff(self):
         """A throw missed: play the whiff recovery clip."""
@@ -954,6 +1090,24 @@ class Akuma(Character):
         self._rendered_fallback = sprite is None
         if sprite is None:
             super().render(screen)  # rectangle placeholder
+            self._render_projectiles(screen)
+            return
+        anim = self.animation_controller.current_animation
+        if isinstance(anim, CelAnimation):
+            # ROM cel: the sprite's offset from the axis is known exactly, so
+            # the axis goes on (x, feet line) and the cel goes where the game
+            # put it -- no canvas centering, no padding, no body anchoring.
+            frame = anim.get_current_frame()
+            facing_right = self.facing != FacingDirection.LEFT
+            if not facing_right:
+                sprite = pygame.transform.flip(sprite, True, False)
+            pos = cel_screen_rect(frame, self.x, self.screen_feet_y(), facing_right)
+            if self.hitflash_frames > 0:
+                flash_sprite = sprite.copy()
+                flash_sprite.fill((30, 30, 30), special_flags=pygame.BLEND_RGB_ADD)
+                screen.blit(flash_sprite, pos)
+            else:
+                screen.blit(sprite, pos)
             self._render_projectiles(screen)
             return
 

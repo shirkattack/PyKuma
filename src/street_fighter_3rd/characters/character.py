@@ -342,15 +342,15 @@ class Character:
             CharacterState.CROUCH_MEDIUM_KICK: 40,
             CharacterState.CROUCH_HEAVY_KICK: 60,
 
-            # Jumping attacks. Caps must sit ABOVE the ROM totals (j.LP=32,
-            # j.MP=31) or the safety timeout truncates the move; in practice
-            # air normals usually end early on landing anyway.
-            CharacterState.JUMP_LIGHT_PUNCH: 40,
-            CharacterState.JUMP_MEDIUM_PUNCH: 40,
-            CharacterState.JUMP_HEAVY_PUNCH: 40,
-            CharacterState.JUMP_LIGHT_KICK: 30,
-            CharacterState.JUMP_MEDIUM_KICK: 30,
-            CharacterState.JUMP_HEAVY_KICK: 40,
+            # Jumping attacks end on landing (or resume the jump after their
+            # ROM total); a normal started at the apex outlives any tight cap,
+            # so the safety net only guards against a stuck airborne state.
+            CharacterState.JUMP_LIGHT_PUNCH: 120,
+            CharacterState.JUMP_MEDIUM_PUNCH: 120,
+            CharacterState.JUMP_HEAVY_PUNCH: 120,
+            CharacterState.JUMP_LIGHT_KICK: 120,
+            CharacterState.JUMP_MEDIUM_KICK: 120,
+            CharacterState.JUMP_HEAVY_KICK: 120,
 
             # Special moves (generous limits)
             CharacterState.GOHADOKEN: 45,

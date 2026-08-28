@@ -138,3 +138,41 @@ def test_state_palette_words_are_swapped_back_to_cpu_order():
     pal = (0x7fff).to_bytes(2, "little") + (0x001f).to_bytes(2, "little") + b"\x00" * (0x40000 - 4)
     sp = cel.StatePalettes(pal)
     assert sp.get("0")[:8] == "001f7fff"
+
+
+def test_cram_is_located_by_a_palette_anchor_when_no_bank0_tile_was_read(tmp_path):
+    import zlib
+    words_cpu = list(range(0x100, 0x200))                          # a distinctive palette (CPU order)
+    host = b"".join(words_cpu[i + 1].to_bytes(2, "little") + words_cpu[i].to_bytes(2, "little") for i in range(0, 256, 2))
+    pal = bytearray(cel.PAL_SIZE); pal[512 * 2:512 * 2 + 512] = host      # palette base 512
+    cram = bytearray(cel.CRAM_SIZE); cram[9712 * 256] = 7
+    state = b"FB1 " + b"FS1 " + b"\x00" * 0x40 + b"\x00" * 4 + zlib.compress(b"\x22" * 777 + bytes(pal) + bytes(cram))
+    f = tmp_path / "s.fs"; f.write_bytes(state)
+    areas = cel.state_areas(f, {}, {"512": "".join(f"{w:04x}" for w in words_cpu)})
+    assert areas["cram"][9712 * 256] == 7
+    assert cel.StatePalettes(areas["pal"]).get("512")[:8] == "01000101"
+
+
+def test_p1_cels_ripped_facing_left_are_stored_right_facing(tmp_path):
+    # the object drawn mirrored (P1 facing byte 0): the stored cel is mirrored
+    # back and its bbox reflected about the axis
+    tile = _tile(lambda x, y: 1 if x < 4 else 0)            # pens on the left 4 columns of every tile
+    part = _part(7, xpos2=0, ypos2=32, xsize=3, ysize=3)    # 4x4 tiles: a "body" (>= 10 tiles)
+    rec = _rec([part], xpos=424)
+    base = {"f": 1, "p2": {"anim": "8800", "cel": 1, "pos_x": 600, "pos_y": 0, "flip": -1, "posture": 0},
+            "records": [rec], "tiles": {str(7 + i): tile for i in range(16)},
+            "palettes": {str(5 * 256): _palette({1: (248, 0, 0)})}}
+    right = dict(base, p1={"anim": "8800", "cel": 11, "pos_x": 424, "pos_y": 0, "flip": 1, "posture": 0})
+    left = dict(base, p1={"anim": "8800", "cel": 12, "pos_x": 424, "pos_y": 0, "flip": 0, "posture": 0})
+    dump = tmp_path / "cels.jsonl"
+    dump.write_text(json.dumps(right) + "\n" + json.dumps(left) + "\n")
+    cel.main([str(dump), "--out", str(tmp_path / "out"), "--p1", "--lua-tiles"])
+    m = json.loads((tmp_path / "out" / "cels.json").read_text())
+    r, l = m["11"], m["12"]
+    assert not r["mirrored_from_left"] and l["mirrored_from_left"]
+    assert l["left"] == -(r["left"] + r["width"])                 # bbox reflected about the axis
+    from PIL import Image
+    ir = Image.open(tmp_path / "out" / "cel_11.png"); il = Image.open(tmp_path / "out" / "cel_12.png")
+    w = ir.size[0]
+    assert ir.getpixel((0, 0))[3] == 255 and ir.getpixel((w - 1, 0))[3] == 0       # right-facing: pens on the left
+    assert il.getpixel((w - 1, 0))[3] == 255 and il.getpixel((0, 0))[3] == 0       # mirrored back: pens on the right

@@ -55,6 +55,7 @@ class SF3ComboState:
     # Scaling factors
     damage_scaling: float = 1.0
     gravity_scaling: float = 1.0
+    scaling_anchor: int = 0        # combo hit number whose scaling step the current move uses
     
     def reset(self):
         """Reset combo state"""
@@ -100,7 +101,8 @@ class SF3ComboSystem:
         }
     
     def register_hit(self, attacker_id: int, defender_id: int, base_damage: int,
-                    hit_type: str = "normal", defender_in_hitstun: bool = False) -> int:
+                    hit_type: str = "normal", defender_in_hitstun: bool = False,
+                    same_move: bool = False) -> int:
         """
         Register a hit and apply damage scaling
 
@@ -128,11 +130,18 @@ class SF3ComboSystem:
         # otherwise start a fresh combo.
         if combo_state.combo_active and defender_in_hitstun:
             combo_state.combo_count += 1
+            if not same_move:
+                combo_state.scaling_anchor = combo_state.combo_count
         else:
             self._start_new_combo(combo_state, current_time)
+            combo_state.scaling_anchor = combo_state.combo_count
         
         # Apply damage scaling
-        scaled_damage = self._apply_damage_scaling(base_damage, combo_state.combo_count)
+        # Every hit window of ONE move shares the scaling step of the move's
+        # first hit: the ROM-captured per-window damage is already the in-move
+        # applied value (cl.HK 21 then 12), so only a NEW move steps the
+        # scaling down (same_move=True from the collision system).
+        scaled_damage = self._apply_damage_scaling(base_damage, combo_state.scaling_anchor or combo_state.combo_count)
         
         # Record the hit
         hit = SF3ComboHit(

@@ -162,6 +162,7 @@ class HitEvent:
     chip_damage: int = 0
     move_frame: int = 0  # 1-indexed move frame the hit landed on (attacker's
                          # state_frame+1 at contact — which active window hit)
+    window: int = -1     # ROM hit window index the collision system applied
 
 
 @dataclass
@@ -182,6 +183,7 @@ class Expected:
     segment: bool = False              # ROM script is only part of the move:
                                        # recovery/gap/total aren't script-measurable
     combat_tier: str = "community"     # 'verified' when damage/stun come from the ROM capture
+    rom_hits: tuple = ()               # per ROM hit window: (damage, hitstun, blockstun), None = not captured
 
 
 @dataclass
@@ -265,7 +267,14 @@ def _sprite_info(char) -> Optional[Dict[str, Any]]:
 
 
 def _expected_anim_for(char, state: CharacterState) -> Optional[str]:
-    """The animation _STATE_ANIM says this state should play."""
+    """The animation the character says this state should play (its own
+    variant resolution: ROM clips such as far_heavy_punch / light_goshoryuken
+    / air_gohadoken), else the plain _STATE_ANIM name."""
+    if hasattr(char, "anim_name_for"):
+        try:
+            return char.anim_name_for(state)
+        except Exception:  # pragma: no cover - a broken resolver must not kill the lab
+            pass
     mapping = getattr(type(char), "_STATE_ANIM", None) or getattr(char, "_STATE_ANIM", None)
     if not mapping:
         return None
@@ -287,6 +296,10 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
     if mfd.hitboxes:
         hb = mfd.hitboxes[0][1]
         dmg, hs, bs = hb.damage, hb.hitstun, hb.blockstun
+    # Per-window ROM values for a multi-hit move (cl.HK 21 then 12): each hit
+    # is diffed against ITS window, not the first one.
+    rom_hits = tuple((h.get("damage"), h.get("hitstun"), h.get("blockstun"))
+                     for h in (getattr(mfd, "rom_combat", None) or {}).get("hits", []))
     # Provenance of the combat expectations: the captured ROM tier when the
     # move has one, else the community tier.
     combat_tier = "verified" if getattr(mfd, "rom_combat", None) else "community"
@@ -315,6 +328,7 @@ def _expected_for(state: CharacterState, variant: Optional[str] = None) -> Optio
         active_frames=tuple(mfd.active),
         segment=segment,
         combat_tier=combat_tier,
+        rom_hits=rom_hits,
     )
 
 
@@ -470,19 +484,27 @@ class MoveCapture:
             if r.total != e.total:
                 self._flag("total", r.total, e.total, rom, "verified")
         for h in r.hits:
+            # expected values for THIS hit's ROM window (multi-hit moves), else the move's
+            exp_dmg, exp_hs, exp_bs = e.damage, e.hitstun, e.blockstun
+            if e.rom_hits and 0 <= h.window < len(e.rom_hits):
+                wd, whs, wbs = e.rom_hits[h.window]
+                exp_dmg = wd if wd is not None else exp_dmg
+                exp_hs = whs if whs is not None else exp_hs
+                exp_bs = wbs if wbs is not None else exp_bs
             if h.blocked:
-                if e.blockstun and h.blockstun != e.blockstun:
-                    self._flag("blockstun", h.blockstun, e.blockstun, community,
+                if exp_bs and h.blockstun != exp_bs:
+                    self._flag("blockstun", h.blockstun, exp_bs, community,
                                e.combat_tier,
                                "declared blockstun is applied directly "
                                "(hitstun//2 is only the no-data fallback)")
             else:
-                if e.damage and h.raw_damage != e.damage:
-                    self._flag("damage", h.raw_damage, e.damage, community,
+                if exp_dmg and h.raw_damage != exp_dmg:
+                    self._flag("damage", h.raw_damage, exp_dmg, community,
                                e.combat_tier,
-                               f"raw (pre-scaling); scaled applied={h.scaled_damage}")
-                if e.hitstun and h.hitstun != e.hitstun:
-                    self._flag("hitstun", h.hitstun, e.hitstun, community, e.combat_tier)
+                               f"window {h.window}; raw (pre-scaling); scaled applied={h.scaled_damage}")
+                if exp_hs and h.hitstun != exp_hs:
+                    self._flag("hitstun", h.hitstun, exp_hs, community, e.combat_tier,
+                               f"window {h.window}")
             exp_stop = self._expected_hitstop(h.scaled_damage)
             if exp_stop is not None and h.hitstop != exp_stop:
                 self._flag("hitstop", h.hitstop, exp_stop,
@@ -636,6 +658,7 @@ class FrameLab:
                           blocked=ev.get("blocked", False),
                           blockstun=ev.get("blockstun", 0),
                           chip_damage=ev.get("chip_damage", 0),
+                          window=ev.get("window", -1),
                           # Collision indexed boxes with state_frame+1 this
                           # same frame — that IS the move frame that hit.
                           move_frame=(getattr(attacker_char, "state_frame", -1) + 1

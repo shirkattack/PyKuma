@@ -677,9 +677,14 @@ class SF3CollisionAdapter:
             getattr(defender, "in_hitstun", False)
             or getattr(defender, "hitstun_frames", 0) > 0
         )
+        # A later hit window of the SAME move: the ROM-captured per-window
+        # damage already is what the game applied inside that move (cl.HK
+        # 21 then 12, HP DP 10/9/9), so the combo scaling stays anchored at
+        # the move's first hit instead of stepping down again per window.
+        same_move = bool(getattr(attacker, "attack_connected", False))
         scaled_damage = self.sf3_combo_system.register_hit(
             attacker_id, defender_id, hit_status.damage, "normal",
-            defender_in_hitstun=defender_in_hitstun,
+            defender_in_hitstun=defender_in_hitstun, same_move=same_move,
         )
 
         # Apply clamped damage and the reaction the attacking move causes
@@ -722,6 +727,7 @@ class SF3CollisionAdapter:
             "hitstun": hit_status.hitstun,
             "hitstop": hitstop,
             "blocked": False,
+            "window": window,
         })
 
         # Spawn a strength-appropriate spark + request a screen shake on heavy
@@ -808,6 +814,8 @@ class SF3CollisionAdapter:
             "blocked": True,
             "blockstun": blockstun,
             "chip_damage": chip_damage,
+            "window": _hit_window_index(get_move_frame_data(getattr(attacker, 'state', None), variant_of(attacker)),
+                                        getattr(attacker, "state_frame", 0) + 1),
         })
 
         # Small meter gain for both on a block.
