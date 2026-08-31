@@ -9305,6 +9305,20 @@ moves:
       - 9
     - - 4
       - 9
+    state: DEMON_FLIP_PALM
+    name_status: metadata
+    combat:
+      damage: 172
+      stun: 13
+      on_hit: 0
+      on_block: 0
+      hitstun: 18
+      blockstun: 14
+      hit_type: HIGH
+      hit_effect: KNOCKDOWN
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
+      total: 33
     rom_combat:
       status: verified
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py
@@ -9596,6 +9610,20 @@ moves:
       - 9
     - - 7
       - 10
+    state: DEMON_FLIP_KICK
+    name_status: metadata
+    combat:
+      damage: 128
+      stun: 11
+      on_hit: 0
+      on_block: 0
+      hitstun: 17
+      blockstun: 17
+      hit_type: HIGH
+      hit_effect: NORMAL
+      status: community
+      source: Baston ESN3S frame data + existing gameplay tuning; NOT ROM-verified
+      total: 26
     rom_combat:
       status: verified
       source: 'sfiii3nr1 memory capture (tools/rom_extract/dump_framedata.lua -> ingest.py

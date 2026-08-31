@@ -55,13 +55,21 @@ _HOLD_STATES = frozenset({
     # forced STANDING while still in the air -- the "frozen in the idle pose,
     # floating down" DP.
     CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI, CharacterState.DIVE_KICK,
+    # The flip holds until touchdown (Character._on_landing recovers it): its
+    # ROM clip is shorter than the arc, and a followup can only be input while
+    # the state still IS the flip.
+    CharacterState.DEMON_FLIP,
+    # The demon flip's followups are airborne when their script ends: physics
+    # finishes the fall and _update_state recovers them on the ground.
+    CharacterState.DEMON_FLIP_PALM, CharacterState.DEMON_FLIP_KICK,
 })
 
 # ROM-movement-driven states: their per-frame (dx, dy) comes from the move's
 # ROM script (hitboxes.yaml `movement`, via the repository) instead of engine
 # physics; physics resumes when the table ends (the fall of a DP).
 _ROM_MOVEMENT_STATES = frozenset({CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
-                                  CharacterState.DIVE_KICK})
+                                  CharacterState.DIVE_KICK,
+                                  CharacterState.DEMON_FLIP_PALM, CharacterState.DEMON_FLIP_KICK})
 
 # Proximity normals: within this centre-to-centre distance a standing normal is
 # its CLOSE version (st.MP/MK/HK by default map to the close ROM records, st.LP/HP
@@ -72,6 +80,12 @@ CLOSE_NORMAL_RANGE = 80
 # Dive kick: frames of grounded recovery after touchdown (Baston "recovery 7";
 # the ROM script ends mid-dive so the landing is physics + this hold).
 DIVE_KICK_LANDING_RECOVERY = 7
+
+# Demon flip followups (Hyakki Goushou / Hyakki Goujin): like the dive kick,
+# the ROM script (b118 / b218) ends in the air, so the fall is physics and the
+# grounded recovery is the Baston tail ("10/3/20" and "9/10/7").
+DEMON_FLIP_PALM_LANDING_RECOVERY = 20
+DEMON_FLIP_KICK_LANDING_RECOVERY = 7
 
 _STANDING_NORMALS = frozenset({
     CharacterState.LIGHT_PUNCH, CharacterState.MEDIUM_PUNCH, CharacterState.HEAVY_PUNCH,
@@ -158,7 +172,7 @@ _BODY_ANCHORED_ANIMS = frozenset({"jump_forward", "jump_backward"})
 _ROM_ROLE_ANIMS = frozenset({
     "stance", "walk_forward", "walk_backward", "crouch_hold", "jump_up", "jump_forward",
     "jump_backward", "dash_forward", "dash_backward", "taunt", "block_high", "block_crouch",
-    "gohadoken", "air_gohadoken",
+    "gohadoken", "air_gohadoken", "hyakkishuu",
     "dp_land", "tatsu_land", "jump_attack_land", "jump_land", "air_fireball_land",
 })
 # the landing clip the ROM plays when a state touches down
@@ -258,6 +272,8 @@ class Akuma(Character):
         CharacterState.TATSUMAKI: "tatsumaki",
         CharacterState.ASHURA_SENKU: "teleport",
         CharacterState.DEMON_FLIP: "hyakkishuu",
+        CharacterState.DEMON_FLIP_PALM: "demon_flip_palm",
+        CharacterState.DEMON_FLIP_KICK: "demon_flip_kick",
         CharacterState.SUPER_ART_1: "sa1",
         CharacterState.SUPER_ART_2: "sa2",
         CharacterState.SUPER_ART_3: "sa3",
@@ -410,6 +426,12 @@ class Akuma(Character):
             ("overhead",           "akuma-overhead",      23, 2, False),  # UOH (MP+MK)
             ("forward_mp",         "akuma-fmp",           13, 2, False),  # f+MP Zugai Hasatsu (overhead)
             ("dive_kick",          "akuma-airkick",       16, 2, False),  # air d+MK Tenma Kujin Kyaku
+            # Demon flip followups. No folder clip was ever extracted for them,
+            # so these are stand-ins (the flip's own pose for the palm, the air
+            # kick for the kick) fitted to the ROM total below; the ripped ROM
+            # cels of b118/b218 replace both wherever rom_cels/ is present.
+            ("demon_flip_palm",    "akuma-hyakkishuu",    54, 1, False),  # Hyakki Goushou (flip + P)
+            ("demon_flip_kick",    "akuma-airkick",       16, 1, False),  # Hyakki Goujin (flip + K)
             # close (proximity) versions of the standing normals; the base clips
             # above are the far versions. st.LP has no separate close clip.
             ("close_medium_punch", "akuma-mpc",            9, 2, False),
@@ -447,6 +469,17 @@ class Akuma(Character):
                        for i in range(frames)]
             self.animation_controller.add_animation(
                 name, f(f"{base}/{folder}", frames, frame_duration=dur, loop=loop))
+
+        # The demon flip followups are not _ROM_TIMED_STATES (they end on
+        # touchdown, not at the script total), so the specs loop above did not
+        # fit them: do it here from their ROM records so the stand-in clip
+        # spans the script instead of over/undershooting it.
+        for _st, _name in ((CharacterState.DEMON_FLIP_PALM, "demon_flip_palm"),
+                           (CharacterState.DEMON_FLIP_KICK, "demon_flip_kick")):
+            _move = HitboxRepository.instance().get_move_by_state(_st.name)
+            _total = int((_move.timing or {}).get("total") or 0) if _move else 0
+            if _total:
+                self._fit_animation(_name, _total)
 
         # Hit/block reactions. Recovery is driven by hitstun/blockstun timers,
         # not animation completion, so airborne/block clips loop while held.
@@ -601,6 +634,47 @@ class Akuma(Character):
         self.pending_projectile_strength = None
         self.pending_projectile_air = False
         self.animation_controller.play_animation("stance", force_restart=True)
+
+    def _process_input(self):
+        """Akuma's input step, with one addition to the base rules: the demon
+        flip's followups.
+
+        DEMON_FLIP is a non-cancelable state, so `Character._process_input`
+        returns before reading a button. The ROM, though, cancels the flip
+        script (af08) into `b118` (P) or `b218` (K) on a button press during
+        the arc -- that cancel is the move. So it is checked first, and only
+        while the flip is still airborne.
+        """
+        if self.state == CharacterState.DEMON_FLIP and self._check_demon_flip_followup():
+            return
+        super()._process_input()
+
+    def _check_demon_flip_followup(self) -> bool:
+        """P -> Hyakki Goushou (palm), K -> Hyakki Goujin (kick) out of the
+        flip. Returns True if a followup started."""
+        if not self.input or self.is_grounded:
+            return False
+        punches = (Button.LIGHT_PUNCH, Button.MEDIUM_PUNCH, Button.HEAVY_PUNCH)
+        kicks = (Button.LIGHT_KICK, Button.MEDIUM_KICK, Button.HEAVY_KICK)
+        if any(self.input.is_button_just_pressed(b) for b in punches):
+            self._execute_demon_flip_followup(CharacterState.DEMON_FLIP_PALM)
+            return True
+        if any(self.input.is_button_just_pressed(b) for b in kicks):
+            self._execute_demon_flip_followup(CharacterState.DEMON_FLIP_KICK)
+            return True
+        return False
+
+    def _execute_demon_flip_followup(self, state: CharacterState):
+        """Enter a flip followup. Its ROM script owns the movement from here
+        (b118/b218 `movement`, via _ROM_MOVEMENT_STATES); when the table runs
+        out physics finishes the fall and _update_state recovers on the
+        ground."""
+        log.debug("HYAKKI %s", "GOUSHOU (palm)" if state == CharacterState.DEMON_FLIP_PALM
+                  else "GOUJIN (kick)")
+        self.move_variant = None
+        self.velocity_x = 0.0
+        self._landed_frame = None
+        self._transition_to_state(state)
 
     def _check_special_moves(self) -> bool:
         """Check for Akuma's special moves.
@@ -896,9 +970,15 @@ class Akuma(Character):
         self._transition_to_state(CharacterState.ASHURA_SENKU)
 
     def _execute_demon_flip(self):
-        """Hyakkishu: an arcing forward jump toward the opponent. The flip has no
-        hitbox; physics handles the arc and the landing recovers to STANDING.
-        (Dive/throw/palm followups are deferred until their hitbox data exists.)"""
+        """Hyakkishu: an arcing forward jump toward the opponent. The flip
+        itself stays hitless here (the vendored framedata does carry attack
+        boxes on af08 f41-55, but the live capture drove af08 and read none --
+        unresolved, see tools/rom_extract/CAPTURE.md); physics handles the arc
+        and the landing recovers to STANDING. A punch or kick during the arc
+        cancels into the ROM followups (_check_demon_flip_followup): b118
+        Hyakki Goushou / b218 Hyakki Goujin. The throw followup (Hyakki
+        Gousai) is still unwired -- its script is not named by the ROM
+        metadata."""
         log.debug("HYAKKISHU (demon flip)")
         self.last_special_frame = self.total_frames
         face = 1 if self.is_facing_right() else -1
@@ -1291,6 +1371,18 @@ class Akuma(Character):
             if (self.is_grounded and self._rom_movement_step() is None
                     and self._landed_frame is not None
                     and self.state_frame >= self._landed_frame + DIVE_KICK_LANDING_RECOVERY):
+                self.velocity_x = 0.0
+                self._transition_to_state(CharacterState.STANDING)
+            return
+        if self.state in (CharacterState.DEMON_FLIP_PALM, CharacterState.DEMON_FLIP_KICK):
+            # Same shape as the dive kick: the ROM script ends in the air,
+            # physics finishes the fall, then the Baston grounded recovery.
+            recovery = (DEMON_FLIP_PALM_LANDING_RECOVERY
+                        if self.state == CharacterState.DEMON_FLIP_PALM
+                        else DEMON_FLIP_KICK_LANDING_RECOVERY)
+            if (self.is_grounded and self._rom_movement_step() is None
+                    and self._landed_frame is not None
+                    and self.state_frame >= self._landed_frame + recovery):
                 self.velocity_x = 0.0
                 self._transition_to_state(CharacterState.STANDING)
             return

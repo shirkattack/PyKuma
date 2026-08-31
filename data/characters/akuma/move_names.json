@@ -88,5 +88,10 @@
   "FORWARD_MP":          { "rom_id": "1638", "name_source": "metadata", "meta_name": "Forward MP",
     "rationale": "framedata_meta.lua GOUKI: \"1638\" -- Forward MP (Baston 'Towards + Strong' 14/2 agrees; overhead, 2 hit_frames)" },
   "DIVE_KICK":           { "rom_id": "2aa0", "name_source": "metadata", "meta_name": "Air Down MK",
-    "rationale": "framedata_meta.lua GOUKI: \"2aa0\" -- Air Down MK (Baston 'Dive Kick' 8/10 agrees); ROM movement dives 92px forward / 116px down over the 20-frame script." }
+    "rationale": "framedata_meta.lua GOUKI: \"2aa0\" -- Air Down MK (Baston 'Dive Kick' 8/10 agrees); ROM movement dives 92px forward / 116px down over the 20-frame script." },
+
+  "DEMON_FLIP_PALM":     { "rom_id": "b118", "name_source": "metadata", "meta_name": "Demon flip P cancel",
+    "rationale": "framedata_meta.lua GOUKI: \"b118\" -- Demon flip P cancel (Hyakki Goushou). Baston 'Hyakki Goushou: 10/3/20, dmg 23, stun 13' agrees on both counts: the ROM script is startup 10 / active 3 and the live capture read damage 23 / stun 13." },
+  "DEMON_FLIP_KICK":     { "rom_id": "b218", "name_source": "metadata", "meta_name": "Demon flip K cancel",
+    "rationale": "framedata_meta.lua GOUKI: \"b218\" -- Demon flip K cancel (Hyakki Goujin). Baston 'Hyakki Goujin: 9/10/7, dmg 17, stun 11' agrees: the ROM script is startup 9 / active 11 and the live capture read damage 17 / stun 11." }
 }

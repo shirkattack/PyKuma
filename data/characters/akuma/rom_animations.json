@@ -3254,6 +3254,66 @@
    "role": "crouch_hit",
    "signature": "dummy reel, posture 32"
   },
+  "af08": {
+   "loop": false,
+   "sequence": [
+    [
+     21580,
+     3
+    ],
+    [
+     21581,
+     3
+    ],
+    [
+     21582,
+     3
+    ],
+    [
+     21583,
+     3
+    ],
+    [
+     21584,
+     3
+    ],
+    [
+     21585,
+     3
+    ],
+    [
+     21586,
+     3
+    ],
+    [
+     21587,
+     3
+    ],
+    [
+     22460,
+     3
+    ],
+    [
+     22461,
+     2
+    ],
+    [
+     22462,
+     2
+    ]
+   ],
+   "total": 31,
+   "rom_total": 71,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 25
+   },
+   "complete": true,
+   "missing_cels": [],
+   "role": "hyakkishuu",
+   "signature": "airborne arc toward the opponent, posture 22, 13 cels"
+  },
   "afec": {
    "loop": false,
    "sequence": [
@@ -3321,6 +3381,130 @@
    "missing_cels": [],
    "role": "knockdown",
    "signature": "dummy posture 38 -> 0 (wake-up)"
+  },
+  "b118": {
+   "loop": false,
+   "sequence": [
+    [
+     22460,
+     2
+    ],
+    [
+     22461,
+     1
+    ],
+    [
+     22462,
+     1
+    ],
+    [
+     22477,
+     2
+    ],
+    [
+     22478,
+     2
+    ],
+    [
+     22479,
+     2
+    ],
+    [
+     22480,
+     1
+    ],
+    [
+     22481,
+     2
+    ],
+    [
+     22482,
+     2
+    ],
+    [
+     22483,
+     2
+    ]
+   ],
+   "total": 17,
+   "rom_total": 18,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 7
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "DEMON_FLIP_PALM",
+   "variant": null
+  },
+  "b218": {
+   "loop": false,
+   "sequence": [
+    [
+     22460,
+     2
+    ],
+    [
+     22461,
+     1
+    ],
+    [
+     22462,
+     1
+    ],
+    [
+     22464,
+     1
+    ],
+    [
+     22465,
+     1
+    ],
+    [
+     22466,
+     1
+    ],
+    [
+     22467,
+     1
+    ],
+    [
+     22468,
+     1
+    ],
+    [
+     22486,
+     1
+    ],
+    [
+     22487,
+     3
+    ],
+    [
+     22488,
+     3
+    ],
+    [
+     22487,
+     3
+    ],
+    [
+     22488,
+     1
+    ]
+   ],
+   "total": 20,
+   "rom_total": 20,
+   "source": {
+    "side": "c1",
+    "whiff": true,
+    "runs": 14
+   },
+   "complete": true,
+   "missing_cels": [],
+   "state": "DEMON_FLIP_KICK",
+   "variant": null
   },
   "c4b0": {
    "loop": false,
@@ -5440,6 +5624,114 @@
    "top": -115,
    "width": 80,
    "height": 128
+  },
+  "22460": {
+   "left": -53,
+   "top": -105,
+   "width": 96,
+   "height": 64
+  },
+  "22461": {
+   "left": -50,
+   "top": -115,
+   "width": 96,
+   "height": 112
+  },
+  "22462": {
+   "left": -50,
+   "top": -131,
+   "width": 112,
+   "height": 128
+  },
+  "22464": {
+   "left": -50,
+   "top": -115,
+   "width": 112,
+   "height": 112
+  },
+  "22465": {
+   "left": -39,
+   "top": -120,
+   "width": 80,
+   "height": 112
+  },
+  "22466": {
+   "left": -55,
+   "top": -120,
+   "width": 96,
+   "height": 112
+  },
+  "22467": {
+   "left": -39,
+   "top": -120,
+   "width": 64,
+   "height": 112
+  },
+  "22468": {
+   "left": -39,
+   "top": -120,
+   "width": 96,
+   "height": 128
+  },
+  "22477": {
+   "left": -50,
+   "top": -115,
+   "width": 112,
+   "height": 112
+  },
+  "22478": {
+   "left": -47,
+   "top": -110,
+   "width": 80,
+   "height": 112
+  },
+  "22479": {
+   "left": -63,
+   "top": -110,
+   "width": 112,
+   "height": 112
+  },
+  "22480": {
+   "left": -47,
+   "top": -110,
+   "width": 96,
+   "height": 112
+  },
+  "22481": {
+   "left": -47,
+   "top": -110,
+   "width": 128,
+   "height": 112
+  },
+  "22482": {
+   "left": -47,
+   "top": -110,
+   "width": 96,
+   "height": 112
+  },
+  "22483": {
+   "left": -47,
+   "top": -110,
+   "width": 112,
+   "height": 112
+  },
+  "22486": {
+   "left": -39,
+   "top": -120,
+   "width": 96,
+   "height": 128
+  },
+  "22487": {
+   "left": -42,
+   "top": -131,
+   "width": 112,
+   "height": 144
+  },
+  "22488": {
+   "left": -42,
+   "top": -131,
+   "width": 96,
+   "height": 144
   }
  },
  "_meta": {
