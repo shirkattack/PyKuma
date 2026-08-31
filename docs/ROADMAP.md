@@ -21,11 +21,15 @@ removed (git history has them); `CHANGELOG.md` is the record of what shipped.
 
 1. **ROM backfill of provisional values** (`tools/rom_extract/`): special-move
    damage scale (currently Baston ×7.5), DP blockstun columns, knockback
-   magnitudes, the P2 palette (a PyKuma colour, not a ROM palette dump).
-2. **Demon Flip followups** (`af08/b118/b218`) — the last unwired ROM scripts
-   (the flip itself has no hitbox; the dive/throw/palm followups do). Also:
-   per-move proximity ranges for the close/far normals (one provisional
-   threshold today).
+   magnitudes. (The P2 palette is done — `rom_palettes.json` is the game's own
+   alternate palette, pen for pen.)
+2. **Per-move proximity ranges** for the close/far normals (one provisional
+   threshold today). The Demon Flip followups are wired: a punch during the
+   arc cancels into `b118` (Hyakki Goushou), a kick into `b218` (Hyakki
+   Goujin), both on their ROM boxes and captured damage. Still open there: the
+   throw followup (Hyakki Gousai — `b308` fits the signature but the ROM
+   metadata does not name it) and whether the flip itself hits (`af08` carries
+   attack boxes in the vendored framedata; the live capture read none).
 3. **Shin Akuma** final boss + arcade-ladder progression (menu entry is teased).
 4. **Second character + character select** (`GameMode.VERSUS` / `DEMO` exist but
    are not reachable from the menu).

@@ -26,7 +26,9 @@ Reported issues and their status. See `docs/ROADMAP.md` for what's next.
   `main()`'s broad `try/except` swallowed (app just exited). Fixed by passing `clock`.
   (`sf3-training`/`sf3-dev` use `--no-menu`, hitting the correct call, which is why they
   worked directly.) Side note: this is the swallow-everything antipattern from the
-  original review §2.4 — `main()`'s catch hid the real error; worth narrowing later.
+  original review §2.4 — `main()`'s catch hid the real error. **Narrowed
+  2026-08-31**: the handler still logs the traceback but re-raises under
+  `--strict` / `--debug`, so a launch bug surfaces in dev instead of exiting 0.
 
 ## Tied to later phases
 

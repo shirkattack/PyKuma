@@ -265,7 +265,13 @@ def main():
     except KeyboardInterrupt:
         log.info("Game interrupted by user")
     except Exception as e:
+        # This handler once hid a real bug in silence (a menu selection raised
+        # TypeError and the app just exited -- docs/DEBUG_BACKLOG.md). It now
+        # logs the traceback, and in strict/dev mode it re-raises like the game
+        # and viewer loops do, so a launch bug surfaces instead of exiting 0.
         log.exception("Error: %s", e)
+        if is_strict():
+            raise
     finally:
         pygame.quit()
         log.info("Game shutdown complete")
