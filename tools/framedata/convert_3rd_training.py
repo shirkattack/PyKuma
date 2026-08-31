@@ -121,6 +121,14 @@ COMBAT_MAP = {
     "TATSUMAKI:air_light": ("air_tatsumaki_light",    "HIGH", "NORMAL",    12, 8),
     "TATSUMAKI:air_medium":("air_tatsumaki_medium",   "HIGH", "NORMAL",    12, 8),
     "TATSUMAKI:air_heavy": ("air_tatsumaki_heavy",    "HIGH", "NORMAL",    12, 8),
+    # Demon flip followups (framedata_meta.lua "Demon flip P/K cancel"; the
+    # flip itself, af08, stays a movement clip -- see build_rom_animations.py).
+    # Both are air attacks (overhead class). Their fallback stun is the LIVE
+    # capture's value where it exists: b218 read hitstun 17 / blockstun 17; the
+    # palm's blockstun was never sampled (0 blocks), so 14 is the heavy-normal
+    # estimate until a block pass lands one.
+    "DEMON_FLIP_PALM":     ("demon_flip_palm",        "HIGH", "KNOCKDOWN", 18, 14),
+    "DEMON_FLIP_KICK":     ("demon_flip_kick",        "HIGH", "NORMAL",    17, 17),
 }
 
 # States whose ROM script is only a SEGMENT of the move (rise/spin; the fall

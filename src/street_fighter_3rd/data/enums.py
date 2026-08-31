@@ -76,7 +76,9 @@ class CharacterState(Enum):
     GOSHORYUKEN = auto()  # Dragon punch
     TATSUMAKI = auto()  # Hurricane kick
     ASHURA_SENKU = auto()  # Teleport
-    DEMON_FLIP = auto()  # Hyakkishu (QCF+K air flip)
+    DEMON_FLIP = auto()  # Hyakkishu (QCF+K air flip), ROM af08
+    DEMON_FLIP_PALM = auto()  # Hyakki Goushou (flip + P), ROM b118
+    DEMON_FLIP_KICK = auto()  # Hyakki Goujin (flip + K), ROM b218
 
     # Super arts
     SUPER_ART_1 = auto()

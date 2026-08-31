@@ -150,9 +150,19 @@ window at 1:1 world px, centred on the fighters' midpoint, clamped to the
 stage, feet line on `NATIVE_VIEW_GROUND_ROW` (192 — provisional, not a ROM
 capture yet), integer-upscaled (×2 on the 896×512 window) and letterboxed;
 `_world_to_screen` carries the letterbox offset so overlays stay aligned.
-The dynamic zoom camera remains the default. Open: stage art at native size
-(rip the tilemaps) and the HUD layout for 384 px.
+The dynamic zoom camera remains the default. **HUD done 2026-08-31**: in
+native view the bars/names/timer/pips/meters are laid out in viewport pixels
+and upscaled with the world (`Game._render_ui_native`), so nothing is painted
+in the letterbox. Open: stage art at native size (rip the tilemaps).
 
 ## Order
 
 0 → 1 → 2 → 3 (all gameplay-visible now), then 6 (needs a rip session), 4, 5 (need labelled captures), 7, 8. The top-up rip (0.6) and the reaction rip (6) can be one Fightcade session.
+
+**Off the critical path, done 2026-08-31 without a capture:** the Demon Flip
+followups (`b118`/`b218` — boxes, ROM movement and captured damage were all
+already on disk; the only blocker was that `build_rom_animations.py` skips any
+anim absent from `move_names.json`) and the 384-px HUD (Phase 8). SA1 was also
+identified as `68cc` from the captured per-hit damage against Baston's
+breakdown, so the labelled super pass now only has to name SA2, SA3 and the
+Raging Demon — see `tools/rom_extract/CAPTURE.md`.

@@ -11,6 +11,26 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **Demon Flip followups from the ROM.** A punch during the flip's arc cancels
+  into `b118` (Hyakki Goushou, the palm) and a kick into `b218` (Hyakki
+  Goujin) — the ROM's own P/K cancels of `af08`, named verbatim by
+  `framedata_meta.lua` ("Demon flip P/K cancel") and independently confirmed
+  by Baston's timings and damage (10/3/20, dmg 23, stun 13 and 9/10/7, dmg 17,
+  stun 11 — the live capture read the same 23/13 and 17/11). Both are wired on
+  their ROM boxes, their ROM movement scripts (the fall is physics, then the
+  Baston grounded recovery) and the *captured* damage: 23 and 17 on the ROM's
+  160 life bar. Their cels were already ripped, so the clips are the game's
+  own (`rom_animations.json`: 57 complete, up from 54; the flip itself now
+  plays its ROM clip too). The flip stays hitless: the vendored framedata
+  carries attack boxes on `af08` f41-55 but the live capture drove `af08` and
+  read none, so the conflict is flagged for the next session rather than
+  guessed at (`tools/rom_extract/CAPTURE.md`). The throw followup (Hyakki
+  Gousai) is still unwired — the ROM metadata does not name its script.
+- **CPS3 view: the HUD moved into the 384×224 frame.** In native view the
+  health bars, names, timer, round pips and super meters are laid out in
+  viewport pixels and upscaled with the world, so the whole image is one
+  arcade frame instead of a 896-px HUD wrapped around a letterboxed fight.
+  The zoom camera keeps the classic HUD unchanged.
 - **CPS3 view (F3).** A fixed 384×224 viewport at 1:1 world pixels — the
   arcade's window — scrolled after the fighters, clamped to the stage and
   integer-upscaled with letterboxing, as an alternative to the dynamic zoom
@@ -57,6 +77,10 @@ ROM-accurate.
   hurtbox pass). `validate` works again (it read `move_names.json` inverted).
 
 ### Fixed
+- **A crash in `main()` no longer exits quietly in dev mode.** The top-level
+  handler logged the traceback but always swallowed the error (it once hid a
+  menu `TypeError` behind a clean exit); it now re-raises under `--strict` /
+  `--debug`, like the game and hitbox-viewer loops already did.
 - **Corner cross-ups no longer jitter or freeze.** Jumping over a cornered
   opponent (plain jump, air tatsu or demon flip) shoved them off the wall and
   then swapped the two fighters every frame, flipping both facings and

@@ -67,6 +67,11 @@ KINEMATIC_ROLES = {
     "10d0": {"role": "taunt",           "loop": False, "signature": "P1 only, posture 0, 7 cels"},
     "8210": {"role": "gohadoken",       "loop": False, "signature": "P1 fireball launch, 14 cels; hits at f24+ (the projectile)"},
     "a130": {"role": "air_gohadoken",   "loop": False, "signature": "airborne (posture 22), dx +2.3/f, busy: the air fireball"},
+    # The flip is a role, not a move: its followups (b118/b218) are the attack
+    # scripts and carry the boxes. The vendored framedata does record attack
+    # boxes on af08 f41-55, but the live capture drove af08 and saw none
+    # (data/sources/SOURCE.txt) -- unresolved, so the flip stays hitless here.
+    "af08": {"role": "hyakkishuu",      "loop": False, "signature": "airborne arc toward the opponent, posture 22, 13 cels"},
     # hand-off tails: what the ROM plays after a script ends (see NEUTRAL_ANIMS / build `next`)
     "6a2c": {"role": "dp_land",         "loop": False, "signature": "after 84f8 (every DP falls into 84f8's tail): landing, 4 cels"},
     "645c": {"role": "tatsu_land",      "loop": False, "signature": "after every ground/air tatsu: landing recovery, 5 cels"},

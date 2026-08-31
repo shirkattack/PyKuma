@@ -232,6 +232,12 @@ class Game:
         self._fd_latch: dict = None
         self._FD_LINGER = 120  # frames (~2s at 60fps) to keep showing after a move
         self._fd_big_font = pygame.font.Font(None, 46)  # big frame-advantage number
+        # The CPS3 HUD is laid out inside the 384x224 frame, so its text is
+        # rendered at viewport scale and upscaled with the world (see
+        # _render_ui_native). 10px is the largest that keeps a name inside the
+        # bar; the integer upscale makes it read as chunky arcade text.
+        self._native_font = pygame.font.Font(None, 10)
+        self._native_hud_buf = None
 
     def _render_text(self, font: pygame.font.Font, text: str, color) -> pygame.Surface:
         """Render text through a cache so repeated frames don't re-render."""
@@ -778,8 +784,12 @@ class Game:
         timer: the colored (remaining) health stays anchored at the inner/center
         end of each bar, so damage eats inward from the outer edges.
         """
-        # Use custom HUD graphics if available
-        if self.hud_assets.get("hud_bar_full"):
+        # The CPS3 view frames the fight in 384x224: the HUD belongs INSIDE
+        # that frame at its proportions, not stretched across the 896-px
+        # window around the letterbox.
+        if self.native_view:
+            self._render_ui_native()
+        elif self.hud_assets.get("hud_bar_full"):
             self._render_ui_custom()
         else:
             self._render_ui_classic()
@@ -934,6 +944,86 @@ class Game:
                            meter_rect)
 
         self._render_ui_common()
+
+    # --- CPS3 (384x224) HUD -------------------------------------------------
+    # Laid out in viewport pixels, then upscaled by the same integer factor as
+    # the world and blitted at the same letterbox offset, so the whole frame is
+    # one coherent arcade image. Proportions follow 3S: long health bars from
+    # the outer edges toward a central timer, super meters along the bottom.
+    NATIVE_HUD_MARGIN = 8
+    NATIVE_HUD_BAR_W = 150
+    NATIVE_HUD_BAR_H = 9
+    NATIVE_HUD_BAR_Y = 16
+    NATIVE_HUD_METER_W = 96
+    NATIVE_HUD_METER_H = 6
+
+    def _render_ui_native(self):
+        """Draw the HUD in 384x224 viewport space and upscale it with the world."""
+        from street_fighter_3rd.characters.character import MAX_SUPER_METER
+        W, H = NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT
+        if self._native_hud_buf is None:
+            self._native_hud_buf = pygame.Surface((W, H), pygame.SRCALPHA)
+        buf = self._native_hud_buf
+        buf.fill((0, 0, 0, 0))
+
+        m, bw, bh, by = (self.NATIVE_HUD_MARGIN, self.NATIVE_HUD_BAR_W,
+                         self.NATIVE_HUD_BAR_H, self.NATIVE_HUD_BAR_Y)
+        chip_color = (245, 245, 245)
+        for player, ghost, x, inward in ((self.player1, self.p1_ghost_health, m, "right"),
+                                         (self.player2, self.p2_ghost_health, W - m - bw, "left")):
+            pct = max(0.0, player.health / player.max_health)
+            ghost_pct = max(0.0, ghost / player.max_health)
+            fill, ghost_w = int(bw * pct), int(bw * ghost_pct)
+            pygame.draw.rect(buf, (50, 50, 50), (x, by, bw, bh))
+            # both bars deplete toward the centre timer, as in the classic HUD
+            gx = x + bw - ghost_w if inward == "right" else x
+            fx = x + bw - fill if inward == "right" else x
+            pygame.draw.rect(buf, chip_color, (gx, by, ghost_w, bh))
+            pygame.draw.rect(buf, self._health_color(pct), (fx, by, fill, bh))
+            pygame.draw.rect(buf, COLOR_WHITE, (x, by, bw, bh), 1)
+
+        p1_name = self._render_text(self._native_font, self.player1.name.upper(), COLOR_WHITE)
+        p2_name = self._render_text(self._native_font, self.player2.name.upper(), COLOR_WHITE)
+        buf.blit(p1_name, (m, by - p1_name.get_height() - 1))
+        buf.blit(p2_name, (W - m - p2_name.get_width(), by - p2_name.get_height() - 1))
+
+        # super meters along the bottom edge
+        mw, mh = self.NATIVE_HUD_METER_W, self.NATIVE_HUD_METER_H
+        my = H - mh - m
+        for player, mx in ((self.player1, m), (self.player2, W - m - mw)):
+            meter = getattr(player, "super_meter", 0)
+            pct = max(0.0, min(1.0, meter / MAX_SUPER_METER))
+            pygame.draw.rect(buf, (40, 40, 40), (mx, my, mw, mh))
+            pygame.draw.rect(buf, (255, 215, 0) if meter >= MAX_SUPER_METER else (80, 170, 255),
+                             (mx, my, int(mw * pct), mh))
+            pygame.draw.rect(buf, COLOR_WHITE, (mx, my, mw, mh), 1)
+
+        cx = W // 2
+        if not self.config.no_timer:
+            timer = self._render_text(self._native_font, self.round_manager.get_timer_display(),
+                                      self._timer_color())
+            buf.blit(timer, (cx - timer.get_width() // 2, by - 2))
+        if not self.config.no_rounds:
+            p1_wins, p2_wins = self.round_manager.get_round_wins()
+            for i in range(p1_wins):
+                pygame.draw.circle(buf, COLOR_RED, (cx - 22 - i * 8, by + 12), 3)
+            for i in range(p2_wins):
+                pygame.draw.circle(buf, COLOR_BLUE, (cx + 22 + i * 8, by + 12), 3)
+            announce = None
+            if self.round_manager.game_state == GameState.PRE_ROUND:
+                announce = (self.round_manager.get_round_display()
+                            if self.round_manager.state_frame < 60 else "FIGHT!")
+            elif self.round_manager.game_state == GameState.ROUND_END:
+                announce = self.round_manager.get_round_result_text()
+            elif self.round_manager.game_state == GameState.MATCH_END:
+                announce = self.round_manager.get_match_winner_text()
+            if announce:
+                text = self._render_text(self._native_font, announce, COLOR_WHITE)
+                buf.blit(text, (cx - text.get_width() // 2, H // 2 - text.get_height()))
+
+        k = self._native_scale()
+        ox, oy = self._cam_off
+        self.screen.blit(pygame.transform.scale(buf, (W * k, H * k)), (ox, oy))
 
     def _render_ui_common(self):
         """Render UI elements common to both classic and custom HUD."""

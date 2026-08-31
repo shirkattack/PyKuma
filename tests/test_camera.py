@@ -109,3 +109,26 @@ def test_f3_toggles_the_native_view():
     assert g.native_view is False
     g.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F3))
     assert g.native_view is True
+
+
+def test_native_view_hud_is_laid_out_inside_the_384x224_frame():
+    """Phase 8: in the CPS3 view the HUD belongs to the arcade frame, not the
+    896-px window -- nothing may be drawn in the letterbox around it."""
+    from street_fighter_3rd.data.constants import NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT
+    g = _game()
+    g.native_view = True
+    g.player1.x, g.player2.x = 400, 500
+    g.player1.health = int(g.player1.max_health * 0.5)
+    g.player2.super_meter = 96
+    g.render()
+    k = g._native_scale()
+    ox, oy = g._cam_off
+    assert (ox, oy) != (0, 0), "this window letterboxes the 384x224 frame"
+    # the HUD buffer is viewport-sized ...
+    assert g._native_hud_buf.get_size() == (NATIVE_VIEW_WIDTH, NATIVE_VIEW_HEIGHT)
+    # ... and the health bar it drew lands inside the frame, not above it
+    bar_y = oy + g.NATIVE_HUD_BAR_Y * k
+    assert oy < bar_y < oy + NATIVE_VIEW_HEIGHT * k
+    # the letterbox columns stay empty (the classic HUD used to paint here)
+    for y in range(0, SCREEN_HEIGHT, 17):
+        assert g.screen.get_at((ox // 2, y))[:3] == (0, 0, 0), f"letterbox painted at y={y}"

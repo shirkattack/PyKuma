@@ -247,3 +247,25 @@ or were never performed.)
 single-sample windows (`merge-combat` reports `samples`); parries if wanted.
 Throw / super / fireball samples exist but need their anim ids mapped in
 `move_names.json` before the converter can attach them.
+
+**Supers — SA1 no longer needs identifying (2026-08-31).** `68cc` is
+**Messatsu Gou Hadou**: the capture reads 6 hits per run at 9/9/8/7/7/7 damage
+with stun 0, which is Baston's own per-hit breakdown for it ("47 (9, 9, 8, 7,
+7, 7)", stun 0) and matches no other Gouki super (Messatsu Gou Shoryuu has a
+16-damage hit and stun 16, Rasen lands 12 hits, Kongou Kokuretsu Zan opens on
+65, Shun Goku Satsu is a single 87). What `68cc` still lacks is a clean
+**whiffed** run: every captured run is a fragment (the longest whiff is 4
+frames), so `build_rom_animations.py` can only assemble a 3-cel clip and the
+SA1 animation is not built. Drive each super once **on whiff** in the labelled
+pass and the clip falls out; the labelling itself is only needed for SA2, SA3
+and the Raging Demon now.
+
+**Demon flip:** the followups are wired from data already captured (`b118`
+palm, `b218` kick). Two questions the next session can settle cheaply:
+- does the flip itself hit? The vendored framedata carries attack boxes on
+  `af08` f41-55 (and Baston lists 17 damage for Hyakki Shuu), but the live
+  capture drove `af08` and recorded no attack box. Do a bare flip into the
+  standing dummy and watch `dm_vital`.
+- is `b308` the flip throw (Hyakki Gousai)? It reads 0 damage with a 121-frame
+  knockdown -- the same signature as the `3768` normal throw -- but the ROM
+  metadata does not name it. Perform flip+LP+LK and see which id runs.

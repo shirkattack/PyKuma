@@ -56,6 +56,7 @@ _ATTACK_STATES = frozenset({
     CharacterState.JUMP_LIGHT_KICK, CharacterState.JUMP_MEDIUM_KICK, CharacterState.JUMP_HEAVY_KICK,
     CharacterState.GOHADOKEN, CharacterState.GOSHORYUKEN, CharacterState.TATSUMAKI,
     CharacterState.OVERHEAD, CharacterState.FORWARD_MP, CharacterState.DIVE_KICK,
+    CharacterState.DEMON_FLIP_PALM, CharacterState.DEMON_FLIP_KICK,
 })
 
 _CROUCH_STATES = frozenset({
@@ -359,6 +360,10 @@ class Character:
             CharacterState.TATSUMAKI: 60,
             CharacterState.ASHURA_SENKU: 60,
             CharacterState.DEMON_FLIP: 90,
+            # Followups: entered mid-arc, so the cap covers the rest of the
+            # fall plus the grounded recovery (they exit on landing).
+            CharacterState.DEMON_FLIP_PALM: 90,
+            CharacterState.DEMON_FLIP_KICK: 90,
             # Super Arts (long cinematic clips; recover on animation completion).
             CharacterState.SUPER_ART_1: 100,
             CharacterState.SUPER_ART_2: 80,
@@ -402,6 +407,8 @@ class Character:
             CharacterState.TATSUMAKI,
             CharacterState.ASHURA_SENKU,
             CharacterState.DEMON_FLIP,
+            CharacterState.DEMON_FLIP_PALM,
+            CharacterState.DEMON_FLIP_KICK,
             CharacterState.SUPER_ART_1,
             CharacterState.SUPER_ART_2,
             CharacterState.SUPER_ART_3,
