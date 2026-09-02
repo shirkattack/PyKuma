@@ -57,3 +57,27 @@ def test_move_names_variants_parse(tmp_path):
     f.write_text(json.dumps({"_meta": {}, "LIGHT_PUNCH": {"rom_id": "1438"}, "LIGHT_PUNCH:close": {"rom_id": "13a8"}}))
     assert bra.load_move_names(f) == {"1438": {"state": "LIGHT_PUNCH", "variant": None},
                                       "13a8": {"state": "LIGHT_PUNCH", "variant": "close"}}
+
+
+def test_targets_lua_lists_missing_cels_and_moves_that_were_never_performed():
+    """The rip session's shopping list (--targets-lua): every cel an animation
+    still needs, named by its move, plus mapped moves with no animation at all.
+    dump_cels.lua reads it and ticks it off live (test_dump_cels_targets.py)."""
+    doc = {"anims": {
+        "1b08": {"state": "HEAVY_KICK", "missing_cels": [22441], "complete": False},
+        "1728": {"state": "HEAVY_PUNCH", "variant": "close", "missing_cels": [21904, 21912],
+                 "complete": False},
+        "a2ec": {"role": "hit_medium", "missing_cels": [21649], "complete": False},
+        "8800": {"role": "stance", "missing_cels": [], "complete": True},
+    }}
+    names = {"1b08": {"state": "HEAVY_KICK", "variant": None},
+             "2aa0": {"state": "DIVE_KICK", "variant": None},   # no anim entry -> never performed
+             "8800": {"state": "STANCE", "variant": None}}
+    out = bra.targets_lua(doc, names)
+
+    assert '[22441] = "HEAVY_KICK (1b08)"' in out
+    assert '[21904] = "HEAVY_PUNCH:close (1728)"' in out       # variant is part of the label
+    assert '[21649] = "hit_medium (a2ec)"' in out              # role-named clips too
+    assert "8800" not in out.split("anims = {")[0]             # a complete clip is not a target
+    assert f'[{0x2aa0}] = "DIVE_KICK (2aa0) -- never performed"' in out
+    assert f"[{0x1b08}]" not in out.split("anims = {")[1]      # it has an anim: not a missing move

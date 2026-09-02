@@ -58,6 +58,8 @@ local P2_MODES = { "off", "jab", "hk", "sweep", "throw" }
 local AUTO_EFFECTS = true    -- when a hit/block connects, dump EVERY frame for FX_FRAMES (sparks, dust: Phase 7)
 local FX_FRAMES    = 12
 local KEEP_ALIVE   = true    -- pin the round timer, refill life while idle, keep both super meters full
+local TARGETS_FILE = "pykuma_targets.lua"  -- the session's shopping list (generated; copy it next to this script)
+local TARGET_ROTATE = 150    -- frames each group of remaining targets stays on screen
 local MAX_TILES    = 64      -- bank-0 tiles read through the window: the decoder's anchor into the state
 
 local SPR_BASE  = 0x04000000
@@ -205,6 +207,62 @@ local function dump_frame(frame_num)
 end
 
 local frame_num, prev_key, status = 0, false, "press " .. DUMP_KEY .. " to dump the current frame"
+
+-- ---------------------------------------------------------------------------
+-- Session targets: what the repo still needs (build_rom_animations.py
+-- --targets-lua). Without the file the ripper behaves exactly as before; with
+-- it, the cels an animation is still missing and the moves never performed are
+-- counted down on screen and ticked off the moment they appear, so a pass ends
+-- when the list is empty instead of when it feels done.
+local targets = { cels = {}, anims = {} }
+local targets_left, groups, group_order = 0, {}, {}
+local got_msg, got_frames, rotate_at = nil, 0, 1
+do
+  local ok, t = pcall(dofile, TARGETS_FILE)
+  if ok and type(t) == "table" then
+    local function add(kind, key, label)
+      targets[kind][key] = label
+      targets_left = targets_left + 1
+      if groups[label] == nil then
+        groups[label] = 0
+        group_order[#group_order + 1] = label
+      end
+      groups[label] = groups[label] + 1
+    end
+    for cel, label in pairs(t.cels or {}) do add("cels", cel, label) end
+    for anim, label in pairs(t.anims or {}) do add("anims", anim, label) end
+  end
+end
+
+local function tick_off(kind, key, what)
+  local label = targets[kind][key]
+  if not label then return end
+  targets[kind][key] = nil
+  targets_left = targets_left - 1
+  groups[label] = groups[label] - 1
+  got_msg = string.format("GOT %s (%s %d) -- %d left", label, what, key, targets_left)
+  got_frames = 180
+end
+
+local function targets_line()
+  if targets_left <= 0 then
+    return (next(group_order) == nil) and "" or "TARGETS: all done"
+  end
+  -- rotate through the groups that still have something outstanding
+  local live = {}
+  for _, label in ipairs(group_order) do
+    if (groups[label] or 0) > 0 then live[#live + 1] = label end
+  end
+  if #live == 0 then return "TARGETS: all done" end
+  local i = (math.floor(frame_num / TARGET_ROTATE) % #live) + 1
+  local shown = {}
+  for k = 0, math.min(2, #live - 1) do
+    local label = live[((i - 1 + k) % #live) + 1]
+    shown[#shown + 1] = string.format("%s x%d", label, groups[label])
+  end
+  return string.format("TARGETS %d left: %s", targets_left, table.concat(shown, ", "))
+end
+
 local seen, nseen = {}, 0
 local prev_hits, prev_marker = { 0, 0 }, { 0, 0 }
 local function connect_check()
@@ -257,12 +315,20 @@ local function on_frame()
   if want then
     local nrec, nt = dump_frame(frame_num)
     status = string.format("dumped f%d cel %d: %d objects", frame_num, cel, nrec)
+    tick_off("cels", cel, "cel")
   end
+  tick_off("anims", rdw(P1_BASE + 0x202), "anim")
   prev_key = down
   if gui and gui.text then
     gui.text(8, 8, string.format("CEL RIP f%d  P1 anim %04x cel %d  ripped %d  P2:%s(%s)%s | %s",
       frame_num, rdw(P1_BASE + 0x202), cel, nseen, P2_MODES[p2_mode], P2_KEY,
       KEEP_ALIVE and "  [inf time/life/meter]" or "", status))
+    local line = targets_line()
+    if line ~= "" then gui.text(8, 18, line) end
+    if got_frames > 0 then
+      got_frames = got_frames - 1
+      gui.text(8, 28, got_msg)
+    end
   end
 end
 if emu.registerbefore then emu.registerbefore(drive_p2) end
