@@ -26,6 +26,7 @@ sf3-dev = "street_fighter_3rd.main_with_menu:main_dev"
 
 [dependency-groups]
 dev = [
+    "lupa>=2.8",
     "pytest>=8.0",
 ]
 

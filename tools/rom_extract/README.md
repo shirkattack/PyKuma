@@ -151,6 +151,24 @@ palette (learned from the stance dumps). `P2_KEY` ('A') in the Lua cycles a
 P2 auto-attack (jab / HK / sweep) for the block, hit, launch and knockdown
 cels; `KEEP_ALIVE` pins the timer and keeps both super meters full.
 
+#### The session checklist (`--targets-lua`)
+
+The ripper does not otherwise know what the repo is still missing, which is how
+the last two passes came back with seven moves short one cel each. Generate the
+list and copy it next to the script:
+
+    uv run python tools/rom_extract/build_rom_animations.py --cels ~/akuma_cels --targets-lua
+    cp tools/rom_extract/dump_cels.lua tools/rom_extract/pykuma_targets.lua \
+       ~/.var/app/com.fightcade.Fightcade/data/fbneo-training-mode/
+
+`pykuma_targets.lua` holds every cel an animation still needs (named by its
+move) plus every mapped move with no animation at all — a move no capture ever
+performed. `dump_cels.lua` loads it if it is there, shows `TARGETS n left`
+rotating through the outstanding groups, and flashes `GOT <move> ... n left` as
+each one appears, so the pass is over when the counter hits zero. Without the
+file the ripper behaves exactly as before. (Regenerate after every ingest: it
+is derived from `rom_animations.json`.)
+
 Two passes (2026-08-27): **458 cels / 72 animations** -- every mapped move
 except the dive kick and UOH (never performed), with 7 moves missing a single
 hit-branch cel each; plus reactions, throws, teleport, taunt, wins and the

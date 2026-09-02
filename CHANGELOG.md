@@ -11,6 +11,15 @@ ROM-accurate.
 ## [Unreleased]
 
 ### Added
+- **The cel ripper knows what is still missing.**
+  `build_rom_animations.py --targets-lua` writes the session's shopping list —
+  every cel an animation still needs, named by its move, plus every mapped move
+  no capture ever performed — and `dump_cels.lua` reads it, counts it down on
+  screen (`TARGETS n left`, rotating through the outstanding groups) and ticks
+  each one off as it appears. A rip pass now ends when the counter hits zero
+  instead of when it feels done; the previous two passes each came back with
+  seven moves one cel short. Without the file the ripper is unchanged. The Lua
+  half is tested under a stubbed FBNeo (`tests/test_dump_cels_targets.py`).
 - **Demon Flip followups from the ROM.** A punch during the flip's arc cancels
   into `b118` (Hyakki Goushou, the palm) and a kick into `b218` (Hyakki
   Goujin) — the ROM's own P/K cancels of `af08`, named verbatim by
