@@ -46,7 +46,9 @@ This is a **non-commercial educational project** created to study fighting game 
 - ✅ **Super-Meter & Super Arts** - meter builds on hits/blocks; SA1/SA2/SA3
 - ✅ **Diagnostic framework** - deterministic replays, scenario tests, ROM-golden compare
 
-### Akuma Character
+<details>
+<summary><b>Akuma character</b> — movement, 18 normals, command actions, specials, Super Arts</summary>
+
 **Movement:** standing, walking, dashing (fwd/back, stops at pushbox contact),
 3 jumps (neutral/fwd/back), crouching.
 
@@ -72,6 +74,8 @@ forward jump), Taunt (HP+HK). Standing normals have close/far versions by distan
 > Damage/timing for several specials & supers are **provisional game-feel values**,
 > flagged in code pending ROM/decomp calibration — geometry remains ROM-accurate.
 
+</details>
+
 ### Game Modes
 - **Normal Mode** - Match vs a **selectable CPU tier** (Novice → Master; a Shin Akuma
   boss is teased/locked) chosen from the difficulty screen
@@ -81,7 +85,9 @@ forward jump), Taunt (HP+HK). Standing normals have close/far versions by distan
   reachable from the menu yet)*
 - **Hitbox Viewer** - ROM-accurate hitbox/hurtbox inspector (`--hitbox-viewer`)
 
-### Technical Features
+<details>
+<summary><b>Technical features</b> — tooling, architecture, debug support</summary>
+
 - ✅ **UV Package Manager** - Modern Python dependency management
 - ✅ **Pydantic Data Validation** - Type-safe schemas with runtime validation
 - ✅ **Modular Architecture** - Separated systems (Input, Collision, Animation, VFX)
@@ -90,6 +96,8 @@ forward jump), Taunt (HP+HK). Standing normals have close/far versions by distan
 - ✅ **Main Menu System** - Start (pick your CPU opponent), Training, Dev, Hitbox Viewer, Controls
 - ✅ **YAML-Based Animation System** - Centralized frame data and hitbox definitions
 - ✅ **Debug Tools** - Hitbox visualization, frame data display, performance metrics
+
+</details>
 
 ## 🚀 Quick Start
 
@@ -140,7 +148,8 @@ punch, `K` = any kick, `PPP` = all three punches, `KKK` = all three kicks.
 
 Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 
-### Akuma command list (facing right)
+<details>
+<summary><b>Akuma command list</b> (facing right)</summary>
 
 | Move | Input |
 |---|---|
@@ -161,14 +170,23 @@ Double-tap → or ← to dash. Hold ← (away) to block while being attacked.
 | **Raging Demon** (Shun Goku Satsu) | LP, LP, →, LK, HP  *(full meter)* |
 | Parry (high / low) | tap → / tap ↓ as the hit lands (7-frame window) |
 
-### Training / debug hotkeys
+</details>
+
+<details>
+<summary><b>Training / debug hotkeys</b> (F1–F12, R, ESC)</summary>
+
 - **F1** hitbox/hurtbox display · **F2** world-coordinate grid · **F3** reset positions
 - **F4** frame meter (SF6-style, expected-vs-actual) · **F6** frame-data overlay
 - **F9** file bug tickets to `bugs/` (every `!!` line also lands in `bugs/discrepancies.log`)
 - **R** reset health · **F10** issue report · **F11** save replay clip · **F12** snapshot
 - **ESC** pause / return to menu
 
+</details>
+
 ## 📁 Project Structure
+
+<details>
+<summary><b>Directory tree</b></summary>
 
 ```
 pykuma/
@@ -188,9 +206,14 @@ pykuma/
 └── tools/                      # framedata converter, diagnostics harness, Frame Lab audit, ROM extraction
 ```
 
+</details>
+
 ## 🔬 Why Pydantic for Fighting Games?
 
 Fighting games have **complex, interconnected data** that must be validated at runtime to prevent bugs. This project uses [Pydantic](https://docs.pydantic.dev/) for type-safe data validation throughout the engine.
+
+<details>
+<summary><b>The challenge, the Pydantic solution, and what it buys us</b> (code examples)</summary>
 
 ### The Challenge
 
@@ -281,6 +304,8 @@ character = CharacterData.parse_file("akuma.yaml")
 
 This approach makes the engine **robust, maintainable, and faithful to SF3's frame-perfect gameplay**.
 
+</details>
+
 ## 📚 Documentation
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
@@ -309,6 +334,9 @@ See [tests/README.md](tests/README.md) for more details.
 
 ## 🧰 Developer Scripts
 
+<details>
+<summary><b>Scripts and headless diagnostics</b></summary>
+
 The game itself is `uv run sf3-menu` (or `sf3-training` / `sf3-dev`). `scripts/`
 holds developer utilities only:
 
@@ -326,6 +354,8 @@ uv run python -m street_fighter_3rd.tools.joystick_probe
 Headless diagnostics live in `tools/diagnostics/` (scripted scenarios, replays,
 montages) — see `docs/DIAGNOSTIC_FRAMEWORK.md`. The old `demo_*.py` scripts were
 removed (they imported modules that no longer exist); git history has them.
+
+</details>
 
 ## 🤝 Contributing
 
@@ -348,6 +378,9 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 
 ## 🎯 Roadmap
 
+<details>
+<summary><b>Completed phases 1–3</b> — core engine, combat expansion, SF3 systems</summary>
+
 ### ✅ Phase 1: Core Engine (COMPLETE)
 - 60 FPS game loop, state machine, animation system
 - Input buffer with motion detection
@@ -364,6 +397,8 @@ See [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/) for issue templates.
 - Super meter + Super Arts SA1/SA2/SA3
 - Raging Demon command grab
 - Round-flow poses (intro / win / time-over)
+
+</details>
 
 ### 🚧 Phase 4: Single-player & polish (IN PROGRESS)
 - ✅ **CPU AI opponent** — deterministic; approaches, pokes, blocks, anti-airs,
